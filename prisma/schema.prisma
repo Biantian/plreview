@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  low
+  medium
+  high
+  critical
+}
+
+enum ReviewStatus {
+  pending
+  running
+  completed
+  partial
+  failed
+}
+
+model Document {
+  id             String              @id @default(cuid())
+  title          String
+  filename       String
+  fileType       String
+  rawText        String
+  paragraphCount Int
+  createdAt      DateTime            @default(now())
+  paragraphs     DocumentParagraph[]
+  reviewJobs     ReviewJob[]
+}
+
+model DocumentParagraph {
+  id             String   @id @default(cuid())
+  documentId     String
+  paragraphIndex Int
+  text           String
+  charStart      Int
+  charEnd        Int
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, paragraphIndex])
+  @@index([documentId])
+}
+
+model Rule {
+  id             String        @id @default(cuid())
+  name           String
+  category       String
+  description    String
+  promptTemplate String
+  severity       Severity
+  enabled        Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  versions       RuleVersion[]
+  annotations    Annotation[]
+}
+
+model RuleVersion {
+  id                     String       @id @default(cuid())
+  ruleId                 String
+  version                Int
+  nameSnapshot           String
+  descriptionSnapshot    String
+  promptTemplateSnapshot String
+  severitySnapshot       Severity
+  createdAt              DateTime     @default(now())
+  rule                   Rule         @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  annotations            Annotation[]
+
+  @@unique([ruleId, version])
+  @@index([ruleId])
+}
+
+model LlmProfile {
+  id           String      @id @default(cuid())
+  name         String
+  provider     String
+  apiStyle     String
+  baseUrl      String
+  defaultModel String
+  enabled      Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  reviewJobs   ReviewJob[]
+}
+
+model ReviewJob {
+  id                String        @id @default(cuid())
+  documentId        String
+  llmProfileId      String?
+  providerSnapshot  String
+  modelNameSnapshot String
+  status            ReviewStatus  @default(pending)
+  summary           String?
+  overallScore      Int?
+  reportMarkdown    String?
+  errorMessage      String?
+  createdAt         DateTime      @default(now())
+  finishedAt        DateTime?
+  document          Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  llmProfile        LlmProfile?   @relation(fields: [llmProfileId], references: [id], onDelete: SetNull)
+  annotations       Annotation[]
+
+  @@index([documentId])
+  @@index([llmProfileId])
+}
+
+model Annotation {
+  id            String     @id @default(cuid())
+  reviewJobId   String
+  ruleId        String
+  ruleVersionId String
+  paragraphIndex Int
+  issue         String
+  suggestion    String
+  severity      Severity
+  evidenceText  String?
+  createdAt     DateTime   @default(now())
+  reviewJob     ReviewJob  @relation(fields: [reviewJobId], references: [id], onDelete: Cascade)
+  rule          Rule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  ruleVersion   RuleVersion @relation(fields: [ruleVersionId], references: [id], onDelete: Cascade)
+
+  @@index([reviewJobId])
+  @@index([ruleId])
+  @@index([ruleVersionId])
+  @@index([reviewJobId, paragraphIndex])
+}
