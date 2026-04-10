@@ -20,56 +20,70 @@ export default async function NewReviewPage() {
 
   return (
     <div className="grid-main">
-      <section className="panel stack">
+      <section className="panel stack-lg">
         <div>
+          <p className="section-eyebrow">Review Launchpad</p>
           <h1 className="section-title">新建评审</h1>
           <p className="section-copy">
-            这一步会完成文件导入、规则快照、模型评审和报告入库。若未配置 API Key，系统会自动使用演示模式帮助你先验证流程。
+            这一步会完成文件导入、规则快照、模型评审和报告入库。页面结构改成了任务启动台，减少表单堆叠感，也让每一步的依赖关系更清楚。
           </p>
         </div>
 
         <form action={createReviewAction} className="form-grid">
-          <div className="field">
-            <label htmlFor="title">评审标题</label>
-            <input
-              id="title"
-              name="title"
-              placeholder="可选，不填则使用文件名"
-            />
-          </div>
-
-          <FilePicker />
-
-          <div className="form-grid two">
-            <div className="field">
-              <label htmlFor="llmProfileId">模型配置</label>
-              <select
-                defaultValue={defaultProfile?.id}
-                id="llmProfileId"
-                name="llmProfileId"
-                required
-              >
-                {llmProfiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.name} · {profile.provider}
-                  </option>
-                ))}
-              </select>
+          <div className="form-section">
+            <div>
+              <h2 className="subsection-title">任务设置</h2>
+              <p className="section-copy">先确认评审标题与本次使用的模型配置。</p>
             </div>
 
             <div className="field">
-              <label htmlFor="modelName">模型名称</label>
-              <input
-                defaultValue={defaultProfile?.defaultModel}
-                id="modelName"
-                name="modelName"
-                placeholder="例如 qwen-plus"
-              />
+              <label htmlFor="title">评审标题</label>
+              <input id="title" name="title" placeholder="可选，不填则使用文件名" />
+            </div>
+
+            <div className="form-grid two">
+              <div className="field">
+                <label htmlFor="llmProfileId">模型配置</label>
+                <select
+                  defaultValue={defaultProfile?.id}
+                  id="llmProfileId"
+                  name="llmProfileId"
+                  required
+                >
+                  {llmProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name} · {profile.provider}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label htmlFor="modelName">模型名称</label>
+                <input
+                  defaultValue={defaultProfile?.defaultModel}
+                  id="modelName"
+                  name="modelName"
+                  placeholder="例如 qwen-plus"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="field">
-            <span>本次评审规则</span>
+          <div className="form-section">
+            <div>
+              <h2 className="subsection-title">文档导入</h2>
+              <p className="section-copy">文件会被解析为段落数组，后续标注结果也会按段落回写。</p>
+            </div>
+            <FilePicker />
+          </div>
+
+          <div className="form-section">
+            <div>
+              <h2 className="subsection-title">本次评审规则</h2>
+              <p className="section-copy">默认勾选所有启用规则，你也可以只保留本次需要的审查口径。</p>
+            </div>
+
             <div className="checkbox-list">
               {rules.length === 0 ? (
                 <div className="checkbox-card">
@@ -104,28 +118,70 @@ export default async function NewReviewPage() {
         </form>
       </section>
 
-      <section className="stack">
-        <div className="card">
-          <h2 className="section-title">本版说明</h2>
-          <p className="section-copy">
-            当前结果以段落级标注为主。评审页会同时展示报告摘要、问题列表和原文高亮，便于快速回看问题落点。
-          </p>
-        </div>
+      <aside className="stack-lg">
+        <section className="card stack">
+          <div>
+            <p className="section-eyebrow">Flow</p>
+            <h2 className="section-title">这次提交会发生什么</h2>
+          </div>
 
-        <div className="card stack">
-          <h2 className="section-title">接入百炼</h2>
-          <p className="section-copy">
-            在项目根目录创建 <code>.env</code>，填入百炼兼容接口 API Key。默认 base URL
-            已按你确认的地址预置。
-          </p>
+          <div className="feature-list">
+            <div className="feature-row">
+              <span className="feature-kicker">01</span>
+              <div>
+                <strong>导入文件并解析段落</strong>
+                <p className="muted">系统会把原文整理成可定位结构，供后续报告和问题跳转使用。</p>
+              </div>
+            </div>
+            <div className="feature-row">
+              <span className="feature-kicker">02</span>
+              <div>
+                <strong>冻结规则快照并调用模型</strong>
+                <p className="muted">本次启用的规则会被保存为版本，保证历史结果可回溯。</p>
+              </div>
+            </div>
+            <div className="feature-row">
+              <span className="feature-kicker">03</span>
+              <div>
+                <strong>生成报告并标注原文</strong>
+                <p className="muted">评审结果会同步生成摘要、问题清单和段落命中高亮。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="card stack">
+          <div>
+            <p className="section-eyebrow">Runtime</p>
+            <h2 className="section-title">运行环境</h2>
+            <p className="section-copy">未配置真实 Key 时，系统会自动切换到演示模式，方便先验证流程。</p>
+          </div>
+
+          <div className="feature-list">
+            <div className="feature-row">
+              <span className="feature-kicker">规则</span>
+              <div>
+                <strong>{rules.length} 条启用规则可用</strong>
+                <p className="muted">当前页只会展示启用状态的规则，减少误选和空跑。</p>
+              </div>
+            </div>
+            <div className="feature-row">
+              <span className="feature-kicker">模型</span>
+              <div>
+                <strong>{llmProfiles.length} 个配置可选</strong>
+                <p className="muted">默认 base URL 已预置为百炼 OpenAI 兼容地址。</p>
+              </div>
+            </div>
+          </div>
+
           <div className="hint">
             <code>OPENAI_COMPATIBLE_API_KEY</code>
           </div>
           <div className="hint">
             <code>OPENAI_COMPATIBLE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1</code>
           </div>
-        </div>
-      </section>
+        </section>
+      </aside>
     </div>
   );
 }

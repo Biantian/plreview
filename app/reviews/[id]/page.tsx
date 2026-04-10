@@ -50,36 +50,66 @@ export default async function ReviewDetailPage({
     }
   });
 
+  const severityCount = review.annotations.reduce(
+    (accumulator, annotation) => {
+      accumulator[annotation.severity] += 1;
+      return accumulator;
+    },
+    { low: 0, medium: 0, high: 0, critical: 0 },
+  );
+
+  const hitParagraphCount = Array.from(annotationsByParagraph.values()).filter(
+    (annotations) => annotations.length > 0,
+  ).length;
+
   return (
     <>
-      <section className="panel stack">
+      <section className="panel stack-lg">
         <div className="inline-actions">
           <StatusBadge status={review.status} />
-          <span className="pill">{review.providerSnapshot}</span>
+          <span className="pill pill-brand">{review.providerSnapshot}</span>
           <span className="pill">{review.modelNameSnapshot}</span>
           <span className="pill">{formatDate(review.createdAt)}</span>
         </div>
+
         <div>
+          <p className="section-eyebrow">Review Snapshot</p>
           <h1 className="section-title">{review.document.title}</h1>
           <p className="section-copy">
             文件：{review.document.filename} · 段落数：{review.document.paragraphCount}
           </p>
         </div>
 
-        {review.summary ? <p className="section-copy">{review.summary}</p> : null}
-        {review.errorMessage ? (
-          <p className="section-copy">错误信息：{review.errorMessage}</p>
-        ) : null}
+        {review.summary ? <p className="hero-lead">{review.summary}</p> : null}
+        {review.errorMessage ? <p className="section-copy">错误信息：{review.errorMessage}</p> : null}
+
+        <div className="metric-grid">
+          <div className="metric-card">
+            <p className="metric-label">问题总数</p>
+            <strong className="metric-value">{review.annotations.length}</strong>
+          </div>
+          <div className="metric-card">
+            <p className="metric-label">命中段落</p>
+            <strong className="metric-value">{hitParagraphCount}</strong>
+          </div>
+          <div className="metric-card">
+            <p className="metric-label">高优先问题</p>
+            <strong className="metric-value">{severityCount.high + severityCount.critical}</strong>
+          </div>
+          <div className="metric-card">
+            <p className="metric-label">中低优先问题</p>
+            <strong className="metric-value">{severityCount.low + severityCount.medium}</strong>
+          </div>
+        </div>
       </section>
 
       <section className="review-layout">
         <div className="panel">
           <div className="stack">
             <div>
+              <p className="section-eyebrow">Annotated Document</p>
               <h2 className="section-title">原文与段落标注</h2>
-              <p className="section-copy">
-                命中问题的段落会直接附带规则、问题描述和修改建议。
-              </p>
+              <p className="section-copy">命中问题的段落会直接附带规则、问题描述和修改建议。</p>
             </div>
 
             <div className="paragraphs">
@@ -95,9 +125,7 @@ export default async function ReviewDetailPage({
                     id={`paragraph-${paragraph.paragraphIndex}`}
                     key={paragraph.id}
                   >
-                    <p className="paragraph-index">
-                      段落 {paragraph.paragraphIndex + 1}
-                    </p>
+                    <p className="paragraph-index">段落 {paragraph.paragraphIndex + 1}</p>
                     <p className="annotation-copy">{paragraph.text}</p>
 
                     {paragraphAnnotations.map((annotation) => (
@@ -120,11 +148,12 @@ export default async function ReviewDetailPage({
           </div>
         </div>
 
-        <div className="stack">
+        <div className="review-sidebar stack-lg">
           <section className="card stack">
             <div>
+              <p className="section-eyebrow">Issue Navigator</p>
               <h2 className="section-title">问题清单</h2>
-              <p className="section-copy">按段落顺序聚合，方便快速跳转定位。</p>
+              <p className="section-copy">按段落顺序聚合，点击后可直接跳转定位到原文位置。</p>
             </div>
 
             <div className="list">
@@ -157,6 +186,7 @@ export default async function ReviewDetailPage({
 
           <section className="card stack">
             <div>
+              <p className="section-eyebrow">Report Body</p>
               <h2 className="section-title">报告正文</h2>
               <p className="section-copy">当前先以内嵌文本方式展示，后续可继续扩展导出能力。</p>
             </div>
