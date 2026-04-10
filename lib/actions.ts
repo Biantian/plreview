@@ -127,6 +127,12 @@ export async function createReviewAction(formData: FormData) {
       fileType: parsedDocument.fileType,
       rawText: parsedDocument.rawText,
       paragraphCount: parsedDocument.paragraphs.length,
+      blockCount: parsedDocument.blocks.length,
+      blocks: {
+        createMany: {
+          data: parsedDocument.blocks,
+        },
+      },
       paragraphs: {
         createMany: {
           data: parsedDocument.paragraphs,
@@ -169,9 +175,12 @@ export async function createReviewAction(formData: FormData) {
     const { response, reportMarkdown, mode } = await reviewDocument({
       documentTitle: finalTitle,
       rawText: parsedDocument.rawText,
-      paragraphs: parsedDocument.paragraphs.map(({ paragraphIndex, text }) => ({
-        paragraphIndex,
+      blocks: parsedDocument.blocks.map(({ blockIndex, blockType, text, level, listKind }) => ({
+        blockIndex,
+        blockType,
         text,
+        level,
+        listKind,
       })),
       rules,
       provider: llmProfile.provider,
@@ -180,12 +189,12 @@ export async function createReviewAction(formData: FormData) {
     });
 
     const versionMap = new Map(ruleVersions.map((version) => [version.ruleId, version]));
-    const paragraphSet = new Set(parsedDocument.paragraphs.map((item) => item.paragraphIndex));
+    const blockSet = new Set(parsedDocument.blocks.map((item) => item.blockIndex));
     const validAnnotations = response.ruleFindings.flatMap((finding) =>
       finding.annotations
         .filter(
           (annotation) =>
-            paragraphSet.has(annotation.paragraphIndex) &&
+            blockSet.has(annotation.blockIndex) &&
             versionMap.has(annotation.ruleId),
         )
         .map((annotation) => {
@@ -199,7 +208,8 @@ export async function createReviewAction(formData: FormData) {
             reviewJobId: reviewJob.id,
             ruleId: annotation.ruleId,
             ruleVersionId: version.id,
-            paragraphIndex: annotation.paragraphIndex,
+            paragraphIndex: annotation.paragraphIndex ?? annotation.blockIndex,
+            blockIndex: annotation.blockIndex,
             issue: annotation.issue,
             suggestion: annotation.suggestion,
             severity: annotation.severity,
@@ -217,6 +227,7 @@ export async function createReviewAction(formData: FormData) {
             ruleId: string;
             ruleVersionId: string;
             paragraphIndex: number;
+            blockIndex: number;
             issue: string;
             suggestion: string;
             severity: Severity;
