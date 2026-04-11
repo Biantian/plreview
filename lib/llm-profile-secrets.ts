@@ -5,7 +5,14 @@ import {
   randomBytes,
 } from "node:crypto";
 
+function assertMasterKey(masterKey: string) {
+  if (!masterKey.trim()) {
+    throw new Error("master key must not be blank");
+  }
+}
+
 function buildKey(masterKey: string) {
+  assertMasterKey(masterKey);
   return createHash("sha256").update(masterKey).digest();
 }
 
