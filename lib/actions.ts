@@ -1,13 +1,14 @@
 "use server";
 
 import { ReviewStatus, Severity } from "@prisma/client";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { RULE_TEMPLATE } from "@/lib/defaults";
-import { reviewDocument } from "@/lib/llm-client";
 import { parseUploadedDocument } from "@/lib/parse-document";
 import { prisma } from "@/lib/prisma";
+import { executeReviewJob } from "@/lib/review-jobs";
 
 function getSeverity(value: FormDataEntryValue | null) {
   switch (value) {
@@ -119,6 +120,7 @@ export async function createReviewAction(formData: FormData) {
 
   const parsedDocument = await parseUploadedDocument(file);
   const finalTitle = title || parsedDocument.title;
+  const resolvedModelName = modelName || llmProfile.defaultModel;
 
   const document = await prisma.document.create({
     data: {
@@ -146,128 +148,26 @@ export async function createReviewAction(formData: FormData) {
       documentId: document.id,
       llmProfileId: llmProfile.id,
       providerSnapshot: llmProfile.provider,
-      modelNameSnapshot: modelName || llmProfile.defaultModel,
-      status: ReviewStatus.running,
+      modelNameSnapshot: resolvedModelName,
+      status: ReviewStatus.pending,
     },
   });
 
-  try {
-    const ruleVersions = await Promise.all(
-      rules.map(async (rule) => {
-        const latest = await prisma.ruleVersion.findFirst({
-          where: { ruleId: rule.id },
-          orderBy: { version: "desc" },
-        });
-
-        return prisma.ruleVersion.create({
-          data: {
-            ruleId: rule.id,
-            version: (latest?.version ?? 0) + 1,
-            nameSnapshot: rule.name,
-            descriptionSnapshot: rule.description,
-            promptTemplateSnapshot: rule.promptTemplate,
-            severitySnapshot: rule.severity,
-          },
-        });
-      }),
-    );
-
-    const { response, reportMarkdown, mode } = await reviewDocument({
+  after(async () => {
+    await executeReviewJob({
+      reviewJobId: reviewJob.id,
       documentTitle: finalTitle,
-      rawText: parsedDocument.rawText,
-      blocks: parsedDocument.blocks.map(({ blockIndex, blockType, text, level, listKind }) => ({
-        blockIndex,
-        blockType,
-        text,
-        level,
-        listKind,
-      })),
+      modelName: resolvedModelName,
+      llmProfile,
+      parsedDocument,
       rules,
-      provider: llmProfile.provider,
-      baseUrl: llmProfile.baseUrl,
-      model: modelName || llmProfile.defaultModel,
     });
-
-    const versionMap = new Map(ruleVersions.map((version) => [version.ruleId, version]));
-    const blockSet = new Set(parsedDocument.blocks.map((item) => item.blockIndex));
-    const validAnnotations = response.ruleFindings.flatMap((finding) =>
-      finding.annotations
-        .filter(
-          (annotation) =>
-            blockSet.has(annotation.blockIndex) &&
-            versionMap.has(annotation.ruleId),
-        )
-        .map((annotation) => {
-          const version = versionMap.get(annotation.ruleId);
-
-          if (!version) {
-            return null;
-          }
-
-          return {
-            reviewJobId: reviewJob.id,
-            ruleId: annotation.ruleId,
-            ruleVersionId: version.id,
-            paragraphIndex: annotation.paragraphIndex ?? annotation.blockIndex,
-            blockIndex: annotation.blockIndex,
-            issue: annotation.issue,
-            suggestion: annotation.suggestion,
-            severity: annotation.severity,
-            evidenceText: annotation.evidenceText ?? null,
-          };
-        })
-        .filter(Boolean),
-    );
-
-    await prisma.$transaction(async (tx) => {
-      if (validAnnotations.length > 0) {
-        await tx.annotation.createMany({
-          data: validAnnotations as Array<{
-            reviewJobId: string;
-            ruleId: string;
-            ruleVersionId: string;
-            paragraphIndex: number;
-            blockIndex: number;
-            issue: string;
-            suggestion: string;
-            severity: Severity;
-            evidenceText: string | null;
-          }>,
-        });
-      }
-
-      await tx.reviewJob.update({
-        where: { id: reviewJob.id },
-        data: {
-          status:
-            validAnnotations.length < response.ruleFindings.flatMap((item) => item.annotations).length
-              ? ReviewStatus.partial
-              : ReviewStatus.completed,
-          summary:
-            mode === "mock" ? `[演示模式] ${response.summary}` : response.summary,
-          overallScore: response.overallScore,
-          reportMarkdown,
-          errorMessage: null,
-          finishedAt: new Date(),
-        },
-      });
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "评审失败，请稍后重试。";
-
-    await prisma.reviewJob.update({
-      where: { id: reviewJob.id },
-      data: {
-        status: ReviewStatus.failed,
-        errorMessage: message,
-        finishedAt: new Date(),
-      },
-    });
-  }
+  });
 
   revalidatePath("/");
+  revalidatePath("/reviews");
   revalidatePath("/reviews/new");
-  redirect(`/reviews/${reviewJob.id}`);
+  redirect("/reviews");
 }
 
 export async function ensureDefaultTemplateAction() {

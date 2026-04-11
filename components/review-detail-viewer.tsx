@@ -1,6 +1,9 @@
 "use client";
 
+import { ReviewStatus } from "@prisma/client";
 import { useEffect, useState } from "react";
+
+import { severityLabel } from "@/lib/utils";
 
 type ReviewBlock = {
   blockIndex: number;
@@ -20,43 +23,34 @@ type ReviewAnnotation = {
   ruleName: string;
 };
 
-function severityText(value: ReviewAnnotation["severity"]) {
-  switch (value) {
-    case "low":
-      return "低";
-    case "medium":
-      return "中";
-    case "high":
-      return "高";
-    case "critical":
-      return "严重";
-    default:
-      return value;
-  }
-}
-
-function blockTypeLabel(block: ReviewBlock) {
-  if (block.blockType === "heading") {
-    return `标题 L${block.level ?? 1}`;
+function getEmptyState(status: ReviewStatus) {
+  if (status === ReviewStatus.pending || status === ReviewStatus.running) {
+    return "后台正在分析文档，问题清单会在评审完成后出现在这里。";
   }
 
-  if (block.blockType === "list_item") {
-    return block.listKind === "ordered" ? "有序项" : "列表项";
+  if (status === ReviewStatus.failed) {
+    return "该任务未生成问题清单，你可以先查看顶部错误信息定位失败原因。";
   }
 
-  return "正文";
+  return "当前没有命中问题，正文会保持自然排版，不额外插入提示标签。";
 }
 
 export function ReviewDetailViewer({
   blocks,
   annotations,
+  status,
 }: {
   blocks: ReviewBlock[];
   annotations: ReviewAnnotation[];
+  status: ReviewStatus;
 }) {
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
     annotations[0]?.id ?? null,
   );
+
+  useEffect(() => {
+    setActiveAnnotationId(annotations[0]?.id ?? null);
+  }, [annotations]);
 
   const activeAnnotation =
     annotations.find((annotation) => annotation.id === activeAnnotationId) ?? annotations[0] ?? null;
@@ -72,48 +66,46 @@ export function ReviewDetailViewer({
     }
   }, [activeAnnotation]);
 
+  let orderedListIndex = 0;
+
   return (
     <section className="review-layout">
       <div className="panel">
         <div className="stack">
           <div>
-            <p className="section-eyebrow">Structured Document</p>
-            <h2 className="section-title">原文结构</h2>
-            <p className="section-copy">标题、正文和列表项会按结构展示，左侧主要负责提供上下文与问题落点。</p>
+            <p className="section-eyebrow">Annotated Source</p>
+            <h2 className="section-title">原文命中</h2>
+            <p className="section-copy">
+              正文按原本顺序连续排版，只在命中问题的位置显示可点击标签，方便在阅读中快速定位。
+            </p>
           </div>
 
-          <div className="document-stream">
+          <div className="document-stream document-reading-flow">
             {blocks.map((block) => {
               const blockAnnotations = annotations.filter(
                 (annotation) => annotation.blockIndex === block.blockIndex,
               );
               const isActive = activeAnnotation?.blockIndex === block.blockIndex;
+              const orderedMarker =
+                block.blockType === "list_item" && block.listKind === "ordered"
+                  ? `${(orderedListIndex += 1)}.`
+                  : (orderedListIndex = 0, "•");
 
               return (
                 <article
-                  className={`document-block ${isActive ? "active" : ""} ${
-                    blockAnnotations.length > 0 ? "has-issues" : ""
-                  }`}
+                  className={`document-block document-block-plain ${
+                    isActive ? "active" : ""
+                  } ${blockAnnotations.length > 0 ? "has-issues" : ""}`}
                   id={`block-${block.blockIndex}`}
                   key={block.blockIndex}
                 >
-                  <div className="document-block-meta">
-                    <span className="document-block-number">{block.blockIndex + 1}</span>
-                    <span className="pill">{blockTypeLabel(block)}</span>
-                    {blockAnnotations.length > 0 ? (
-                      <span className="pill pill-accent">命中 {blockAnnotations.length} 个问题</span>
-                    ) : null}
-                  </div>
-
                   {block.blockType === "heading" ? (
                     <h3 className={`document-heading level-${Math.min(block.level ?? 2, 4)}`}>
                       {block.text}
                     </h3>
                   ) : block.blockType === "list_item" ? (
                     <div className="document-list-row">
-                      <span className="document-list-marker">
-                        {block.listKind === "ordered" ? `${block.blockIndex + 1}.` : "•"}
-                      </span>
+                      <span className="document-list-marker">{orderedMarker}</span>
                       <p className="document-paragraph">{block.text}</p>
                     </div>
                   ) : (
@@ -131,7 +123,10 @@ export function ReviewDetailViewer({
                           onClick={() => setActiveAnnotationId(annotation.id)}
                           type="button"
                         >
-                          {annotation.ruleName}
+                          <span>{annotation.ruleName}</span>
+                          <span className="document-annotation-chip-meta">
+                            {severityLabel(annotation.severity)}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -148,36 +143,35 @@ export function ReviewDetailViewer({
           <div>
             <p className="section-eyebrow">Issue Navigator</p>
             <h2 className="section-title">问题清单</h2>
-            <p className="section-copy">目录承担主要阅读任务，点击后会同步高亮左侧对应内容块。</p>
+            <p className="section-copy">点击问题项或正文中的提示标签，右侧详情和原文位置会同步聚焦。</p>
           </div>
 
           <div className="issue-list">
             {annotations.length === 0 ? (
               <div className="list-item">
                 <div>
-                  <h3>当前没有标注问题</h3>
-                  <p className="muted">若你使用的是演示模式，可换一份文档或补充规则再试一次。</p>
+                  <h3>当前没有可展示的问题</h3>
+                  <p className="muted">{getEmptyState(status)}</p>
                 </div>
               </div>
             ) : (
               annotations.map((annotation) => (
-                <a
+                <button
                   className={`issue-item ${annotation.id === activeAnnotation?.id ? "active" : ""}`}
-                  href={`#block-${annotation.blockIndex}`}
                   key={annotation.id}
                   onClick={() => setActiveAnnotationId(annotation.id)}
+                  type="button"
                 >
                   <div className="issue-item-copy">
                     <div className="inline-actions">
-                      <span className="document-block-number subtle">{annotation.blockIndex + 1}</span>
                       <span className="pill">{annotation.ruleName}</span>
                       <span className={`severity-badge severity-${annotation.severity}`}>
-                        {severityText(annotation.severity)}
+                        {severityLabel(annotation.severity)}
                       </span>
                     </div>
                     <p className="issue-item-title">{annotation.issue}</p>
                   </div>
-                </a>
+                </button>
               ))
             )}
           </div>
@@ -192,11 +186,11 @@ export function ReviewDetailViewer({
           {activeAnnotation ? (
             <div className="issue-detail stack">
               <div className="inline-actions">
-                <span className="document-block-number subtle">{activeAnnotation.blockIndex + 1}</span>
                 <span className="pill pill-brand">{activeAnnotation.ruleName}</span>
                 <span className={`severity-badge severity-${activeAnnotation.severity}`}>
-                  {severityText(activeAnnotation.severity)}
+                  {severityLabel(activeAnnotation.severity)}
                 </span>
+                <span className="pill">已定位到正文对应位置</span>
               </div>
               <p className="issue-item-title">{activeAnnotation.issue}</p>
               <p className="annotation-copy">{activeAnnotation.suggestion}</p>
@@ -205,7 +199,7 @@ export function ReviewDetailViewer({
               ) : null}
             </div>
           ) : (
-            <p className="section-copy">当前没有可展示的问题详情。</p>
+            <p className="section-copy">{getEmptyState(status)}</p>
           )}
         </section>
       </div>

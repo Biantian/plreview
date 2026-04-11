@@ -25,7 +25,7 @@ export default async function NewReviewPage() {
           <p className="section-eyebrow">Review Launchpad</p>
           <h1 className="section-title">新建评审</h1>
           <p className="section-copy">
-            这一步会完成文件导入、规则快照、模型评审和报告入库。页面结构改成了任务启动台，减少表单堆叠感，也让每一步的依赖关系更清楚。
+            这里负责创建评审任务并立即回到任务列表。文档解析、规则快照、模型评审和报告入库会在后台继续完成，方便你提交后马上回到工作台。
           </p>
         </div>
 
@@ -112,7 +112,7 @@ export default async function NewReviewPage() {
 
           <div className="actions">
             <button className="button" disabled={rules.length === 0} type="submit">
-              开始评审
+              开始评审并返回列表
             </button>
           </div>
         </form>
@@ -130,21 +130,21 @@ export default async function NewReviewPage() {
               <span className="feature-kicker">01</span>
               <div>
                 <strong>导入文件并解析段落</strong>
-                <p className="muted">系统会把原文整理成可定位结构，供后续报告和问题跳转使用。</p>
+                <p className="muted">系统会把原文整理成可定位结构，并先创建一条可追踪的评审任务。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">02</span>
               <div>
-                <strong>冻结规则快照并调用模型</strong>
-                <p className="muted">本次启用的规则会被保存为版本，保证历史结果可回溯。</p>
+                <strong>跳回评审列表并在后台执行</strong>
+                <p className="muted">提交后会立刻返回评审列表，任务状态先显示为“评审中”。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">03</span>
               <div>
                 <strong>生成报告并标注原文</strong>
-                <p className="muted">评审结果会同步生成摘要、问题清单和段落命中高亮。</p>
+                <p className="muted">评审完成后会生成 Markdown 报告、问题清单和正文命中提示。</p>
               </div>
             </div>
           </div>

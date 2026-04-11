@@ -56,8 +56,8 @@ export default async function HomePage() {
               <Link className="button" href="/reviews/new">
                 开始新评审
               </Link>
-              <Link className="button-ghost" href="/rules">
-                打开规则库
+              <Link className="button-ghost" href="/reviews">
+                打开评审列表
               </Link>
             </div>
           </div>
@@ -170,6 +170,14 @@ export default async function HomePage() {
           </div>
 
           <div className="list">
+            <Link className="list-item" href="/reviews">
+              <div>
+                <h3>查看评审任务列表与后台进度</h3>
+                <p className="muted">新任务创建后会立即回到列表页，并在这里持续更新状态。</p>
+              </div>
+              <span className="pill pill-brand">任务中心</span>
+            </Link>
+
             <Link className="list-item" href="/reviews/new">
               <div>
                 <h3>创建一次新的策划案评审</h3>

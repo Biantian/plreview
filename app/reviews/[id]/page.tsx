@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { ReviewStatus } from "@prisma/client";
 
+import { ReportMarkdown } from "@/components/report-markdown";
 import { ReviewDetailViewer } from "@/components/review-detail-viewer";
 import { StatusBadge } from "@/components/status-badge";
 import { prisma } from "@/lib/prisma";
@@ -73,6 +75,9 @@ export default async function ReviewDetailPage({
   const highPriorityCount = annotations.filter((annotation) =>
     ["high", "critical"].includes(annotation.severity),
   ).length;
+  const isProcessing =
+    review.status === ReviewStatus.pending || review.status === ReviewStatus.running;
+  const isFailed = review.status === ReviewStatus.failed;
 
   return (
     <>
@@ -115,16 +120,28 @@ export default async function ReviewDetailPage({
         </div>
       </section>
 
-      <ReviewDetailViewer annotations={annotations} blocks={blocks} />
+      <ReviewDetailViewer annotations={annotations} blocks={blocks} status={review.status} />
 
       <section className="card stack">
         <div>
           <p className="section-eyebrow">Report Body</p>
           <h2 className="section-title">报告正文</h2>
-          <p className="section-copy">当前先以内嵌文本方式展示，后续可继续扩展导出能力。</p>
+          <p className="section-copy">正文已按 Markdown 文档阅读方式渲染，便于直接浏览结论、规则明细和结构化内容。</p>
         </div>
 
-        <div className="report">{review.reportMarkdown ?? "该任务尚未生成报告正文。"}</div>
+        {review.reportMarkdown ? (
+          <ReportMarkdown markdown={review.reportMarkdown} />
+        ) : (
+          <div className="report-empty">
+            <p className="section-copy">
+              {isProcessing
+                ? "后台正在生成报告正文，完成后刷新页面即可查看完整 Markdown 报告。"
+                : isFailed
+                  ? "该任务未生成可展示的报告正文。"
+                  : "该任务尚未生成报告正文。"}
+            </p>
+          </div>
+        )}
       </section>
     </>
   );
