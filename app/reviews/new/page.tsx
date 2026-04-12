@@ -29,14 +29,21 @@ export default async function NewReviewPage() {
   const readyProfileCount = profileOptions.filter((profile) => profile.ready).length;
 
   return (
-    <div className="grid-main">
+    <div className="stack-lg">
       <section className="panel stack-lg">
-        <div>
-          <p className="section-eyebrow">Review Launchpad</p>
-          <h1 className="section-title">新建评审</h1>
-          <p className="section-copy">
-            在这里启动一次评审任务；详细流程说明可在顶部“帮助”中查看。
-          </p>
+        <div className="stack">
+          <div className="inline-actions">
+            <span className="pill pill-brand">Review Launchpad</span>
+            <Link className="button-ghost button-inline" href="/docs">
+              查看帮助
+            </Link>
+          </div>
+
+          <div>
+            <p className="section-eyebrow">Review Launchpad</p>
+            <h1 className="section-title">新建评审</h1>
+            <p className="section-copy">在这里启动一次评审任务。</p>
+          </div>
         </div>
 
         <form action={createReviewAction} className="form-grid">
@@ -116,50 +123,6 @@ export default async function NewReviewPage() {
           </div>
         </form>
       </section>
-
-      <aside className="stack-lg">
-        <section className="card stack">
-          <div>
-            <p className="section-eyebrow">Quick Help</p>
-            <h2 className="section-title">快速提示</h2>
-            <p className="section-copy">这里专注于发起任务，完整流程和配置说明统一放到帮助页。</p>
-          </div>
-
-          <div className="actions">
-            <Link className="button-ghost" href="/docs">
-              查看帮助
-            </Link>
-            <Link className="button-ghost" href="/models">
-              管理模型配置
-            </Link>
-          </div>
-        </section>
-
-        <section className="card stack">
-          <div>
-            <p className="section-eyebrow">Current Setup</p>
-            <h2 className="section-title">当前资源</h2>
-            <p className="section-copy">模型配置和规则都在独立页面维护，这里只负责选择并启动本次任务。</p>
-          </div>
-
-          <div className="feature-list">
-            <div className="feature-row">
-              <span className="feature-kicker">规则</span>
-              <div>
-                <strong>{rules.length} 条启用规则可用</strong>
-                <p className="muted">当前页只会展示启用状态的规则，减少误选和空跑。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">模型</span>
-              <div>
-                <strong>{llmProfiles.length} 个配置可选</strong>
-                <p className="muted">{readyProfileCount} 个配置当前可直接运行，演示模式也会标记为就绪。</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </aside>
     </div>
   );
 }

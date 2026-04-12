@@ -7,14 +7,12 @@ export default async function ModelsPage() {
   });
 
   return (
-    <div className="grid-main">
-      <section className="panel stack">
-        <div>
-          <p className="section-eyebrow">Model Settings</p>
-          <h1 className="section-title">模型设置</h1>
-          <p className="section-copy">管理供应商连接、默认模型和密钥状态。</p>
-        </div>
-      </section>
+    <section className="panel stack-lg">
+      <div>
+        <p className="section-eyebrow">Model Settings</p>
+        <h1 className="section-title">模型设置</h1>
+        <p className="section-copy">管理供应商连接、默认模型和密钥状态。</p>
+      </div>
 
       <ModelManager
         profiles={profiles.map((profile) => ({
@@ -31,6 +29,6 @@ export default async function ModelsPage() {
           apiKeyLast4: profile.apiKeyLast4,
         }))}
       />
-    </div>
+    </section>
   );
 }

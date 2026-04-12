@@ -17,12 +17,15 @@ export default async function ReviewsPage() {
   const failedCount = initialReviews.filter((review) => review.status === ReviewStatus.failed).length;
 
   return (
-    <div className="grid-main">
+    <div className="stack-lg">
       <section className="panel stack-lg">
         <div className="stack">
           <div className="inline-actions">
             <span className="pill pill-brand">Review Queue</span>
             <span className="pill">后台任务中心</span>
+            <Link className="button-ghost button-inline" href="/docs">
+              查看帮助
+            </Link>
           </div>
 
           <div>
@@ -64,56 +67,6 @@ export default async function ReviewsPage() {
 
         <ReviewQueue initialReviews={initialReviews} />
       </section>
-
-      <aside className="stack-lg">
-        <section className="card stack">
-          <div>
-            <p className="section-eyebrow">Queue Signals</p>
-            <h2 className="section-title">阅读节奏</h2>
-            <p className="section-copy">
-              这里优先回答两个问题：哪些任务还在后台运行，哪些任务现在已经值得进入详情页仔细看。
-            </p>
-          </div>
-
-          <div className="feature-list">
-            <div className="feature-row">
-              <span className="feature-kicker">进行中</span>
-              <div>
-                <strong>用动态状态感知后台进度</strong>
-                <p className="muted">评审中的任务会自动刷新，但不会强制把你带离列表。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">已完成</span>
-              <div>
-                <strong>结果一旦可读，就显示评分与问题数</strong>
-                <p className="muted">你可以直接判断先看哪份报告，而不用挨个点开详情页。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">失败</span>
-              <div>
-                <strong>失败任务也保留详情入口</strong>
-                <p className="muted">这样你可以快速查看错误原因，不需要猜测任务卡在哪一步。</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="card stack">
-          <div>
-            <p className="section-eyebrow">Need Help</p>
-            <h2 className="section-title">补充说明</h2>
-            <p className="section-copy">如果你需要完整流程或阅读说明，可以直接去帮助页查看。</p>
-          </div>
-
-          <div className="actions">
-            <Link className="button-ghost" href="/docs">
-              打开帮助
-            </Link>
-          </div>
-        </section>
-      </aside>
     </div>
   );
 }
