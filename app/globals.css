@@ -1329,6 +1329,10 @@ svg {
     grid-template-columns: 1fr;
   }
 
+  .page-stack {
+    width: min(100%, 980px);
+  }
+
   .review-sidebar {
     position: static;
   }
