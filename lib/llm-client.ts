@@ -19,6 +19,8 @@ type ReviewInput = {
   provider: string;
   baseUrl: string;
   model: string;
+  apiKey: string | null;
+  mode: "live" | "demo";
 };
 
 function formatBlockLabel(block: ReviewInput["blocks"][number]) {
@@ -133,7 +135,7 @@ function buildMockReview(input: ReviewInput): ReviewResponse {
 
   return {
     summary:
-      "当前未检测到可用的 API Key，系统已使用本地演示模式生成示例评审结果。配置百炼 API Key 后可获得真实评审结果。",
+      "当前使用演示模式生成示例评审结果。切换到已配置密钥的实时模型配置后，可获得真实评审结果。",
     overallScore: 70,
     ruleFindings: input.rules.map((rule) => ({
       ruleId: rule.id,
@@ -153,9 +155,7 @@ export async function reviewDocument(input: ReviewInput) {
     );
   }
 
-  const apiKey = process.env.OPENAI_COMPATIBLE_API_KEY;
-
-  if (!apiKey) {
+  if (input.mode === "demo") {
     const mock = buildMockReview(input);
 
     return {
@@ -165,8 +165,12 @@ export async function reviewDocument(input: ReviewInput) {
     };
   }
 
+  if (!input.apiKey) {
+    throw new Error("当前模型配置缺少 API Key。");
+  }
+
   const client = new OpenAI({
-    apiKey,
+    apiKey: input.apiKey,
     baseURL: input.baseUrl,
   });
 

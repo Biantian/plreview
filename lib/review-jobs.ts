@@ -9,6 +9,7 @@ import {
 import { reviewDocument } from "@/lib/llm-client";
 import type { ParsedDocument } from "@/lib/parse-document";
 import { prisma } from "@/lib/prisma";
+import { resolveReviewRuntime } from "@/lib/review-runtime";
 
 type ExecuteReviewJobInput = {
   reviewJobId: string;
@@ -118,6 +119,12 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       }),
     );
 
+    const runtime = resolveReviewRuntime({
+      mode: llmProfile.mode,
+      apiKeyEncrypted: llmProfile.apiKeyEncrypted,
+      encryptionKey: process.env.APP_ENCRYPTION_KEY ?? null,
+    });
+
     const { response, reportMarkdown, mode } = await reviewDocument({
       documentTitle,
       rawText: parsedDocument.rawText,
@@ -132,6 +139,8 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       provider: llmProfile.provider,
       baseUrl: llmProfile.baseUrl,
       model: modelName,
+      mode: runtime.mode,
+      apiKey: runtime.apiKey,
     });
 
     const versionMap = new Map(ruleVersions.map((version) => [version.ruleId, version]));

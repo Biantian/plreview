@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { FilePicker } from "@/components/file-picker";
+import { ModelProfilePicker } from "@/components/model-profile-picker";
 import { createReviewAction } from "@/lib/actions";
 import { prisma } from "@/lib/prisma";
 
@@ -16,7 +17,16 @@ export default async function NewReviewPage() {
     }),
   ]);
 
-  const defaultProfile = llmProfiles[0];
+  const profileOptions = llmProfiles.map((profile) => ({
+    id: profile.id,
+    name: profile.name,
+    provider: profile.provider,
+    defaultModel: profile.defaultModel,
+    modelOptions: JSON.parse(profile.modelOptionsJson ?? "[]") as string[],
+    ready: profile.mode === "demo" || profile.hasApiKey,
+    mode: profile.mode,
+  }));
+  const readyProfileCount = profileOptions.filter((profile) => profile.ready).length;
 
   return (
     <div className="grid-main">
@@ -41,33 +51,18 @@ export default async function NewReviewPage() {
               <input id="title" name="title" placeholder="可选，不填则使用文件名" />
             </div>
 
-            <div className="form-grid two">
-              <div className="field">
-                <label htmlFor="llmProfileId">模型配置</label>
-                <select
-                  defaultValue={defaultProfile?.id}
-                  id="llmProfileId"
-                  name="llmProfileId"
-                  required
-                >
-                  {llmProfiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name} · {profile.provider}
-                    </option>
-                  ))}
-                </select>
+            {profileOptions.length === 0 ? (
+              <div className="checkbox-card">
+                <div>
+                  <strong>还没有可用的模型配置</strong>
+                  <p className="muted">
+                    先去 <Link href="/models">模型设置</Link> 页面创建至少一条演示或实时配置。
+                  </p>
+                </div>
               </div>
-
-              <div className="field">
-                <label htmlFor="modelName">模型名称</label>
-                <input
-                  defaultValue={defaultProfile?.defaultModel}
-                  id="modelName"
-                  name="modelName"
-                  placeholder="例如 qwen-plus"
-                />
-              </div>
-            </div>
+            ) : (
+              <ModelProfilePicker profiles={profileOptions} />
+            )}
           </div>
 
           <div className="form-section">
@@ -111,7 +106,11 @@ export default async function NewReviewPage() {
           </div>
 
           <div className="actions">
-            <button className="button" disabled={rules.length === 0} type="submit">
+            <button
+              className="button"
+              disabled={rules.length === 0 || profileOptions.length === 0 || readyProfileCount === 0}
+              type="submit"
+            >
               开始评审并返回列表
             </button>
           </div>
@@ -155,7 +154,7 @@ export default async function NewReviewPage() {
               <span className="feature-kicker">模型</span>
               <div>
                 <strong>{llmProfiles.length} 个配置可选</strong>
-                <p className="muted">请在模型设置页维护供应商、模型与密钥状态。</p>
+                <p className="muted">{readyProfileCount} 个配置当前可直接运行，演示模式也会标记为就绪。</p>
               </div>
             </div>
           </div>

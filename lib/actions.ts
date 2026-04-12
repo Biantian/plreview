@@ -222,6 +222,10 @@ export async function createReviewAction(formData: FormData) {
     throw new Error("未找到可用的大模型配置。");
   }
 
+  if (llmProfile.mode === "live" && !llmProfile.hasApiKey) {
+    throw new Error("当前模型配置缺少 API Key。");
+  }
+
   const parsedDocument = await parseUploadedDocument(file);
   const finalTitle = title || parsedDocument.title;
   const resolvedModelName = modelName || llmProfile.defaultModel;
