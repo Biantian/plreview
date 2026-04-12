@@ -36,16 +36,12 @@ async function main() {
       name: "百炼默认配置",
       provider: "DashScope",
       vendorKey: "openai_compatible",
-      mode: "demo",
       apiStyle: "openai_compatible",
       baseUrl:
         process.env.OPENAI_COMPATIBLE_BASE_URL ??
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
       defaultModel: process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus",
       modelOptionsJson: JSON.stringify(["qwen-plus", "qwen-turbo"]),
-      apiKeyEncrypted: null,
-      apiKeyLast4: null,
-      hasApiKey: false,
     },
     create: {
       id: "dashscope-default-profile",
