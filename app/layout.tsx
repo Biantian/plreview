@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 
 import "./globals.css";
@@ -17,11 +18,39 @@ const navItems = [
   { href: "/docs", label: "帮助" },
 ];
 
-export default function RootLayout({
+async function getCurrentPathname() {
+  const requestHeaders = await headers();
+  const requestUrl = requestHeaders.get("next-url") ?? requestHeaders.get("x-matched-path") ?? "/";
+
+  try {
+    return new URL(requestUrl, "http://localhost").pathname || "/";
+  } catch {
+    return requestUrl.split("?")[0] || "/";
+  }
+}
+
+function getActiveNavHref(currentPathname: string) {
+  const exactMatch = navItems.find((item) => item.href === currentPathname);
+
+  if (exactMatch) {
+    return exactMatch.href;
+  }
+
+  const childMatch = navItems
+    .filter((item) => item.href !== "/" && currentPathname.startsWith(`${item.href}/`))
+    .sort((left, right) => right.href.length - left.href.length)[0];
+
+  return childMatch?.href ?? null;
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentPathname = await getCurrentPathname();
+  const activeNavHref = getActiveNavHref(currentPathname);
+
   return (
     <html lang="zh-CN">
       <body>
@@ -41,11 +70,20 @@ export default function RootLayout({
             </div>
 
             <nav className="nav">
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isActive = item.href === activeNavHref;
+
+                return (
+                  <Link
+                    aria-current={isActive ? "page" : undefined}
+                    className={isActive ? "active" : undefined}
+                    key={item.href}
+                    href={item.href}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
           </header>
 
