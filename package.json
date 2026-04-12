@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --import tsx --test",
+    "test": "node --import tsx --test tests/lib/*.test.ts",
     "db:generate": "prisma generate",
     "db:push": "mkdir -p prisma && touch prisma/dev.db && prisma db push",
     "db:seed": "node prisma/seed.mjs"

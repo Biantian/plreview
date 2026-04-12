@@ -43,6 +43,8 @@ async function main() {
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
       defaultModel: process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus",
       modelOptionsJson: JSON.stringify(["qwen-plus", "qwen-turbo"]),
+      apiKeyEncrypted: null,
+      apiKeyLast4: null,
       hasApiKey: false,
     },
     create: {
