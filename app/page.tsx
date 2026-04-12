@@ -46,10 +46,8 @@ export default async function HomePage() {
             </div>
 
             <div className="hero-copy stack">
-              <h1 className="hero-title">把策划案评审的启动、判断与定位放进同一张工作台。</h1>
-              <p className="hero-lead">
-                首页保留完整工作流程，帮助你从上传文档、套用规则到回看命中快速进入状态；详细说明统一放在帮助页。
-              </p>
+              <h1 className="hero-title">上传文档，选择规则和模型，直接开始评审。</h1>
+              <p className="hero-lead">从这里进入新评审、查看任务进度，或回到规则与模型设置完成准备工作。</p>
             </div>
 
             <div className="actions">
@@ -67,16 +65,16 @@ export default async function HomePage() {
 
           <div className="hero-strip">
             <div className="hero-strip-item">
-              <strong>上传与解析</strong>
-              <p className="muted">支持 `docx`、`txt`、`md`，并自动拆分为可定位的段落结构。</p>
+              <strong>上传文档</strong>
+              <p className="muted">支持 `docx`、`txt`、`md`，导入后可直接开始评审。</p>
             </div>
             <div className="hero-strip-item">
-              <strong>规则冻结</strong>
-              <p className="muted">评审时固化规则版本，历史报告可回看、可追溯。</p>
+              <strong>锁定规则</strong>
+              <p className="muted">评审时自动保留规则快照，便于后续回查。</p>
             </div>
             <div className="hero-strip-item">
-              <strong>问题回查</strong>
-              <p className="muted">报告、问题清单与原文段落同屏联动，落点更快找到。</p>
+              <strong>定位问题</strong>
+              <p className="muted">从报告、问题清单和原文段落之间快速跳转。</p>
             </div>
           </div>
         </div>
@@ -84,8 +82,8 @@ export default async function HomePage() {
         <aside className="panel stack">
           <div>
             <p className="section-eyebrow">Workspace Snapshot</p>
-            <h2 className="section-title">当前概览</h2>
-            <p className="section-copy">首页保留流程总览，其他页面则尽量只保留操作提示与结果信息。</p>
+            <h2 className="section-title">运行概览</h2>
+            <p className="section-copy">查看文档、任务、规则和问题的当前状态。</p>
           </div>
 
           <div className="metric-grid">
@@ -112,21 +110,21 @@ export default async function HomePage() {
               <span className="feature-kicker">规则</span>
               <div>
                 <strong>{rulesCount} 条规则已建档</strong>
-                <p className="muted">规则可以持续编辑，但每次评审都会保留当时的冻结快照。</p>
+                <p className="muted">评审前确认规则已启用，执行时会保留快照。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">模型</span>
               <div>
                 <strong>{llmProfiles.length} 个启用中的模型配置</strong>
-                <p className="muted">OpenAI 兼容供应商统一在模型设置页维护，评审时只负责选择配置。</p>
+                <p className="muted">到模型设置页切换可用配置后再发起评审。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">联动</span>
               <div>
-                <strong>报告、问题、原文三处互相映射</strong>
-                <p className="muted">详情页已经围绕“先发现问题，再快速定位原文”来组织阅读路径。</p>
+                <strong>报告、问题、原文三处互相联动</strong>
+                <p className="muted">发现命中后可以直接跳到对应原文段落。</p>
               </div>
             </div>
           </div>
@@ -138,7 +136,7 @@ export default async function HomePage() {
           <div>
             <p className="section-eyebrow">Recent Reviews</p>
             <h2 className="section-title">最近评审</h2>
-            <p className="section-copy">从首页就能回看最近任务，避免每次都从列表重新查找。</p>
+            <p className="section-copy">查看最近任务并继续处理结果。</p>
           </div>
 
           <div className="list">
@@ -146,7 +144,7 @@ export default async function HomePage() {
               <div className="list-item">
                 <div>
                   <h3>还没有评审记录</h3>
-                  <p className="muted">先上传一份策划案，跑一遍完整流程后，这里会变成你的工作回看入口。</p>
+                  <p className="muted">先创建一个新评审，结果会出现在这里。</p>
                 </div>
               </div>
             ) : (
@@ -168,23 +166,23 @@ export default async function HomePage() {
         <div className="card stack">
           <div>
             <p className="section-eyebrow">Workbench</p>
-            <h2 className="section-title">工作入口</h2>
-            <p className="section-copy">首页不铺太多冗余内容，而是把你最常用的两件事放在显眼位置。</p>
+            <h2 className="section-title">常用操作</h2>
+            <p className="section-copy">新建评审、查看任务和维护规则都在这里。</p>
           </div>
 
           <div className="list">
             <Link className="list-item" href="/reviews">
               <div>
-                <h3>查看评审任务列表与后台进度</h3>
-                <p className="muted">新任务创建后会立即回到列表页，并在这里持续更新状态。</p>
+                <h3>查看评审任务列表与进度</h3>
+                <p className="muted">打开列表继续跟踪任务状态。</p>
               </div>
               <span className="pill pill-brand">任务中心</span>
             </Link>
 
             <Link className="list-item" href="/reviews/new">
               <div>
-                <h3>创建一次新的策划案评审</h3>
-                <p className="muted">从文件导入、规则快照到报告生成，一次完成完整启动流程。</p>
+                <h3>创建新的策划案评审</h3>
+                <p className="muted">上传文件、选择规则和模型后开始执行。</p>
               </div>
               <span className="pill pill-brand">主操作</span>
             </Link>
@@ -192,7 +190,7 @@ export default async function HomePage() {
             <Link className="list-item" href="/rules">
               <div>
                 <h3>维护评审规则与提示词模板</h3>
-                <p className="muted">统一调整评审口径，并保持历史结果仍然可追踪到旧版本规则。</p>
+                <p className="muted">更新评审口径并保留历史版本可追踪。</p>
               </div>
               <span className="pill pill-accent">配置台</span>
             </Link>
@@ -204,7 +202,7 @@ export default async function HomePage() {
                 <span className="feature-kicker">模型</span>
                 <div>
                   <strong>当前没有启用模型配置</strong>
-                  <p className="muted">先去模型设置页补一条配置，完整说明可以在帮助页查看。</p>
+                  <p className="muted">先去模型设置页启用一个配置后再开始评审。</p>
                 </div>
               </div>
             ) : (
