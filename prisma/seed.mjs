@@ -29,11 +29,14 @@ const defaultRules = [
   },
 ];
 
+const LEGACY_DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+const LEGACY_DEFAULT_MODEL = "qwen-plus";
+
 async function main() {
   const defaultBaseUrl =
     process.env.OPENAI_COMPATIBLE_BASE_URL ??
-    "https://dashscope.aliyuncs.com/compatible-mode/v1";
-  const defaultModel = process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus";
+    LEGACY_DEFAULT_BASE_URL;
+  const defaultModel = process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? LEGACY_DEFAULT_MODEL;
   const defaultModelOptionsJson = JSON.stringify(["qwen-plus", "qwen-turbo"]);
   const existingDefaultProfile = await prisma.llmProfile.findUnique({
     where: { id: "dashscope-default-profile" },
@@ -50,6 +53,8 @@ async function main() {
     existingDefaultProfile.vendorKey === "openai_compatible" &&
     existingDefaultProfile.mode === "live" &&
     existingDefaultProfile.apiStyle === "openai_compatible" &&
+    existingDefaultProfile.baseUrl === LEGACY_DEFAULT_BASE_URL &&
+    existingDefaultProfile.defaultModel === LEGACY_DEFAULT_MODEL &&
     matchesLegacyModelOptions &&
     existingDefaultProfile.hasApiKey === false &&
     !existingDefaultProfile.apiKeyEncrypted &&
