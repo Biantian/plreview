@@ -37,3 +37,41 @@ test("parseLlmProfileForm allows demo profiles without a key", () => {
   assert.equal(parsed.hasApiKey, false);
   assert.equal(parsed.mode, "demo");
 });
+
+test("parseLlmProfileForm preserves an existing stored key for live profiles", () => {
+  const parsed = parseLlmProfileForm({
+    name: "百炼生产",
+    provider: "DashScope",
+    vendorKey: "openai_compatible",
+    mode: "live",
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    defaultModel: "qwen-plus",
+    modelOptionsText: "qwen-plus",
+    apiKey: "   ",
+    hasStoredApiKey: true,
+    enabled: true,
+  });
+
+  assert.equal(parsed.apiKey, "");
+  assert.equal(parsed.apiKeyLast4, null);
+  assert.equal(parsed.hasApiKey, true);
+});
+
+test("parseLlmProfileForm rejects live profiles without any key source", () => {
+  assert.throws(
+    () =>
+      parseLlmProfileForm({
+        name: "百炼生产",
+        provider: "DashScope",
+        vendorKey: "openai_compatible",
+        mode: "live",
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        defaultModel: "qwen-plus",
+        modelOptionsText: "",
+        apiKey: "",
+        hasStoredApiKey: false,
+        enabled: true,
+      }),
+    /API Key/,
+  );
+});

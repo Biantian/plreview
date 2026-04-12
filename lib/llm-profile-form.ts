@@ -7,10 +7,12 @@ type LlmProfileFormInput = {
   defaultModel: string;
   modelOptionsText: string;
   apiKey: string;
+  hasStoredApiKey?: boolean;
   enabled: boolean;
 };
 
 export function parseLlmProfileForm(input: LlmProfileFormInput) {
+  const normalizedApiKey = input.apiKey.trim();
   const modelOptions = Array.from(
     new Set(
       input.modelOptionsText
@@ -29,9 +31,9 @@ export function parseLlmProfileForm(input: LlmProfileFormInput) {
     defaultModel: input.defaultModel.trim(),
     modelOptions,
     enabled: input.enabled,
-    hasApiKey: input.apiKey.trim().length > 0,
-    apiKey: input.apiKey.trim(),
-    apiKeyLast4: input.apiKey.trim().slice(-4) || null,
+    hasApiKey: normalizedApiKey.length > 0 || Boolean(input.hasStoredApiKey),
+    apiKey: normalizedApiKey,
+    apiKeyLast4: normalizedApiKey.slice(-4) || null,
   };
 
   if (!parsed.name || !parsed.provider || !parsed.baseUrl || !parsed.defaultModel) {

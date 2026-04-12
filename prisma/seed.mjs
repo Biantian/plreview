@@ -36,7 +36,7 @@ async function main() {
       name: "百炼默认配置",
       provider: "DashScope",
       vendorKey: "openai_compatible",
-      mode: "live",
+      mode: "demo",
       apiStyle: "openai_compatible",
       baseUrl:
         process.env.OPENAI_COMPATIBLE_BASE_URL ??
@@ -50,7 +50,7 @@ async function main() {
       name: "百炼默认配置",
       provider: "DashScope",
       vendorKey: "openai_compatible",
-      mode: "live",
+      mode: "demo",
       apiStyle: "openai_compatible",
       baseUrl:
         process.env.OPENAI_COMPATIBLE_BASE_URL ??
