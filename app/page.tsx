@@ -48,7 +48,7 @@ export default async function HomePage() {
             <div className="hero-copy stack">
               <h1 className="hero-title">把策划案评审的启动、判断与定位放进同一张工作台。</h1>
               <p className="hero-lead">
-                这版首页不再只是在展示模块，而是直接把你带入工作状态。上传文档、套用规则、触发模型评审、回看段落命中，都围绕同一个主流程组织。
+                首页保留完整工作流程，帮助你从上传文档、套用规则到回看命中快速进入状态；详细说明统一放在帮助页。
               </p>
             </div>
 
@@ -58,6 +58,9 @@ export default async function HomePage() {
               </Link>
               <Link className="button-ghost" href="/reviews">
                 打开评审列表
+              </Link>
+              <Link className="button-ghost" href="/docs">
+                查看帮助
               </Link>
             </div>
           </div>
@@ -82,7 +85,7 @@ export default async function HomePage() {
           <div>
             <p className="section-eyebrow">Workspace Snapshot</p>
             <h2 className="section-title">当前概览</h2>
-            <p className="section-copy">首屏保留品牌感，但第一优先级仍然是让你立即进入评审流程。</p>
+            <p className="section-copy">首页保留流程总览，其他页面则尽量只保留操作提示与结果信息。</p>
           </div>
 
           <div className="metric-grid">
@@ -116,7 +119,7 @@ export default async function HomePage() {
               <span className="feature-kicker">模型</span>
               <div>
                 <strong>{llmProfiles.length} 个启用中的模型配置</strong>
-                <p className="muted">默认接百炼兼容接口，未配置 API Key 时也能切换到演示模式验证流程。</p>
+                <p className="muted">OpenAI 兼容供应商统一在模型设置页维护，评审时只负责选择配置。</p>
               </div>
             </div>
             <div className="feature-row">
@@ -201,7 +204,7 @@ export default async function HomePage() {
                 <span className="feature-kicker">模型</span>
                 <div>
                   <strong>当前没有启用模型配置</strong>
-                  <p className="muted">你仍然可以先使用演示模式验证 UI 和流程，再回头补接真实模型。</p>
+                  <p className="muted">先去模型设置页补一条配置，完整说明可以在帮助页查看。</p>
                 </div>
               </div>
             ) : (

@@ -17,7 +17,7 @@ export default async function RulesPage() {
           <p className="section-eyebrow">Rule Library</p>
           <h1 className="section-title">规则管理</h1>
           <p className="section-copy">
-            规则页现在默认保持紧凑浏览状态，避免规则数量一多就变成长长的编辑墙。需要修改时再展开单条规则，阅读和维护都会更轻。
+            规则页保持紧凑浏览，详细规则写法统一收敛到帮助页。
           </p>
         </div>
 

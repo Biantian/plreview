@@ -29,7 +29,7 @@ export default async function ReviewsPage() {
             <p className="section-eyebrow">Task Center</p>
             <h1 className="section-title">评审列表</h1>
             <p className="section-copy">
-              新任务会在这里出现并持续更新状态。你可以先回到列表继续安排工作，等报告生成完成后再进入详情阅读。
+              这里负责查看任务状态和进入结果页，不再重复展示完整教学流程。
             </p>
           </div>
 
@@ -102,25 +102,15 @@ export default async function ReviewsPage() {
 
         <section className="card stack">
           <div>
-            <p className="section-eyebrow">Next Step</p>
-            <h2 className="section-title">进入结果页后会看到什么</h2>
+            <p className="section-eyebrow">Need Help</p>
+            <h2 className="section-title">补充说明</h2>
+            <p className="section-copy">如果你需要完整流程或阅读说明，可以直接去帮助页查看。</p>
           </div>
 
-          <div className="feature-list">
-            <div className="feature-row">
-              <span className="feature-kicker">报告</span>
-              <div>
-                <strong>报告正文按 Markdown 排版</strong>
-                <p className="muted">表格、列表、任务清单和代码块会按可读文档方式展示。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">命中</span>
-              <div>
-                <strong>原文只在命中处显示提示标签</strong>
-                <p className="muted">阅读顺序更自然，问题定位也保留足够明确的落点。</p>
-              </div>
-            </div>
+          <div className="actions">
+            <Link className="button-ghost" href="/docs">
+              打开帮助
+            </Link>
           </div>
         </section>
       </aside>

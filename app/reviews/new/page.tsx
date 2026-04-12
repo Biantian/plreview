@@ -25,7 +25,7 @@ export default async function NewReviewPage() {
           <p className="section-eyebrow">Review Launchpad</p>
           <h1 className="section-title">新建评审</h1>
           <p className="section-copy">
-            这里负责创建评审任务并立即回到任务列表。文档解析、规则快照、模型评审和报告入库会在后台继续完成，方便你提交后马上回到工作台。
+            在这里启动一次评审任务；详细流程说明可在顶部“帮助”中查看。
           </p>
         </div>
 
@@ -121,40 +121,26 @@ export default async function NewReviewPage() {
       <aside className="stack-lg">
         <section className="card stack">
           <div>
-            <p className="section-eyebrow">Flow</p>
-            <h2 className="section-title">这次提交会发生什么</h2>
+            <p className="section-eyebrow">Quick Help</p>
+            <h2 className="section-title">快速提示</h2>
+            <p className="section-copy">这里专注于发起任务，完整流程和配置说明统一放到帮助页。</p>
           </div>
 
-          <div className="feature-list">
-            <div className="feature-row">
-              <span className="feature-kicker">01</span>
-              <div>
-                <strong>导入文件并解析段落</strong>
-                <p className="muted">系统会把原文整理成可定位结构，并先创建一条可追踪的评审任务。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">02</span>
-              <div>
-                <strong>跳回评审列表并在后台执行</strong>
-                <p className="muted">提交后会立刻返回评审列表，任务状态先显示为“评审中”。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">03</span>
-              <div>
-                <strong>生成报告并标注原文</strong>
-                <p className="muted">评审完成后会生成 Markdown 报告、问题清单和正文命中提示。</p>
-              </div>
-            </div>
+          <div className="actions">
+            <Link className="button-ghost" href="/docs">
+              查看帮助
+            </Link>
+            <Link className="button-ghost" href="/models">
+              管理模型配置
+            </Link>
           </div>
         </section>
 
         <section className="card stack">
           <div>
-            <p className="section-eyebrow">Runtime</p>
-            <h2 className="section-title">运行环境</h2>
-            <p className="section-copy">未配置真实 Key 时，系统会自动切换到演示模式，方便先验证流程。</p>
+            <p className="section-eyebrow">Current Setup</p>
+            <h2 className="section-title">当前资源</h2>
+            <p className="section-copy">模型配置和规则都在独立页面维护，这里只负责选择并启动本次任务。</p>
           </div>
 
           <div className="feature-list">
@@ -169,16 +155,9 @@ export default async function NewReviewPage() {
               <span className="feature-kicker">模型</span>
               <div>
                 <strong>{llmProfiles.length} 个配置可选</strong>
-                <p className="muted">默认 base URL 已预置为百炼 OpenAI 兼容地址。</p>
+                <p className="muted">请在模型设置页维护供应商、模型与密钥状态。</p>
               </div>
             </div>
-          </div>
-
-          <div className="hint">
-            <code>OPENAI_COMPATIBLE_API_KEY</code>
-          </div>
-          <div className="hint">
-            <code>OPENAI_COMPATIBLE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1</code>
           </div>
         </section>
       </aside>

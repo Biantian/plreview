@@ -75,9 +75,7 @@ export function ReviewDetailViewer({
           <div>
             <p className="section-eyebrow">Annotated Source</p>
             <h2 className="section-title">原文命中</h2>
-            <p className="section-copy">
-              正文按原本顺序连续排版，只在命中问题的位置显示可点击标签，方便在阅读中快速定位。
-            </p>
+            <p className="section-copy">正文与问题联动阅读，详细使用说明可在帮助页查看。</p>
           </div>
 
           <div className="document-stream document-reading-flow">
