@@ -30,18 +30,40 @@ const defaultRules = [
 ];
 
 async function main() {
+  const defaultBaseUrl =
+    process.env.OPENAI_COMPATIBLE_BASE_URL ??
+    "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  const defaultModel = process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus";
+  const defaultModelOptionsJson = JSON.stringify(["qwen-plus", "qwen-turbo"]);
+  const existingDefaultProfile = await prisma.llmProfile.findUnique({
+    where: { id: "dashscope-default-profile" },
+  });
+  const shouldNormalizeLegacyDefaultProfile =
+    existingDefaultProfile?.mode === "live" &&
+    existingDefaultProfile.hasApiKey === false &&
+    !existingDefaultProfile.apiKeyEncrypted &&
+    !existingDefaultProfile.apiKeyLast4 &&
+    existingDefaultProfile.name === "百炼默认配置" &&
+    existingDefaultProfile.provider === "DashScope" &&
+    existingDefaultProfile.vendorKey === "openai_compatible" &&
+    existingDefaultProfile.apiStyle === "openai_compatible";
+
   await prisma.llmProfile.upsert({
     where: { id: "dashscope-default-profile" },
     update: {
       name: "百炼默认配置",
       provider: "DashScope",
       vendorKey: "openai_compatible",
+      ...(shouldNormalizeLegacyDefaultProfile
+        ? {
+            mode: "demo",
+            hasApiKey: false,
+          }
+        : {}),
       apiStyle: "openai_compatible",
-      baseUrl:
-        process.env.OPENAI_COMPATIBLE_BASE_URL ??
-        "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      defaultModel: process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus",
-      modelOptionsJson: JSON.stringify(["qwen-plus", "qwen-turbo"]),
+      baseUrl: defaultBaseUrl,
+      defaultModel,
+      modelOptionsJson: defaultModelOptionsJson,
     },
     create: {
       id: "dashscope-default-profile",
@@ -50,11 +72,9 @@ async function main() {
       vendorKey: "openai_compatible",
       mode: "demo",
       apiStyle: "openai_compatible",
-      baseUrl:
-        process.env.OPENAI_COMPATIBLE_BASE_URL ??
-        "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      defaultModel: process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus",
-      modelOptionsJson: JSON.stringify(["qwen-plus", "qwen-turbo"]),
+      baseUrl: defaultBaseUrl,
+      defaultModel,
+      modelOptionsJson: defaultModelOptionsJson,
       hasApiKey: false,
     },
   });

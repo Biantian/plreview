@@ -40,9 +40,5 @@ export function parseLlmProfileForm(input: LlmProfileFormInput) {
     throw new Error("模型配置名称、供应商、Base URL 和默认模型均为必填项。");
   }
 
-  if (parsed.mode === "live" && !parsed.hasApiKey) {
-    throw new Error("实时模型配置必须提供 API Key。");
-  }
-
   return parsed;
 }
