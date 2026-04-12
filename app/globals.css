@@ -102,7 +102,7 @@ svg {
 
 .app-shell {
   position: relative;
-  width: min(1380px, calc(100vw - 32px));
+  width: min(1280px, calc(100vw - 64px));
   margin: 0 auto;
   padding: 20px 0 52px;
 }
@@ -225,11 +225,16 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  align-items: center;
+}
+
+.page > * {
+  width: min(100%, 1240px);
 }
 
 .page-stack {
   display: flex;
-  width: min(100%, 980px);
+  width: min(68vw, 1240px);
   flex-direction: column;
   gap: 20px;
 }
