@@ -70,7 +70,7 @@ export function ReviewDetailViewer({
 
   return (
     <section className="review-layout">
-      <div className="panel">
+      <div className="panel review-document-pane">
         <div className="stack">
           <div>
             <p className="section-eyebrow">Annotated Source</p>
@@ -78,7 +78,7 @@ export function ReviewDetailViewer({
             <p className="section-copy">正文与问题联动阅读，详细使用说明可在帮助页查看。</p>
           </div>
 
-          <div className="document-stream document-reading-flow">
+          <div className="document-stream document-reading-flow document-stream-dense">
             {blocks.map((block) => {
               const blockAnnotations = annotations.filter(
                 (annotation) => annotation.blockIndex === block.blockIndex,
@@ -136,7 +136,7 @@ export function ReviewDetailViewer({
         </div>
       </div>
 
-      <div className="review-sidebar stack">
+      <div className="review-sidebar review-issue-pane stack">
         <section className="card stack">
           <div>
             <p className="section-eyebrow">Issue Navigator</p>
