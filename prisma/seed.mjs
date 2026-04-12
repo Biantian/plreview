@@ -34,24 +34,30 @@ async function main() {
     where: { id: "dashscope-default-profile" },
     update: {
       name: "百炼默认配置",
-      provider: "dashscope",
+      provider: "DashScope",
+      vendorKey: "openai_compatible",
+      mode: "live",
       apiStyle: "openai_compatible",
       baseUrl:
         process.env.OPENAI_COMPATIBLE_BASE_URL ??
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
       defaultModel: process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus",
-      enabled: true,
+      modelOptionsJson: JSON.stringify(["qwen-plus", "qwen-turbo"]),
+      hasApiKey: false,
     },
     create: {
       id: "dashscope-default-profile",
       name: "百炼默认配置",
-      provider: "dashscope",
+      provider: "DashScope",
+      vendorKey: "openai_compatible",
+      mode: "live",
       apiStyle: "openai_compatible",
       baseUrl:
         process.env.OPENAI_COMPATIBLE_BASE_URL ??
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
       defaultModel: process.env.OPENAI_COMPATIBLE_DEFAULT_MODEL ?? "qwen-plus",
-      enabled: true,
+      modelOptionsJson: JSON.stringify(["qwen-plus", "qwen-turbo"]),
+      hasApiKey: false,
     },
   });
 
