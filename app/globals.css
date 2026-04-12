@@ -182,7 +182,7 @@ svg {
   margin: 0;
   max-width: 620px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .nav {
@@ -283,11 +283,11 @@ svg {
 }
 
 .panel {
-  padding: 30px;
+  padding: 28px;
 }
 
 .card {
-  padding: 22px;
+  padding: 20px;
 }
 
 .hero-grid,
@@ -356,7 +356,7 @@ svg {
 
 .section-title {
   margin: 0 0 8px;
-  font-size: clamp(24px, 2.2vw, 34px);
+  font-size: clamp(22px, 2vw, 32px);
   line-height: 1.1;
   letter-spacing: -0.05em;
 }
@@ -371,7 +371,7 @@ svg {
 .hero-title {
   margin: 0;
   max-width: 11ch;
-  font-size: clamp(40px, 5vw, 66px);
+  font-size: clamp(38px, 4.6vw, 62px);
   line-height: 0.96;
   letter-spacing: -0.07em;
 }
@@ -389,14 +389,18 @@ svg {
 }
 
 .hero-lead {
-  font-size: 17px;
-  line-height: 1.75;
+  font-size: 16px;
+  line-height: 1.72;
 }
 
 .section-copy,
 .annotation-copy,
 .report {
   line-height: 1.72;
+}
+
+.section-copy {
+  font-size: 15px;
 }
 
 .hero-strip {
@@ -870,7 +874,7 @@ svg {
 
 .queue-item-title {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.25;
   letter-spacing: -0.04em;
 }
@@ -1006,8 +1010,8 @@ svg {
 
 .document-paragraph {
   color: var(--ink-soft);
-  font-size: 15px;
-  line-height: 1.66;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .document-list-row {
@@ -1093,7 +1097,7 @@ svg {
 }
 
 .issue-item-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.6;
 }
@@ -1392,7 +1396,7 @@ svg {
 @media (max-width: 720px) {
   .panel,
   .card {
-    padding: 20px;
+    padding: 18px;
     border-radius: 26px;
   }
 
