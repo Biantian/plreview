@@ -38,46 +38,56 @@ async function main() {
   const existingDefaultProfile = await prisma.llmProfile.findUnique({
     where: { id: "dashscope-default-profile" },
   });
+  const matchesLegacyProvider =
+    existingDefaultProfile?.provider === "dashscope" ||
+    existingDefaultProfile?.provider === "DashScope";
+  const matchesLegacyModelOptions =
+    existingDefaultProfile?.modelOptionsJson === null ||
+    existingDefaultProfile?.modelOptionsJson === defaultModelOptionsJson;
   const shouldNormalizeLegacyDefaultProfile =
-    existingDefaultProfile?.mode === "live" &&
+    existingDefaultProfile?.name === "百炼默认配置" &&
+    matchesLegacyProvider &&
+    existingDefaultProfile.vendorKey === "openai_compatible" &&
+    existingDefaultProfile.mode === "live" &&
+    existingDefaultProfile.apiStyle === "openai_compatible" &&
+    existingDefaultProfile.baseUrl === defaultBaseUrl &&
+    existingDefaultProfile.defaultModel === defaultModel &&
+    matchesLegacyModelOptions &&
     existingDefaultProfile.hasApiKey === false &&
     !existingDefaultProfile.apiKeyEncrypted &&
-    !existingDefaultProfile.apiKeyLast4 &&
-    existingDefaultProfile.name === "百炼默认配置" &&
-    existingDefaultProfile.provider === "DashScope" &&
-    existingDefaultProfile.vendorKey === "openai_compatible" &&
-    existingDefaultProfile.apiStyle === "openai_compatible";
+    !existingDefaultProfile.apiKeyLast4;
 
-  await prisma.llmProfile.upsert({
-    where: { id: "dashscope-default-profile" },
-    update: {
-      name: "百炼默认配置",
-      provider: "DashScope",
-      vendorKey: "openai_compatible",
-      ...(shouldNormalizeLegacyDefaultProfile
-        ? {
-            mode: "demo",
-            hasApiKey: false,
-          }
-        : {}),
-      apiStyle: "openai_compatible",
-      baseUrl: defaultBaseUrl,
-      defaultModel,
-      modelOptionsJson: defaultModelOptionsJson,
-    },
-    create: {
-      id: "dashscope-default-profile",
-      name: "百炼默认配置",
-      provider: "DashScope",
-      vendorKey: "openai_compatible",
-      mode: "demo",
-      apiStyle: "openai_compatible",
-      baseUrl: defaultBaseUrl,
-      defaultModel,
-      modelOptionsJson: defaultModelOptionsJson,
-      hasApiKey: false,
-    },
-  });
+  if (!existingDefaultProfile) {
+    await prisma.llmProfile.create({
+      data: {
+        id: "dashscope-default-profile",
+        name: "百炼默认配置",
+        provider: "DashScope",
+        vendorKey: "openai_compatible",
+        mode: "demo",
+        apiStyle: "openai_compatible",
+        baseUrl: defaultBaseUrl,
+        defaultModel,
+        modelOptionsJson: defaultModelOptionsJson,
+        hasApiKey: false,
+      },
+    });
+  } else if (shouldNormalizeLegacyDefaultProfile) {
+    await prisma.llmProfile.update({
+      where: { id: "dashscope-default-profile" },
+      data: {
+        name: "百炼默认配置",
+        provider: "DashScope",
+        vendorKey: "openai_compatible",
+        mode: "demo",
+        apiStyle: "openai_compatible",
+        baseUrl: defaultBaseUrl,
+        defaultModel,
+        modelOptionsJson: defaultModelOptionsJson,
+        hasApiKey: false,
+      },
+    });
+  }
 
   for (const rule of defaultRules) {
     const existing = await prisma.rule.findFirst({
