@@ -50,8 +50,6 @@ async function main() {
     existingDefaultProfile.vendorKey === "openai_compatible" &&
     existingDefaultProfile.mode === "live" &&
     existingDefaultProfile.apiStyle === "openai_compatible" &&
-    existingDefaultProfile.baseUrl === defaultBaseUrl &&
-    existingDefaultProfile.defaultModel === defaultModel &&
     matchesLegacyModelOptions &&
     existingDefaultProfile.hasApiKey === false &&
     !existingDefaultProfile.apiKeyEncrypted &&

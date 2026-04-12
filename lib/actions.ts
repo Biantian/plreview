@@ -147,7 +147,9 @@ export async function createReviewAction(formData: FormData) {
     data: {
       documentId: document.id,
       llmProfileId: llmProfile.id,
+      profileNameSnapshot: llmProfile.name,
       providerSnapshot: llmProfile.provider,
+      baseUrlSnapshot: llmProfile.baseUrl,
       modelNameSnapshot: resolvedModelName,
       status: ReviewStatus.pending,
     },
