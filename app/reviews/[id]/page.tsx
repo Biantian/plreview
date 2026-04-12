@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { ReviewStatus } from "@prisma/client";
 
-import { SeverityBadge } from "@/components/severity-badge";
+import { ReportMarkdown } from "@/components/report-markdown";
+import { ReviewDetailViewer } from "@/components/review-detail-viewer";
 import { StatusBadge } from "@/components/status-badge";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
@@ -21,6 +23,9 @@ export default async function ReviewDetailPage({
     include: {
       document: {
         include: {
+          blocks: {
+            orderBy: { blockIndex: "asc" },
+          },
           paragraphs: {
             orderBy: { paragraphIndex: "asc" },
           },
@@ -30,7 +35,7 @@ export default async function ReviewDetailPage({
         include: {
           rule: true,
         },
-        orderBy: [{ paragraphIndex: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ blockIndex: "asc" }, { paragraphIndex: "asc" }, { createdAt: "asc" }],
       },
     },
   });
@@ -39,133 +44,104 @@ export default async function ReviewDetailPage({
     notFound();
   }
 
-  const annotationsByParagraph = new Map(
-    review.document.paragraphs.map((paragraph) => [paragraph.paragraphIndex, [] as typeof review.annotations]),
-  );
+  const blocks =
+    review.document.blocks.length > 0
+      ? review.document.blocks.map((block) => ({
+          blockIndex: block.blockIndex,
+          blockType: block.blockType,
+          text: block.text,
+          level: block.level,
+          listKind: block.listKind,
+        }))
+      : review.document.paragraphs.map((paragraph) => ({
+          blockIndex: paragraph.paragraphIndex,
+          blockType: "paragraph" as const,
+          text: paragraph.text,
+          level: null,
+          listKind: null,
+        }));
 
-  review.annotations.forEach((annotation) => {
-    const current = annotationsByParagraph.get(annotation.paragraphIndex);
-    if (current) {
-      current.push(annotation);
-    }
-  });
+  const annotations = review.annotations.map((annotation) => ({
+    id: annotation.id,
+    blockIndex: annotation.blockIndex ?? annotation.paragraphIndex,
+    issue: annotation.issue,
+    suggestion: annotation.suggestion,
+    severity: annotation.severity,
+    evidenceText: annotation.evidenceText,
+    ruleName: annotation.rule.name,
+  }));
+
+  const hitBlockCount = new Set(annotations.map((annotation) => annotation.blockIndex)).size;
+  const highPriorityCount = annotations.filter((annotation) =>
+    ["high", "critical"].includes(annotation.severity),
+  ).length;
+  const isProcessing =
+    review.status === ReviewStatus.pending || review.status === ReviewStatus.running;
+  const isFailed = review.status === ReviewStatus.failed;
 
   return (
     <>
-      <section className="panel stack">
+      <section className="panel stack-lg">
         <div className="inline-actions">
           <StatusBadge status={review.status} />
-          <span className="pill">{review.providerSnapshot}</span>
+          <span className="pill pill-brand">{review.providerSnapshot}</span>
           <span className="pill">{review.modelNameSnapshot}</span>
           <span className="pill">{formatDate(review.createdAt)}</span>
         </div>
+
         <div>
+          <p className="section-eyebrow">Review Snapshot</p>
           <h1 className="section-title">{review.document.title}</h1>
           <p className="section-copy">
-            文件：{review.document.filename} · 段落数：{review.document.paragraphCount}
+            文件：{review.document.filename} · 文档块：{review.document.blockCount || blocks.length}
           </p>
         </div>
 
-        {review.summary ? <p className="section-copy">{review.summary}</p> : null}
-        {review.errorMessage ? (
-          <p className="section-copy">错误信息：{review.errorMessage}</p>
-        ) : null}
-      </section>
+        {review.summary ? <p className="hero-lead">{review.summary}</p> : null}
+        {review.errorMessage ? <p className="section-copy">错误信息：{review.errorMessage}</p> : null}
 
-      <section className="review-layout">
-        <div className="panel">
-          <div className="stack">
-            <div>
-              <h2 className="section-title">原文与段落标注</h2>
-              <p className="section-copy">
-                命中问题的段落会直接附带规则、问题描述和修改建议。
-              </p>
-            </div>
-
-            <div className="paragraphs">
-              {review.document.paragraphs.map((paragraph) => {
-                const paragraphAnnotations =
-                  annotationsByParagraph.get(paragraph.paragraphIndex) ?? [];
-
-                return (
-                  <article
-                    className={`paragraph-card ${
-                      paragraphAnnotations.length > 0 ? "highlight" : ""
-                    }`}
-                    id={`paragraph-${paragraph.paragraphIndex}`}
-                    key={paragraph.id}
-                  >
-                    <p className="paragraph-index">
-                      段落 {paragraph.paragraphIndex + 1}
-                    </p>
-                    <p className="annotation-copy">{paragraph.text}</p>
-
-                    {paragraphAnnotations.map((annotation) => (
-                      <div className="annotation-block" key={annotation.id}>
-                        <div className="inline-actions">
-                          <span className="pill">{annotation.rule.name}</span>
-                          <SeverityBadge severity={annotation.severity} />
-                        </div>
-                        <p className="annotation-title">{annotation.issue}</p>
-                        <p className="annotation-copy">{annotation.suggestion}</p>
-                        {annotation.evidenceText ? (
-                          <p className="hint">证据摘录：{annotation.evidenceText}</p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </article>
-                );
-              })}
-            </div>
+        <div className="metric-grid">
+          <div className="metric-card">
+            <p className="metric-label">问题总数</p>
+            <strong className="metric-value">{annotations.length}</strong>
+          </div>
+          <div className="metric-card">
+            <p className="metric-label">命中块数</p>
+            <strong className="metric-value">{hitBlockCount}</strong>
+          </div>
+          <div className="metric-card">
+            <p className="metric-label">高优先问题</p>
+            <strong className="metric-value">{highPriorityCount}</strong>
+          </div>
+          <div className="metric-card">
+            <p className="metric-label">总体评分</p>
+            <strong className="metric-value">{review.overallScore ?? "--"}</strong>
           </div>
         </div>
+      </section>
 
-        <div className="stack">
-          <section className="card stack">
-            <div>
-              <h2 className="section-title">问题清单</h2>
-              <p className="section-copy">按段落顺序聚合，方便快速跳转定位。</p>
-            </div>
+      <ReviewDetailViewer annotations={annotations} blocks={blocks} status={review.status} />
 
-            <div className="list">
-              {review.annotations.length === 0 ? (
-                <div className="list-item">
-                  <div>
-                    <h3>当前没有标注问题</h3>
-                    <p className="muted">若你使用的是演示模式，可换一份文档或补充规则再试一次。</p>
-                  </div>
-                </div>
-              ) : (
-                review.annotations.map((annotation) => (
-                  <a
-                    className="list-item"
-                    href={`#paragraph-${annotation.paragraphIndex}`}
-                    key={annotation.id}
-                  >
-                    <div>
-                      <h3>
-                        段落 {annotation.paragraphIndex + 1} · {annotation.rule.name}
-                      </h3>
-                      <p className="muted">{annotation.issue}</p>
-                    </div>
-                    <SeverityBadge severity={annotation.severity} />
-                  </a>
-                ))
-              )}
-            </div>
-          </section>
-
-          <section className="card stack">
-            <div>
-              <h2 className="section-title">报告正文</h2>
-              <p className="section-copy">当前先以内嵌文本方式展示，后续可继续扩展导出能力。</p>
-            </div>
-
-            <div className="report">
-              {review.reportMarkdown ?? "该任务尚未生成报告正文。"}
-            </div>
-          </section>
+      <section className="card stack">
+        <div>
+          <p className="section-eyebrow">Report Body</p>
+          <h2 className="section-title">报告正文</h2>
+          <p className="section-copy">正文已按 Markdown 文档阅读方式渲染，便于直接浏览结论、规则明细和结构化内容。</p>
         </div>
+
+        {review.reportMarkdown ? (
+          <ReportMarkdown markdown={review.reportMarkdown} />
+        ) : (
+          <div className="report-empty">
+            <p className="section-copy">
+              {isProcessing
+                ? "后台正在生成报告正文，完成后刷新页面即可查看完整 Markdown 报告。"
+                : isFailed
+                  ? "该任务未生成可展示的报告正文。"
+                  : "该任务尚未生成报告正文。"}
+            </p>
+          </div>
+        )}
       </section>
     </>
   );

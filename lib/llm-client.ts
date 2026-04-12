@@ -3,24 +3,41 @@ import OpenAI from "openai";
 
 import { MAX_DOCUMENT_CHARS } from "@/lib/defaults";
 import { buildReportMarkdown } from "@/lib/report";
-import {
-  reviewResponseSchema,
-  type ReviewResponse,
-} from "@/lib/review-types";
+import { reviewResponseSchema, type ReviewResponse } from "@/lib/review-types";
 
 type ReviewInput = {
   documentTitle: string;
   rawText: string;
-  paragraphs: Array<{ paragraphIndex: number; text: string }>;
+  blocks: Array<{
+    blockIndex: number;
+    blockType: "heading" | "paragraph" | "list_item";
+    text: string;
+    level: number | null;
+    listKind: "unordered" | "ordered" | null;
+  }>;
   rules: Rule[];
   provider: string;
   baseUrl: string;
   model: string;
+  apiKey: string | null;
+  mode: "live" | "demo";
 };
 
+function formatBlockLabel(block: ReviewInput["blocks"][number]) {
+  if (block.blockType === "heading") {
+    return `heading(level=${block.level ?? 1})`;
+  }
+
+  if (block.blockType === "list_item") {
+    return `list_item(${block.listKind ?? "unordered"})`;
+  }
+
+  return "paragraph";
+}
+
 function buildReviewPrompt(input: ReviewInput) {
-  const paragraphPayload = input.paragraphs
-    .map((paragraph) => `[${paragraph.paragraphIndex}] ${paragraph.text}`)
+  const blockPayload = input.blocks
+    .map((block) => `[${block.blockIndex}] ${formatBlockLabel(block)}: ${block.text}`)
     .join("\n\n");
 
   const rulesPayload = input.rules
@@ -33,7 +50,7 @@ function buildReviewPrompt(input: ReviewInput) {
   return `你是一名资深互联网策划案评审专家。
 请仅输出合法 JSON，不要输出 Markdown、解释或额外文字。
 
-你会收到一份策划案和一组规则。请严格基于段落内容评审，每个命中的问题必须引用 paragraphIndex。
+你会收到一份策划案的结构化文档块和一组规则。请严格基于文档块评审，每个命中的问题必须引用 blockIndex。
 如果某条规则没有发现明显问题，可以在该规则下返回空 annotations。
 
 输出 JSON 结构：
@@ -47,7 +64,7 @@ function buildReviewPrompt(input: ReviewInput) {
       "annotations": [
         {
           "ruleId": "规则ID",
-          "paragraphIndex": 0,
+          "blockIndex": 0,
           "issue": "问题描述",
           "suggestion": "修改建议",
           "severity": "low | medium | high | critical",
@@ -60,17 +77,18 @@ function buildReviewPrompt(input: ReviewInput) {
 
 要求：
 1. 只允许使用提供的 ruleId。
-2. paragraphIndex 必须来自提供的段落列表。
-3. 优先指出高价值问题，不要为了凑数量而输出低质量问题。
-4. 修改建议必须具体、可执行。
+2. blockIndex 必须来自提供的文档块列表。
+3. 标题、正文、列表项都可能是有效证据，不要忽略文档结构。
+4. 优先指出高价值问题，不要为了凑数量而输出低质量问题。
+5. 修改建议必须具体、可执行。
 
 文档标题：${input.documentTitle}
 
 规则列表：
 ${rulesPayload}
 
-段落列表：
-${paragraphPayload}`;
+文档块列表：
+${blockPayload}`;
 }
 
 function extractJsonPayload(content: string) {
@@ -88,9 +106,9 @@ function buildMockReview(input: ReviewInput): ReviewResponse {
   const annotations = input.rules.flatMap((rule) => {
     const lowerName = rule.name.toLowerCase();
 
-    return input.paragraphs
-      .filter((paragraph) => {
-        const text = paragraph.text;
+    return input.blocks
+      .filter((block) => {
+        const text = block.text;
         if (lowerName.includes("目标")) {
           return !/(目标|用户|成功|指标)/.test(text);
         }
@@ -100,23 +118,24 @@ function buildMockReview(input: ReviewInput): ReviewResponse {
         if (lowerName.includes("执行")) {
           return !/(时间|排期|负责人|资源|里程碑)/.test(text);
         }
-        return paragraph.paragraphIndex === 0;
+        return block.blockIndex === 0;
       })
       .slice(0, 2)
-      .map((paragraph) => ({
+      .map((block) => ({
         ruleId: rule.id,
-        paragraphIndex: paragraph.paragraphIndex,
-        issue: `演示模式判断该段落可能未充分覆盖“${rule.name}”。`,
+        blockIndex: block.blockIndex,
+        paragraphIndex: block.blockIndex,
+        issue: `演示模式判断该内容块可能未充分覆盖“${rule.name}”。`,
         suggestion: "建议补充更明确的目标、执行路径或风险说明，并再次进行真实模型评审。",
         severity:
           rule.severity === Severity.critical ? Severity.high : rule.severity,
-        evidenceText: paragraph.text.slice(0, 80),
+        evidenceText: block.text.slice(0, 80),
       }));
   });
 
   return {
     summary:
-      "当前未检测到可用的 API Key，系统已使用本地演示模式生成示例评审结果。配置百炼 API Key 后可获得真实评审结果。",
+      "当前使用演示模式生成示例评审结果。切换到已配置密钥的实时模型配置后，可获得真实评审结果。",
     overallScore: 70,
     ruleFindings: input.rules.map((rule) => ({
       ruleId: rule.id,
@@ -136,9 +155,7 @@ export async function reviewDocument(input: ReviewInput) {
     );
   }
 
-  const apiKey = process.env.OPENAI_COMPATIBLE_API_KEY;
-
-  if (!apiKey) {
+  if (input.mode === "demo") {
     const mock = buildMockReview(input);
 
     return {
@@ -148,8 +165,12 @@ export async function reviewDocument(input: ReviewInput) {
     };
   }
 
+  if (!input.apiKey) {
+    throw new Error("当前模型配置缺少 API Key。");
+  }
+
   const client = new OpenAI({
-    apiKey,
+    apiKey: input.apiKey,
     baseURL: input.baseUrl,
   });
 

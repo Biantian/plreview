@@ -13,6 +13,9 @@ const statusMap: Record<ReviewStatus, string> = {
 export function StatusBadge({ status }: { status: ReviewStatus }) {
   return (
     <span className={cn("status-badge", `status-${status}`)}>
+      {status === ReviewStatus.pending || status === ReviewStatus.running ? (
+        <span aria-hidden="true" className="status-badge-signal" />
+      ) : null}
       {statusMap[status]}
     </span>
   );

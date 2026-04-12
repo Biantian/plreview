@@ -22,6 +22,22 @@ enum ReviewStatus {
   failed
 }
 
+enum DocumentBlockType {
+  heading
+  paragraph
+  list_item
+}
+
+enum ListKind {
+  unordered
+  ordered
+}
+
+enum LlmProfileMode {
+  live
+  demo
+}
+
 model Document {
   id             String              @id @default(cuid())
   title          String
@@ -29,9 +45,27 @@ model Document {
   fileType       String
   rawText        String
   paragraphCount Int
+  blockCount     Int                 @default(0)
   createdAt      DateTime            @default(now())
   paragraphs     DocumentParagraph[]
+  blocks         DocumentBlock[]
   reviewJobs     ReviewJob[]
+}
+
+model DocumentBlock {
+  id         String            @id @default(cuid())
+  documentId String
+  blockIndex Int
+  blockType  DocumentBlockType
+  text       String
+  level      Int?
+  listKind   ListKind?
+  charStart  Int
+  charEnd    Int
+  document   Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, blockIndex])
+  @@index([documentId])
 }
 
 model DocumentParagraph {
@@ -78,34 +112,42 @@ model RuleVersion {
 }
 
 model LlmProfile {
-  id           String      @id @default(cuid())
-  name         String
-  provider     String
-  apiStyle     String
-  baseUrl      String
-  defaultModel String
-  enabled      Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  reviewJobs   ReviewJob[]
+  id               String         @id @default(cuid())
+  name             String
+  provider         String
+  vendorKey        String         @default("openai_compatible")
+  mode             LlmProfileMode @default(live)
+  apiStyle         String
+  baseUrl          String
+  defaultModel     String
+  modelOptionsJson String?
+  apiKeyEncrypted  String?
+  apiKeyLast4      String?
+  hasApiKey        Boolean        @default(false)
+  enabled          Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  reviewJobs       ReviewJob[]
 }
 
 model ReviewJob {
-  id                String        @id @default(cuid())
-  documentId        String
-  llmProfileId      String?
-  providerSnapshot  String
-  modelNameSnapshot String
-  status            ReviewStatus  @default(pending)
-  summary           String?
-  overallScore      Int?
-  reportMarkdown    String?
-  errorMessage      String?
-  createdAt         DateTime      @default(now())
-  finishedAt        DateTime?
-  document          Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  llmProfile        LlmProfile?   @relation(fields: [llmProfileId], references: [id], onDelete: SetNull)
-  annotations       Annotation[]
+  id                  String       @id @default(cuid())
+  documentId          String
+  llmProfileId        String?
+  profileNameSnapshot String?
+  providerSnapshot    String
+  baseUrlSnapshot     String?
+  modelNameSnapshot   String
+  status              ReviewStatus @default(pending)
+  summary             String?
+  overallScore        Int?
+  reportMarkdown      String?
+  errorMessage        String?
+  createdAt           DateTime     @default(now())
+  finishedAt          DateTime?
+  document            Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  llmProfile          LlmProfile?  @relation(fields: [llmProfileId], references: [id], onDelete: SetNull)
+  annotations         Annotation[]
 
   @@index([documentId])
   @@index([llmProfileId])
@@ -117,6 +159,7 @@ model Annotation {
   ruleId        String
   ruleVersionId String
   paragraphIndex Int
+  blockIndex    Int?
   issue         String
   suggestion    String
   severity      Severity
@@ -130,4 +173,5 @@ model Annotation {
   @@index([ruleId])
   @@index([ruleVersionId])
   @@index([reviewJobId, paragraphIndex])
+  @@index([reviewJobId, blockIndex])
 }

@@ -1,13 +1,16 @@
 "use server";
 
 import { ReviewStatus, Severity } from "@prisma/client";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { RULE_TEMPLATE } from "@/lib/defaults";
-import { reviewDocument } from "@/lib/llm-client";
+import { parseLlmProfileForm } from "@/lib/llm-profile-form";
+import { encryptSecret } from "@/lib/llm-profile-secrets";
 import { parseUploadedDocument } from "@/lib/parse-document";
 import { prisma } from "@/lib/prisma";
+import { executeReviewJob } from "@/lib/review-jobs";
 
 function getSeverity(value: FormDataEntryValue | null) {
   switch (value) {
@@ -83,6 +86,108 @@ export async function toggleRuleEnabledAction(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function saveLlmProfileAction(formData: FormData) {
+  const id = String(formData.get("id") || "").trim();
+  const existingProfile = id
+    ? await prisma.llmProfile.findUnique({
+        where: { id },
+      })
+    : null;
+
+  const parsed = parseLlmProfileForm({
+    name: String(formData.get("name") || ""),
+    provider: String(formData.get("provider") || ""),
+    vendorKey: String(formData.get("vendorKey") || "openai_compatible"),
+    mode: String(formData.get("mode") || "live") as "live" | "demo",
+    baseUrl: String(formData.get("baseUrl") || ""),
+    defaultModel: String(formData.get("defaultModel") || ""),
+    modelOptionsText: String(formData.get("modelOptionsText") || ""),
+    apiKey: String(formData.get("apiKey") || ""),
+    hasStoredApiKey: existingProfile?.hasApiKey,
+    enabled: formData.has("enabled")
+      ? formData.get("enabled") === "on"
+      : existingProfile?.enabled ?? false,
+  });
+
+  const data: {
+    name: string;
+    provider: string;
+    vendorKey: string;
+    mode: "live" | "demo";
+    apiStyle: string;
+    baseUrl: string;
+    defaultModel: string;
+    modelOptionsJson: string;
+    enabled: boolean;
+    hasApiKey: boolean;
+    apiKeyLast4: string | null;
+    apiKeyEncrypted?: string;
+  } = {
+    name: parsed.name,
+    provider: parsed.provider,
+    vendorKey: parsed.vendorKey,
+    mode: parsed.mode,
+    apiStyle: "openai_compatible",
+    baseUrl: parsed.baseUrl,
+    defaultModel: parsed.defaultModel,
+    modelOptionsJson: JSON.stringify(parsed.modelOptions),
+    enabled: parsed.enabled,
+    hasApiKey: parsed.hasApiKey,
+    apiKeyLast4: parsed.apiKeyLast4 ?? existingProfile?.apiKeyLast4 ?? null,
+  };
+
+  if (parsed.apiKey) {
+    const encryptionKey = process.env.APP_ENCRYPTION_KEY;
+
+    if (!encryptionKey) {
+      throw new Error("缺少 APP_ENCRYPTION_KEY，无法保存模型密钥。");
+    }
+
+    data.apiKeyEncrypted = encryptSecret(parsed.apiKey, encryptionKey);
+  }
+
+  if (id) {
+    await prisma.llmProfile.update({ where: { id }, data });
+  } else {
+    await prisma.llmProfile.create({ data });
+  }
+
+  revalidatePath("/models");
+  revalidatePath("/reviews/new");
+  revalidatePath("/");
+}
+
+export async function toggleLlmProfileEnabledAction(formData: FormData) {
+  const id = String(formData.get("id") || "").trim();
+  const enabled = formData.get("enabled") === "true";
+
+  if (!id) {
+    throw new Error("缺少模型配置 ID。");
+  }
+
+  await prisma.llmProfile.update({ where: { id }, data: { enabled } });
+
+  revalidatePath("/models");
+  revalidatePath("/reviews/new");
+  revalidatePath("/");
+}
+
+export async function deleteLlmProfileAction(formData: FormData) {
+  const id = String(formData.get("id") || "").trim();
+
+  if (!id) {
+    throw new Error("缺少模型配置 ID。");
+  }
+
+  await prisma.llmProfile.delete({
+    where: { id },
+  });
+
+  revalidatePath("/models");
+  revalidatePath("/reviews/new");
+  revalidatePath("/");
+}
+
 export async function createReviewAction(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const llmProfileId = String(formData.get("llmProfileId") || "").trim();
@@ -117,8 +222,13 @@ export async function createReviewAction(formData: FormData) {
     throw new Error("未找到可用的大模型配置。");
   }
 
+  if (llmProfile.mode === "live" && !llmProfile.hasApiKey) {
+    throw new Error("当前模型配置缺少 API Key。");
+  }
+
   const parsedDocument = await parseUploadedDocument(file);
   const finalTitle = title || parsedDocument.title;
+  const resolvedModelName = modelName || llmProfile.defaultModel;
 
   const document = await prisma.document.create({
     data: {
@@ -127,6 +237,12 @@ export async function createReviewAction(formData: FormData) {
       fileType: parsedDocument.fileType,
       rawText: parsedDocument.rawText,
       paragraphCount: parsedDocument.paragraphs.length,
+      blockCount: parsedDocument.blocks.length,
+      blocks: {
+        createMany: {
+          data: parsedDocument.blocks,
+        },
+      },
       paragraphs: {
         createMany: {
           data: parsedDocument.paragraphs,
@@ -139,124 +255,29 @@ export async function createReviewAction(formData: FormData) {
     data: {
       documentId: document.id,
       llmProfileId: llmProfile.id,
+      profileNameSnapshot: llmProfile.name,
       providerSnapshot: llmProfile.provider,
-      modelNameSnapshot: modelName || llmProfile.defaultModel,
-      status: ReviewStatus.running,
+      baseUrlSnapshot: llmProfile.baseUrl,
+      modelNameSnapshot: resolvedModelName,
+      status: ReviewStatus.pending,
     },
   });
 
-  try {
-    const ruleVersions = await Promise.all(
-      rules.map(async (rule) => {
-        const latest = await prisma.ruleVersion.findFirst({
-          where: { ruleId: rule.id },
-          orderBy: { version: "desc" },
-        });
-
-        return prisma.ruleVersion.create({
-          data: {
-            ruleId: rule.id,
-            version: (latest?.version ?? 0) + 1,
-            nameSnapshot: rule.name,
-            descriptionSnapshot: rule.description,
-            promptTemplateSnapshot: rule.promptTemplate,
-            severitySnapshot: rule.severity,
-          },
-        });
-      }),
-    );
-
-    const { response, reportMarkdown, mode } = await reviewDocument({
+  after(async () => {
+    await executeReviewJob({
+      reviewJobId: reviewJob.id,
       documentTitle: finalTitle,
-      rawText: parsedDocument.rawText,
-      paragraphs: parsedDocument.paragraphs.map(({ paragraphIndex, text }) => ({
-        paragraphIndex,
-        text,
-      })),
+      modelName: resolvedModelName,
+      llmProfile,
+      parsedDocument,
       rules,
-      provider: llmProfile.provider,
-      baseUrl: llmProfile.baseUrl,
-      model: modelName || llmProfile.defaultModel,
     });
-
-    const versionMap = new Map(ruleVersions.map((version) => [version.ruleId, version]));
-    const paragraphSet = new Set(parsedDocument.paragraphs.map((item) => item.paragraphIndex));
-    const validAnnotations = response.ruleFindings.flatMap((finding) =>
-      finding.annotations
-        .filter(
-          (annotation) =>
-            paragraphSet.has(annotation.paragraphIndex) &&
-            versionMap.has(annotation.ruleId),
-        )
-        .map((annotation) => {
-          const version = versionMap.get(annotation.ruleId);
-
-          if (!version) {
-            return null;
-          }
-
-          return {
-            reviewJobId: reviewJob.id,
-            ruleId: annotation.ruleId,
-            ruleVersionId: version.id,
-            paragraphIndex: annotation.paragraphIndex,
-            issue: annotation.issue,
-            suggestion: annotation.suggestion,
-            severity: annotation.severity,
-            evidenceText: annotation.evidenceText ?? null,
-          };
-        })
-        .filter(Boolean),
-    );
-
-    await prisma.$transaction(async (tx) => {
-      if (validAnnotations.length > 0) {
-        await tx.annotation.createMany({
-          data: validAnnotations as Array<{
-            reviewJobId: string;
-            ruleId: string;
-            ruleVersionId: string;
-            paragraphIndex: number;
-            issue: string;
-            suggestion: string;
-            severity: Severity;
-            evidenceText: string | null;
-          }>,
-        });
-      }
-
-      await tx.reviewJob.update({
-        where: { id: reviewJob.id },
-        data: {
-          status:
-            validAnnotations.length < response.ruleFindings.flatMap((item) => item.annotations).length
-              ? ReviewStatus.partial
-              : ReviewStatus.completed,
-          summary:
-            mode === "mock" ? `[演示模式] ${response.summary}` : response.summary,
-          overallScore: response.overallScore,
-          reportMarkdown,
-          errorMessage: null,
-          finishedAt: new Date(),
-        },
-      });
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "评审失败，请稍后重试。";
-
-    await prisma.reviewJob.update({
-      where: { id: reviewJob.id },
-      data: {
-        status: ReviewStatus.failed,
-        errorMessage: message,
-        finishedAt: new Date(),
-      },
-    });
-  }
+  });
 
   revalidatePath("/");
+  revalidatePath("/reviews");
   revalidatePath("/reviews/new");
-  redirect(`/reviews/${reviewJob.id}`);
+  redirect("/reviews");
 }
 
 export async function ensureDefaultTemplateAction() {

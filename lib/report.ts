@@ -31,9 +31,8 @@ export function buildReportMarkdown(
     }
 
     finding.annotations.forEach((annotation, index) => {
-      lines.push(
-        `${index + 1}. 段落 ${annotation.paragraphIndex + 1}：${annotation.issue}`,
-      );
+      const blockIndex = annotation.blockIndex ?? annotation.paragraphIndex ?? 0;
+      lines.push(`${index + 1}. 文档块 ${blockIndex + 1}：${annotation.issue}`);
       lines.push(`建议：${annotation.suggestion}`);
       lines.push("");
     });

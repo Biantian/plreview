@@ -3,7 +3,8 @@ import { z } from "zod";
 
 export const annotationSchema = z.object({
   ruleId: z.string(),
-  paragraphIndex: z.number().int().min(0),
+  blockIndex: z.number().int().min(0),
+  paragraphIndex: z.number().int().min(0).optional(),
   issue: z.string().min(1),
   suggestion: z.string().min(1),
   severity: z.nativeEnum(Severity),

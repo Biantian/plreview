@@ -30,6 +30,9 @@ pnpm-debug.log*
 /prisma/*.db-wal
 /prisma/*.db-shm
 
+# local git worktrees
+/.worktrees
+
 # macOS/editor noise
 .DS_Store
 .idea
