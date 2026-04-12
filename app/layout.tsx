@@ -13,6 +13,7 @@ const navItems = [
   { href: "/reviews", label: "评审列表" },
   { href: "/reviews/new", label: "新建评审" },
   { href: "/rules", label: "规则管理" },
+  { href: "/models", label: "模型设置" },
 ];
 
 export default function RootLayout({

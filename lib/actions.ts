@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { RULE_TEMPLATE } from "@/lib/defaults";
+import { parseLlmProfileForm } from "@/lib/llm-profile-form";
+import { encryptSecret } from "@/lib/llm-profile-secrets";
 import { parseUploadedDocument } from "@/lib/parse-document";
 import { prisma } from "@/lib/prisma";
 import { executeReviewJob } from "@/lib/review-jobs";
@@ -80,6 +82,108 @@ export async function toggleRuleEnabledAction(formData: FormData) {
   });
 
   revalidatePath("/rules");
+  revalidatePath("/reviews/new");
+  revalidatePath("/");
+}
+
+export async function saveLlmProfileAction(formData: FormData) {
+  const id = String(formData.get("id") || "").trim();
+  const existingProfile = id
+    ? await prisma.llmProfile.findUnique({
+        where: { id },
+      })
+    : null;
+
+  const parsed = parseLlmProfileForm({
+    name: String(formData.get("name") || ""),
+    provider: String(formData.get("provider") || ""),
+    vendorKey: String(formData.get("vendorKey") || "openai_compatible"),
+    mode: String(formData.get("mode") || "live") as "live" | "demo",
+    baseUrl: String(formData.get("baseUrl") || ""),
+    defaultModel: String(formData.get("defaultModel") || ""),
+    modelOptionsText: String(formData.get("modelOptionsText") || ""),
+    apiKey: String(formData.get("apiKey") || ""),
+    hasStoredApiKey: existingProfile?.hasApiKey,
+    enabled: formData.has("enabled")
+      ? formData.get("enabled") === "on"
+      : existingProfile?.enabled ?? false,
+  });
+
+  const data: {
+    name: string;
+    provider: string;
+    vendorKey: string;
+    mode: "live" | "demo";
+    apiStyle: string;
+    baseUrl: string;
+    defaultModel: string;
+    modelOptionsJson: string;
+    enabled: boolean;
+    hasApiKey: boolean;
+    apiKeyLast4: string | null;
+    apiKeyEncrypted?: string;
+  } = {
+    name: parsed.name,
+    provider: parsed.provider,
+    vendorKey: parsed.vendorKey,
+    mode: parsed.mode,
+    apiStyle: "openai_compatible",
+    baseUrl: parsed.baseUrl,
+    defaultModel: parsed.defaultModel,
+    modelOptionsJson: JSON.stringify(parsed.modelOptions),
+    enabled: parsed.enabled,
+    hasApiKey: parsed.hasApiKey,
+    apiKeyLast4: parsed.apiKeyLast4 ?? existingProfile?.apiKeyLast4 ?? null,
+  };
+
+  if (parsed.apiKey) {
+    const encryptionKey = process.env.APP_ENCRYPTION_KEY;
+
+    if (!encryptionKey) {
+      throw new Error("缺少 APP_ENCRYPTION_KEY，无法保存模型密钥。");
+    }
+
+    data.apiKeyEncrypted = encryptSecret(parsed.apiKey, encryptionKey);
+  }
+
+  if (id) {
+    await prisma.llmProfile.update({ where: { id }, data });
+  } else {
+    await prisma.llmProfile.create({ data });
+  }
+
+  revalidatePath("/models");
+  revalidatePath("/reviews/new");
+  revalidatePath("/");
+}
+
+export async function toggleLlmProfileEnabledAction(formData: FormData) {
+  const id = String(formData.get("id") || "").trim();
+  const enabled = formData.get("enabled") === "true";
+
+  if (!id) {
+    throw new Error("缺少模型配置 ID。");
+  }
+
+  await prisma.llmProfile.update({ where: { id }, data: { enabled } });
+
+  revalidatePath("/models");
+  revalidatePath("/reviews/new");
+  revalidatePath("/");
+}
+
+export async function deleteLlmProfileAction(formData: FormData) {
+  const id = String(formData.get("id") || "").trim();
+
+  if (!id) {
+    throw new Error("缺少模型配置 ID。");
+  }
+
+  await prisma.llmProfile.delete({
+    where: { id },
+  });
+
+  revalidatePath("/models");
   revalidatePath("/reviews/new");
   revalidatePath("/");
 }
