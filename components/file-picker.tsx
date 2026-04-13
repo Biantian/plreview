@@ -1,35 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
-export function FilePicker() {
+type FilePickerProps = {
+  badgeLabel?: string;
+  description?: string;
+  title?: string;
+  accept?: string;
+  multiple?: boolean;
+};
+
+export function FilePicker({
+  badgeLabel = "支持 docx / txt / md",
+  description = "当前支持 .docx、.txt、.md，后续批量导入会接到同一张 workbench 表格里。",
+  title = "选择待导入文件",
+  accept = ".docx,.txt,.md",
+  multiple = false,
+}: FilePickerProps) {
+  const inputId = useId();
   const [fileName, setFileName] = useState("尚未选择文件");
 
   return (
     <div className="upload-panel">
       <div>
         <p className="section-eyebrow">File Intake</p>
-        <strong>上传策划案</strong>
-        <p className="muted">
-          当前支持 <code>.docx</code>、<code>.txt</code>、<code>.md</code>。
-        </p>
+        <label htmlFor={inputId}>
+          <strong>{title}</strong>
+        </label>
+        <p className="muted">{description}</p>
       </div>
 
       <input
+        id={inputId}
         className="file-input"
         name="file"
         type="file"
-        accept=".docx,.txt,.md"
+        accept={accept}
+        multiple={multiple}
         onChange={(event) => {
-          const nextFile = event.target.files?.[0];
-          setFileName(nextFile?.name ?? "尚未选择文件");
+          const files = Array.from(event.target.files ?? []);
+
+          if (files.length === 0) {
+            setFileName("尚未选择文件");
+            return;
+          }
+
+          if (files.length === 1) {
+            setFileName(files[0]?.name ?? "尚未选择文件");
+            return;
+          }
+
+          setFileName(`已选择 ${files.length} 个文件`);
         }}
         required
       />
 
       <div className="upload-meta">
-        <span className="pill pill-brand">支持 docx / txt / md</span>
-        <div className="hint">当前文件：{fileName}</div>
+        <span className="pill pill-brand">{badgeLabel}</span>
+        <div className="hint">当前选择：{fileName}</div>
       </div>
     </div>
   );

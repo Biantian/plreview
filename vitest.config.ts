@@ -2,15 +2,19 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  esbuild: {
+    jsx: "automatic",
+    jsxImportSource: "react",
+  },
   test: {
-    environment: "node",
+    environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     environmentMatchGlobs: [
-      ["tests/components/**/*.test.ts", "jsdom"],
-      ["tests/components/**/*.test.tsx", "jsdom"],
-      ["tests/components/**/*.spec.ts", "jsdom"],
-      ["tests/components/**/*.spec.tsx", "jsdom"],
+      ["tests/desktop/**/*.test.ts", "node"],
+      ["tests/desktop/**/*.test.tsx", "node"],
+      ["tests/desktop/**/*.spec.ts", "node"],
+      ["tests/desktop/**/*.spec.tsx", "node"],
     ],
   },
   resolve: {
