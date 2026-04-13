@@ -101,6 +101,7 @@ model RuleVersion {
   createdAt              DateTime     @default(now())
   rule                   Rule         @relation(fields: [ruleId], references: [id], onDelete: Cascade)
   annotations            Annotation[]
+  batchRules             ReviewBatchRule[]
 
   @@unique([ruleId, version])
   @@index([ruleId])
@@ -117,10 +118,38 @@ model LlmProfile {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   reviewJobs   ReviewJob[]
+  reviewBatches ReviewBatch[]
+}
+
+model ReviewBatch {
+  id                String            @id @default(cuid())
+  name              String
+  llmProfileId      String?
+  providerSnapshot  String
+  modelNameSnapshot String
+  createdAt         DateTime          @default(now())
+  llmProfile        LlmProfile?       @relation(fields: [llmProfileId], references: [id], onDelete: SetNull)
+  reviewJobs        ReviewJob[]
+  batchRules        ReviewBatchRule[]
+
+  @@index([llmProfileId])
+}
+
+model ReviewBatchRule {
+  id            String      @id @default(cuid())
+  reviewBatchId String
+  ruleVersionId String
+  reviewBatch   ReviewBatch @relation(fields: [reviewBatchId], references: [id], onDelete: Cascade)
+  ruleVersion   RuleVersion @relation(fields: [ruleVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewBatchId, ruleVersionId])
+  @@index([reviewBatchId])
+  @@index([ruleVersionId])
 }
 
 model ReviewJob {
   id                String        @id @default(cuid())
+  batchId           String?
   documentId        String
   llmProfileId      String?
   providerSnapshot  String
@@ -132,10 +161,12 @@ model ReviewJob {
   errorMessage      String?
   createdAt         DateTime      @default(now())
   finishedAt        DateTime?
+  reviewBatch       ReviewBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
   document          Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
   llmProfile        LlmProfile?   @relation(fields: [llmProfileId], references: [id], onDelete: SetNull)
   annotations       Annotation[]
 
+  @@index([batchId])
   @@index([documentId])
   @@index([llmProfileId])
 }
