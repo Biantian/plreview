@@ -106,6 +106,29 @@ function blocksToLegacyParagraphs(blocks: ParsedBlock[]): ParsedParagraph[] {
   }));
 }
 
+export function createParsedDocument({
+  title,
+  filename,
+  fileType,
+  rawText,
+  blocks,
+}: {
+  title: string;
+  filename: string;
+  fileType: string;
+  rawText: string;
+  blocks: ParsedBlock[];
+}): ParsedDocument {
+  return {
+    title,
+    filename,
+    fileType,
+    rawText,
+    blocks,
+    paragraphs: blocksToLegacyParagraphs(blocks),
+  };
+}
+
 function looksLikeHeading(line: string, nextLine: string | undefined, previousBlank: boolean) {
   const compact = line.trim();
 
@@ -341,12 +364,11 @@ export async function parseUploadedDocument(file: File): Promise<ParsedDocument>
     throw new Error("未能从文档中解析出有效正文。");
   }
 
-  return {
+  return createParsedDocument({
     title: file.name.replace(/\.[^.]+$/, ""),
     filename: file.name,
     fileType,
     rawText: parsed.rawText,
     blocks: parsed.blocks,
-    paragraphs: blocksToLegacyParagraphs(parsed.blocks),
-  };
+  });
 }
