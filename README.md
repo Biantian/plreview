@@ -23,7 +23,15 @@ npm install
 cp .env.example .env
 ```
 
-将 `OPENAI_COMPATIBLE_API_KEY` 替换为你的百炼 Key。
+设置：
+
+- `DATABASE_URL`
+- `APP_ENCRYPTION_KEY`
+
+如需初始化默认百炼配置，可额外设置：
+
+- `OPENAI_COMPATIBLE_BASE_URL`
+- `OPENAI_COMPATIBLE_DEFAULT_MODEL`
 
 3. 初始化数据库
 
@@ -79,6 +87,10 @@ Win11 手工烟测步骤见 [2026-04-14-win11-smoke-test-checklist.md](/Users/ji
 - `baseURL`: `https://dashscope.aliyuncs.com/compatible-mode/v1`
 - 目前仅支持 OpenAI 兼容格式接口
 
-## 说明
+## 使用流程
 
-如果没有配置 `OPENAI_COMPATIBLE_API_KEY`，系统会自动进入演示模式，生成一份本地模拟评审结果，方便先验证 UI 和流程。
+1. 在顶部“模型设置”中创建一个实时或演示配置
+2. 在“规则管理”中确认启用规则
+3. 在“新建评审”中选择模型配置与模型名称
+4. 在“评审列表”中等待后台任务完成
+5. 在“帮助”页查看完整说明
