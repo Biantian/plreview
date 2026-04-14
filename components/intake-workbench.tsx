@@ -41,6 +41,8 @@ type IntakeWorkbenchProps = {
   importedFiles?: ImportedFile[];
 };
 
+type WorkbenchStatusFilter = "all" | "ready" | "needsRetry";
+
 const EMPTY_IMPORTED_FILES: ImportedFile[] = [];
 const BROWSER_FALLBACK_NOTE = "网页回退入口已记录，请使用“导入本地文件”完成本地解析。";
 
@@ -99,6 +101,22 @@ function removeImportedFile(files: ImportedFile[], targetId: string) {
   return files.filter((file) => file.id !== targetId);
 }
 
+function isReadyDocument(file: ImportedFile) {
+  return Boolean(file.documentId?.trim());
+}
+
+function matchesStatusFilter(file: ImportedFile, filter: WorkbenchStatusFilter) {
+  if (filter === "ready") {
+    return isReadyDocument(file);
+  }
+
+  if (filter === "needsRetry") {
+    return !isReadyDocument(file);
+  }
+
+  return true;
+}
+
 export function IntakeWorkbench({
   llmProfiles,
   rules,
@@ -122,8 +140,13 @@ export function IntakeWorkbench({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<WorkbenchStatusFilter>("all");
   const readyDocuments = workbenchFiles.filter(
-    (file): file is ImportedFile & { documentId: string } => Boolean(file.documentId?.trim()),
+    (file): file is ImportedFile & { documentId: string } => isReadyDocument(file),
+  );
+  const pendingRetryFiles = workbenchFiles.filter((file) => !isReadyDocument(file));
+  const filteredWorkbenchFiles = workbenchFiles.filter((file) =>
+    matchesStatusFilter(file, statusFilter),
   );
   const selectedSummaryFile =
     workbenchFiles.find((file) => file.id === selectedSummaryId) ?? null;
@@ -137,12 +160,16 @@ export function IntakeWorkbench({
       return;
     }
 
-    if (workbenchFiles.some((file) => file.id === selectedSummaryId)) {
+    if (
+      workbenchFiles.some(
+        (file) => file.id === selectedSummaryId && matchesStatusFilter(file, statusFilter),
+      )
+    ) {
       return;
     }
 
     setSelectedSummaryId(null);
-  }, [selectedSummaryId, workbenchFiles]);
+  }, [selectedSummaryId, statusFilter, workbenchFiles]);
 
   useEffect(() => {
     if (selectedProfile) {
@@ -200,6 +227,16 @@ export function IntakeWorkbench({
 
   const handleRemoveFile = (targetId: string) => {
     setWorkbenchFiles((current) => removeImportedFile(current, targetId));
+    setErrorMessage("");
+  };
+
+  const handleClearRetryFiles = () => {
+    setWorkbenchFiles((current) => current.filter((file) => isReadyDocument(file)));
+    setErrorMessage("");
+  };
+
+  const handleClearWorkbench = () => {
+    setWorkbenchFiles([]);
     setErrorMessage("");
   };
 
@@ -340,6 +377,44 @@ export function IntakeWorkbench({
             </p>
           ) : null}
 
+          <div className="table-toolbar">
+            <div className="field table-search">
+              <label htmlFor="workbenchStatusFilter">状态筛选</label>
+              <select
+                id="workbenchStatusFilter"
+                name="workbenchStatusFilter"
+                onChange={(event) => setStatusFilter(event.target.value as WorkbenchStatusFilter)}
+                value={statusFilter}
+              >
+                <option value="all">全部文件</option>
+                <option value="ready">可提交评审</option>
+                <option value="needsRetry">待重新导入</option>
+              </select>
+            </div>
+            <div className="table-actions">
+              <span className="muted">
+                共 {workbenchFiles.length} 条 · 可提交 {readyDocuments.length} 条 · 待重新导入{" "}
+                {pendingRetryFiles.length} 条
+              </span>
+              <button
+                className="button-secondary button-inline"
+                disabled={isSubmitting || pendingRetryFiles.length === 0}
+                onClick={handleClearRetryFiles}
+                type="button"
+              >
+                清理待重新导入
+              </button>
+              <button
+                className="button-ghost button-inline"
+                disabled={isSubmitting || workbenchFiles.length === 0}
+                onClick={handleClearWorkbench}
+                type="button"
+              >
+                清空工作台
+              </button>
+            </div>
+          </div>
+
           <table aria-label="已导入文件">
             <thead>
               <tr>
@@ -351,14 +426,16 @@ export function IntakeWorkbench({
               </tr>
             </thead>
             <tbody>
-              {workbenchFiles.length === 0 ? (
+              {filteredWorkbenchFiles.length === 0 ? (
                 <tr>
                   <td className="muted" colSpan={5}>
-                    尚未导入文件，文件解析结果会在这里逐行呈现。
+                    {workbenchFiles.length === 0
+                      ? "尚未导入文件，文件解析结果会在这里逐行呈现。"
+                      : "当前筛选下没有文件，请切换筛选条件查看其他行。"}
                   </td>
                 </tr>
               ) : (
-                workbenchFiles.map((file) => (
+                filteredWorkbenchFiles.map((file) => (
                   <tr key={file.id}>
                     <th scope="row">{file.name}</th>
                     <td>{file.fileType ?? "待识别"}</td>

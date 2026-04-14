@@ -70,6 +70,42 @@ describe("IntakeWorkbench", () => {
     expect(screen.getAllByRole("row")).toHaveLength(3);
   });
 
+  it("filters workbench rows by submit readiness", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+          {
+            id: "browser:launch-plan.docx:1:1",
+            documentId: null,
+            name: "launch-plan.docx",
+            fileType: "docx",
+            status: "待从桌面导入",
+            note: "网页回退入口已记录，请使用“导入本地文件”完成本地解析。",
+          },
+        ]}
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.selectOptions(screen.getByLabelText("状态筛选"), "ready");
+
+    expect(screen.getByRole("rowheader", { name: "schedule.xlsx" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "launch-plan.docx" })).not.toBeInTheDocument();
+  });
+
   it("updates the model name when the selected profile changes", async () => {
     const user = userEvent.setup();
 
@@ -179,6 +215,79 @@ describe("IntakeWorkbench", () => {
     expect(screen.getByText("尚未导入文件，文件解析结果会在这里逐行呈现。")).toBeInTheDocument();
   });
 
+  it("cleans only fallback rows from the workbench", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+          {
+            id: "browser:launch-plan.docx:1:1",
+            documentId: null,
+            name: "launch-plan.docx",
+            fileType: "docx",
+            status: "待从桌面导入",
+            note: "网页回退入口已记录，请使用“导入本地文件”完成本地解析。",
+          },
+        ]}
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "清理待重新导入" }));
+
+    expect(screen.getByRole("rowheader", { name: "schedule.xlsx" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "launch-plan.docx" })).not.toBeInTheDocument();
+  });
+
+  it("clears all workbench rows in one action", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+          {
+            id: "doc_2",
+            documentId: "doc_2",
+            name: "launch-plan.docx",
+            fileType: "docx",
+            status: "已导入",
+            note: "标题：四月活动玩法 · 3 个文档块",
+          },
+        ]}
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "清空工作台" }));
+
+    expect(screen.queryByRole("rowheader", { name: "schedule.xlsx" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "launch-plan.docx" })).not.toBeInTheDocument();
+    expect(screen.getByText("尚未导入文件，文件解析结果会在这里逐行呈现。")).toBeInTheDocument();
+  });
+
   it("opens a parse summary panel for a selected row", async () => {
     const user = userEvent.setup();
 
@@ -217,6 +326,44 @@ describe("IntakeWorkbench", () => {
     expect(summaryPanel).toHaveTextContent("1 个文档块");
     expect(summaryPanel).toHaveTextContent("1 个段落");
     expect(within(summaryPanel).getByText("本地桌面导入")).toBeInTheDocument();
+  });
+
+  it("hides the parse summary panel when the selected row is filtered out", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+          {
+            id: "browser:launch-plan.docx:1:1",
+            documentId: null,
+            name: "launch-plan.docx",
+            fileType: "docx",
+            status: "待从桌面导入",
+            note: "网页回退入口已记录，请使用“导入本地文件”完成本地解析。",
+          },
+        ]}
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "查看摘要 launch-plan.docx" }));
+    expect(screen.getByRole("region", { name: "解析摘要面板" })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("状态筛选"), "ready");
+
+    expect(screen.queryByRole("region", { name: "解析摘要面板" })).not.toBeInTheDocument();
   });
 
   it("imports local files through the desktop bridge and renders them in the table", async () => {
