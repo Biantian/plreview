@@ -1,12 +1,15 @@
 {
   "name": "plreview",
   "version": "0.1.0",
+  "main": "electron/main.cjs",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "desktop:main": "cross-env ELECTRON_RENDERER_URL=http://localhost:3000 ELECTRON_PRELOAD_PATH=./electron/preload.ts electron --import tsx ./electron/main.ts",
     "desktop:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && npm run desktop:main\"",
     "build": "next build",
+    "desktop:build": "next build --no-lint",
+    "desktop:dist": "npm run desktop:build && electron-builder",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -25,6 +28,7 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "tsx": "^4.19.3",
     "xlsx": "^0.18.5",
     "zod": "^3.24.3"
   },
@@ -38,13 +42,13 @@
     "concurrently": "^9.0.1",
     "cross-env": "^7.0.3",
     "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.24.0",
     "eslint-config-next": "^15.3.0",
     "jsdom": "^25.0.1",
     "prisma": "^6.6.0",
-    "tsx": "^4.19.3",
     "typescript": "^5.8.3",
-    "wait-on": "^8.0.1",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "wait-on": "^8.0.1"
   }
 }

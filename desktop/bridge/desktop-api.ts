@@ -1,5 +1,5 @@
 import type { DesktopChannel } from "@/electron/channels";
-import { CHANNELS } from "@/electron/channels";
+import { CHANNELS } from "../../electron/channels";
 
 export type DesktopInvoke = <T = unknown>(
   channel: DesktopChannel,

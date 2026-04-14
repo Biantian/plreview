@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import { createDesktopApi } from "@/desktop/bridge/desktop-api";
+import { createDesktopApi } from "../desktop/bridge/desktop-api";
 
 contextBridge.exposeInMainWorld(
   "plreview",

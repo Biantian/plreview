@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BrowserWindow, app, ipcMain } from "electron";
 
-import { registerDesktopHandlers } from "@/electron/channels";
+import { registerDesktopHandlers } from "./channels";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
@@ -12,7 +12,7 @@ function getPreloadPath() {
     return path.resolve(process.env.ELECTRON_PRELOAD_PATH);
   }
 
-  return path.join(currentDir, "preload.js");
+  return path.join(currentDir, "preload.cjs");
 }
 
 function getFallbackHtml() {

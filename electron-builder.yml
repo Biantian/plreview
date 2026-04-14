@@ -1,0 +1,21 @@
+appId: com.plreview.desktop
+productName: PLReview
+directories:
+  output: release
+files:
+  - electron/**/*.{ts,cjs}
+  - desktop/bridge/**/*.ts
+  - .next/standalone/**
+  - .next/static/**
+  - public/**
+  - package.json
+extraMetadata:
+  main: electron/main.cjs
+mac:
+  category: public.app-category.productivity
+  identity: null
+  target:
+    - dmg
+win:
+  target:
+    - nsis

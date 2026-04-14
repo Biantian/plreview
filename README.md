@@ -1,9 +1,11 @@
-# 策划案评审系统 MVP
+# 策划案评审系统
 
-本项目是一个可在本机启动的策划案评审系统 MVP，支持：
+本项目正在从 Web MVP 迭代为本地优先桌面应用，当前已经支持：
 
 - 上传 `docx`、`txt`、`md`
-- 网页维护评审规则
+- 导入 `xlsx` 作为完整策划案评审输入
+- 批量发起同规则评审工作台
+- 表格化的评审任务中心与规则中心
 - 使用百炼 OpenAI 兼容接口进行评审
 - 生成报告并在原文段落位置展示标注结果
 
@@ -40,6 +42,25 @@ npm run dev
 默认地址为 [http://localhost:3000](http://localhost:3000)。
 
 SQLite 数据会落在 [prisma/dev.db](/Users/jiangdongzhe/Dev/ai-project/plreview/prisma/dev.db)。
+
+## 桌面应用调试
+
+```bash
+npm install
+npm run db:push
+npm run desktop:dev
+```
+
+桌面模式会启动 `Next.js` 渲染层和 `Electron` 壳层。默认仍使用本地 SQLite，只有大模型调用会走网络。
+
+## 桌面应用打包
+
+```bash
+npm run desktop:build
+npm run desktop:dist
+```
+
+打包配置位于 [electron-builder.yml](/Users/jiangdongzhe/Dev/ai-project/plreview/.worktrees/codex-local-first-desktop-delivery/electron-builder.yml)。产物默认输出到 `release/`。
 
 ## 模型接口
 
