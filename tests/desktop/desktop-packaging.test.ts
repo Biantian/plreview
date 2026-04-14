@@ -8,4 +8,9 @@ describe("desktop packaging scripts", () => {
     expect(packageJson.scripts["desktop:build"]).toBeTruthy();
     expect(packageJson.scripts["desktop:dist"]).toBeTruthy();
   });
+
+  it("starts desktop main process from the cjs bootstrap entry", () => {
+    expect(packageJson.scripts["desktop:main"]).toContain("electron ./electron/main.cjs");
+    expect(packageJson.scripts["desktop:main"]).not.toContain("--import tsx");
+  });
 });
