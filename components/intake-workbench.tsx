@@ -75,6 +75,10 @@ function mergeImportedFiles(existing: ImportedFile[], incoming: ImportedFile[]) 
   return Array.from(filesById.values());
 }
 
+function removeImportedFile(files: ImportedFile[], targetId: string) {
+  return files.filter((file) => file.id !== targetId);
+}
+
 export function IntakeWorkbench({
   llmProfiles,
   rules,
@@ -97,13 +101,28 @@ export function IntakeWorkbench({
   const [isPickingFiles, setIsPickingFiles] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
   const readyDocuments = workbenchFiles.filter(
     (file): file is ImportedFile & { documentId: string } => Boolean(file.documentId?.trim()),
   );
+  const selectedSummaryFile =
+    workbenchFiles.find((file) => file.id === selectedSummaryId) ?? null;
 
   useEffect(() => {
     setWorkbenchFiles((current) => mergeImportedFiles(current, incomingImportedFiles));
   }, [incomingImportedFiles]);
+
+  useEffect(() => {
+    if (!selectedSummaryId) {
+      return;
+    }
+
+    if (workbenchFiles.some((file) => file.id === selectedSummaryId)) {
+      return;
+    }
+
+    setSelectedSummaryId(null);
+  }, [selectedSummaryId, workbenchFiles]);
 
   useEffect(() => {
     if (selectedProfile) {
@@ -156,6 +175,35 @@ export function IntakeWorkbench({
       setErrorMessage("批量评审创建失败，请重试。");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveFile = (targetId: string) => {
+    setWorkbenchFiles((current) => removeImportedFile(current, targetId));
+    setErrorMessage("");
+  };
+
+  const handleRetryImport = async (targetId: string) => {
+    if (!window.plreview?.pickFiles) {
+      return;
+    }
+
+    setErrorMessage("");
+    setIsPickingFiles(true);
+
+    try {
+      const nextFiles = await window.plreview.pickFiles();
+      if (!nextFiles || nextFiles.length === 0) {
+        return;
+      }
+
+      setWorkbenchFiles((current) =>
+        mergeImportedFiles(removeImportedFile(current, targetId), nextFiles),
+      );
+    } catch {
+      setErrorMessage("本地文件导入失败，请重试。");
+    } finally {
+      setIsPickingFiles(false);
     }
   };
 
@@ -279,12 +327,13 @@ export function IntakeWorkbench({
                 <th scope="col">类型</th>
                 <th scope="col">状态</th>
                 <th scope="col">备注</th>
+                <th scope="col">操作</th>
               </tr>
             </thead>
             <tbody>
               {workbenchFiles.length === 0 ? (
                 <tr>
-                  <td className="muted" colSpan={4}>
+                  <td className="muted" colSpan={5}>
                     尚未导入文件，文件解析结果会在这里逐行呈现。
                   </td>
                 </tr>
@@ -299,11 +348,89 @@ export function IntakeWorkbench({
                     <td className="muted">
                       {file.note ?? "后续会补上批量操作与解析状态。"}
                     </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          aria-label={`查看摘要 ${file.name}`}
+                          className="button-ghost button-inline"
+                          onClick={() => setSelectedSummaryId(file.id)}
+                          type="button"
+                        >
+                          查看摘要
+                        </button>
+                        {!file.documentId ? (
+                          <button
+                            aria-label={`重新导入 ${file.name}`}
+                            className="button-secondary button-inline"
+                            disabled={isPickingFiles || isSubmitting}
+                            onClick={() => void handleRetryImport(file.id)}
+                            type="button"
+                          >
+                            重新导入
+                          </button>
+                        ) : null}
+                        <button
+                          aria-label={`移除 ${file.name}`}
+                          className="button-ghost button-inline"
+                          disabled={isSubmitting}
+                          onClick={() => handleRemoveFile(file.id)}
+                          type="button"
+                        >
+                          移除
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+
+          {selectedSummaryFile ? (
+            <section className="card stack" aria-label="解析摘要面板">
+              <div className="inline-actions">
+                <div>
+                  <p className="section-eyebrow">Summary</p>
+                  <h3 className="subsection-title">解析摘要</h3>
+                </div>
+                <button
+                  className="button-ghost button-inline"
+                  onClick={() => setSelectedSummaryId(null)}
+                  type="button"
+                >
+                  收起摘要
+                </button>
+              </div>
+
+              <div className="feature-list">
+                <div className="feature-row">
+                  <span className="feature-kicker">文件</span>
+                  <div>
+                    <strong>{selectedSummaryFile.name}</strong>
+                    <p className="muted">{selectedSummaryFile.fileType ?? "待识别"}</p>
+                  </div>
+                </div>
+                <div className="feature-row">
+                  <span className="feature-kicker">状态</span>
+                  <div>
+                    <strong>{selectedSummaryFile.status ?? "待处理"}</strong>
+                    <p className="muted">
+                      {selectedSummaryFile.documentId
+                        ? "这份文件已经完成本地解析，可以加入批量评审。"
+                        : "这份文件还在浏览器回退队列里，需要重新走桌面导入。"}
+                    </p>
+                  </div>
+                </div>
+                <div className="feature-row">
+                  <span className="feature-kicker">摘要</span>
+                  <div>
+                    <strong>{selectedSummaryFile.note ?? "暂无解析摘要"}</strong>
+                    <p className="muted">这里会保留当前文件的解析说明，方便行级排查。</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </section>
 
         <section className="form-section">

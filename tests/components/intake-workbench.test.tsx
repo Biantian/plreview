@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -146,6 +146,63 @@ describe("IntakeWorkbench", () => {
     expect(screen.getByRole("button", { name: "开始批量评审" })).toBeDisabled();
   });
 
+  it("removes a workbench row from the table", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+        ]}
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "移除 schedule.xlsx" }));
+
+    expect(screen.queryByRole("rowheader", { name: "schedule.xlsx" })).not.toBeInTheDocument();
+    expect(screen.getByText("尚未导入文件，文件解析结果会在这里逐行呈现。")).toBeInTheDocument();
+  });
+
+  it("opens a parse summary panel for a selected row", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+        ]}
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "查看摘要 schedule.xlsx" }));
+
+    const summaryPanel = screen.getByRole("region", { name: "解析摘要面板" });
+
+    expect(within(summaryPanel).getByRole("heading", { name: "解析摘要" })).toBeInTheDocument();
+    expect(within(summaryPanel).getByText("schedule.xlsx")).toBeInTheDocument();
+    expect(within(summaryPanel).getByText("标题：四月活动排期 · 1 个文档块")).toBeInTheDocument();
+  });
+
   it("imports local files through the desktop bridge and renders them in the table", async () => {
     const user = userEvent.setup();
     const pickFiles = vi.fn().mockResolvedValue([
@@ -174,6 +231,69 @@ describe("IntakeWorkbench", () => {
     expect(pickFiles).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("rowheader", { name: "schedule.xlsx" })).toBeInTheDocument();
     expect(screen.getByText("标题：四月活动排期 · 1 个文档块")).toBeInTheDocument();
+  });
+
+  it("retries desktop import for a browser fallback row and replaces the placeholder", async () => {
+    const user = userEvent.setup();
+    const pickFiles = vi.fn().mockResolvedValue([
+      {
+        id: "doc_1",
+        name: "launch-plan.docx",
+        fileType: "docx",
+        status: "已导入",
+        note: "标题：四月活动玩法 · 3 个文档块",
+      },
+    ]);
+
+    window.plreview.pickFiles = pickFiles;
+
+    render(
+      <IntakeWorkbench
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.upload(screen.getByLabelText("选择待导入文件"), [
+      new File(["a"], "launch-plan.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }),
+    ]);
+
+    await user.click(screen.getByRole("button", { name: "重新导入 launch-plan.docx" }));
+
+    expect(pickFiles).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole("rowheader", { name: "launch-plan.docx" })).toHaveLength(1);
+    expect(screen.getByText("标题：四月活动玩法 · 3 个文档块")).toBeInTheDocument();
+    expect(screen.queryByText("网页回退入口已记录，请使用“导入本地文件”完成本地解析。")).not.toBeInTheDocument();
+  });
+
+  it("keeps a browser fallback row when retry import is cancelled", async () => {
+    const user = userEvent.setup();
+
+    window.plreview.pickFiles = vi.fn().mockResolvedValue([]);
+
+    render(
+      <IntakeWorkbench
+        llmProfiles={[
+          { defaultModel: "qwen-plus", id: "profile-1", name: "Default", provider: "openai" },
+        ]}
+        rules={[{ category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" }]}
+      />,
+    );
+
+    await user.upload(screen.getByLabelText("选择待导入文件"), [
+      new File(["a"], "launch-plan.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }),
+    ]);
+
+    await user.click(screen.getByRole("button", { name: "重新导入 launch-plan.docx" }));
+
+    expect(screen.getByRole("rowheader", { name: "launch-plan.docx" })).toBeInTheDocument();
+    expect(screen.getByText("网页回退入口已记录，请使用“导入本地文件”完成本地解析。")).toBeInTheDocument();
   });
 
   it("shows an error message when desktop import fails", async () => {
