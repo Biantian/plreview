@@ -100,6 +100,12 @@ describe("importDocumentsIntoStore", () => {
         name: "schedule.xlsx",
         fileType: "xlsx",
         note: "标题：四月活动排期 · 1 个文档块",
+        summary: {
+          blockCount: 1,
+          paragraphCount: 1,
+          sourceLabel: "本地桌面导入",
+          title: "四月活动排期",
+        },
         status: "已导入",
       },
     ]);

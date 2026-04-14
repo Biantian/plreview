@@ -1,12 +1,20 @@
 import type { DesktopChannel } from "@/electron/channels";
 import { CHANNELS } from "../../electron/channels";
 
+export type ImportedDocumentSummary = {
+  title: string;
+  blockCount: number;
+  paragraphCount: number;
+  sourceLabel: string;
+};
+
 export type ImportedDocumentRecord = {
   id: string;
   name: string;
   fileType: string;
   status: string;
   note: string;
+  summary: ImportedDocumentSummary;
 };
 
 export type DesktopInvoke = <T = unknown>(

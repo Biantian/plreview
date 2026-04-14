@@ -158,6 +158,12 @@ describe("IntakeWorkbench", () => {
             fileType: "xlsx",
             status: "已导入",
             note: "标题：四月活动排期 · 1 个文档块",
+            summary: {
+              title: "四月活动排期",
+              blockCount: 1,
+              paragraphCount: 1,
+              sourceLabel: "本地桌面导入",
+            },
           },
         ]}
         llmProfiles={[
@@ -185,6 +191,12 @@ describe("IntakeWorkbench", () => {
             fileType: "xlsx",
             status: "已导入",
             note: "标题：四月活动排期 · 1 个文档块",
+            summary: {
+              title: "四月活动排期",
+              blockCount: 1,
+              paragraphCount: 1,
+              sourceLabel: "本地桌面导入",
+            },
           },
         ]}
         llmProfiles={[
@@ -201,6 +213,10 @@ describe("IntakeWorkbench", () => {
     expect(within(summaryPanel).getByRole("heading", { name: "解析摘要" })).toBeInTheDocument();
     expect(within(summaryPanel).getByText("schedule.xlsx")).toBeInTheDocument();
     expect(within(summaryPanel).getByText("标题：四月活动排期 · 1 个文档块")).toBeInTheDocument();
+    expect(within(summaryPanel).getByText("四月活动排期")).toBeInTheDocument();
+    expect(summaryPanel).toHaveTextContent("1 个文档块");
+    expect(summaryPanel).toHaveTextContent("1 个段落");
+    expect(within(summaryPanel).getByText("本地桌面导入")).toBeInTheDocument();
   });
 
   it("imports local files through the desktop bridge and renders them in the table", async () => {

@@ -27,6 +27,12 @@ type ImportedFile = {
   status?: string;
   note?: string;
   documentId?: string | null;
+  summary?: {
+    title?: string;
+    blockCount?: number;
+    paragraphCount?: number;
+    sourceLabel?: string;
+  };
 };
 
 type IntakeWorkbenchProps = {
@@ -51,6 +57,12 @@ function createBrowserFallbackFiles(files: File[]): ImportedFile[] {
     fileType: inferFileType(file.name),
     status: "待从桌面导入",
     note: BROWSER_FALLBACK_NOTE,
+    summary: {
+      title: file.name.replace(/\.[^.]+$/, ""),
+      blockCount: 0,
+      paragraphCount: 0,
+      sourceLabel: "浏览器回退入口",
+    },
   }));
 }
 
@@ -59,6 +71,14 @@ function normalizeImportedFile(file: ImportedFile): ImportedFile {
     ...file,
     documentId: file.documentId === undefined ? file.id : file.documentId,
   };
+}
+
+function formatCount(value: number | undefined, unit: string) {
+  if (value === undefined) {
+    return "待生成";
+  }
+
+  return `${value} 个${unit}`;
 }
 
 function mergeImportedFiles(existing: ImportedFile[], incoming: ImportedFile[]) {
@@ -411,6 +431,13 @@ export function IntakeWorkbench({
                   </div>
                 </div>
                 <div className="feature-row">
+                  <span className="feature-kicker">标题</span>
+                  <div>
+                    <strong>{selectedSummaryFile.summary?.title ?? "待完成本地解析"}</strong>
+                    <p className="muted">导入后的策划案标题会显示在这里，方便确认是否读对内容。</p>
+                  </div>
+                </div>
+                <div className="feature-row">
                   <span className="feature-kicker">状态</span>
                   <div>
                     <strong>{selectedSummaryFile.status ?? "待处理"}</strong>
@@ -419,6 +446,23 @@ export function IntakeWorkbench({
                         ? "这份文件已经完成本地解析，可以加入批量评审。"
                         : "这份文件还在浏览器回退队列里，需要重新走桌面导入。"}
                     </p>
+                  </div>
+                </div>
+                <div className="feature-row">
+                  <span className="feature-kicker">结构</span>
+                  <div>
+                    <strong>
+                      {formatCount(selectedSummaryFile.summary?.blockCount, "文档块")} ·{" "}
+                      {formatCount(selectedSummaryFile.summary?.paragraphCount, "段落")}
+                    </strong>
+                    <p className="muted">文档块和段落数量可以帮助快速判断解析粒度是否合理。</p>
+                  </div>
+                </div>
+                <div className="feature-row">
+                  <span className="feature-kicker">来源</span>
+                  <div>
+                    <strong>{selectedSummaryFile.summary?.sourceLabel ?? "待识别来源"}</strong>
+                    <p className="muted">用来区分桌面端解析结果和浏览器回退占位记录。</p>
                   </div>
                 </div>
                 <div className="feature-row">
