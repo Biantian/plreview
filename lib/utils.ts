@@ -34,3 +34,20 @@ export function severityLabel(
       return severity;
   }
 }
+
+export function reviewStatusLabel(status: string) {
+  switch (status) {
+    case "pending":
+      return "待处理";
+    case "running":
+      return "评审中";
+    case "completed":
+      return "已完成";
+    case "partial":
+      return "部分完成";
+    case "failed":
+      return "失败";
+    default:
+      return status;
+  }
+}

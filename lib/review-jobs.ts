@@ -23,6 +23,8 @@ export type ReviewListItem = {
   id: string;
   title: string;
   filename: string;
+  fileType: string;
+  batchName: string | null;
   status: ReviewJob["status"];
   provider: string;
   modelName: string;
@@ -36,7 +38,11 @@ export type ReviewListItem = {
 
 function mapReviewListItem(
   review: ReviewJob & {
+    reviewBatch: {
+      name: string;
+    } | null;
     document: {
+      fileType: string;
       title: string;
       filename: string;
     };
@@ -49,6 +55,8 @@ function mapReviewListItem(
     id: review.id,
     title: review.document.title,
     filename: review.document.filename,
+    fileType: review.document.fileType,
+    batchName: review.reviewBatch?.name ?? null,
     status: review.status,
     provider: review.providerSnapshot,
     modelName: review.modelNameSnapshot,
@@ -61,11 +69,17 @@ function mapReviewListItem(
   };
 }
 
-export async function getReviewListItems(limit = 24) {
+export async function getReviewListItems(limit?: number) {
   const reviews = await prisma.reviewJob.findMany({
     include: {
+      reviewBatch: {
+        select: {
+          name: true,
+        },
+      },
       document: {
         select: {
+          fileType: true,
           title: true,
           filename: true,
         },
@@ -79,10 +93,26 @@ export async function getReviewListItems(limit = 24) {
     orderBy: {
       createdAt: "desc",
     },
-    take: limit,
+    ...(typeof limit === "number" ? { take: limit } : {}),
   });
 
   return reviews.map(mapReviewListItem);
+}
+
+export async function getReviewDashboardData(limit?: number) {
+  const items = await getReviewListItems(limit);
+
+  return {
+    items,
+    totalCount: items.length,
+    runningCount: items.filter(
+      (review) => review.status === ReviewStatus.pending || review.status === ReviewStatus.running,
+    ).length,
+    completedCount: items.filter(
+      (review) => review.status === ReviewStatus.completed || review.status === ReviewStatus.partial,
+    ).length,
+    failedCount: items.filter((review) => review.status === ReviewStatus.failed).length,
+  };
 }
 
 export async function executeReviewJob(input: ExecuteReviewJobInput) {

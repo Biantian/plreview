@@ -1,20 +1,13 @@
 import Link from "next/link";
-import { ReviewStatus } from "@prisma/client";
 
-import { ReviewQueue } from "@/components/review-queue";
-import { getReviewListItems } from "@/lib/review-jobs";
+import { ReviewJobsTable } from "@/components/review-jobs-table";
+import { getReviewDashboardData } from "@/lib/review-jobs";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewsPage() {
-  const initialReviews = await getReviewListItems();
-  const runningCount = initialReviews.filter(
-    (review) => review.status === ReviewStatus.pending || review.status === ReviewStatus.running,
-  ).length;
-  const completedCount = initialReviews.filter(
-    (review) => review.status === ReviewStatus.completed || review.status === ReviewStatus.partial,
-  ).length;
-  const failedCount = initialReviews.filter((review) => review.status === ReviewStatus.failed).length;
+  const { items, totalCount, runningCount, completedCount, failedCount } =
+    await getReviewDashboardData();
 
   return (
     <div className="grid-main">
@@ -29,7 +22,7 @@ export default async function ReviewsPage() {
             <p className="section-eyebrow">Task Center</p>
             <h1 className="section-title">评审列表</h1>
             <p className="section-copy">
-              新任务会在这里出现并持续更新状态。你可以先回到列表继续安排工作，等报告生成完成后再进入详情阅读。
+              这里改成表格式任务中心，方便按标题、文件名、批次和模型快速筛选，再决定先查看哪一份报告。
             </p>
           </div>
 
@@ -46,7 +39,7 @@ export default async function ReviewsPage() {
         <div className="metric-grid">
           <div className="metric-card">
             <p className="metric-label">总任务数</p>
-            <strong className="metric-value">{initialReviews.length}</strong>
+            <strong className="metric-value">{totalCount}</strong>
           </div>
           <div className="metric-card">
             <p className="metric-label">进行中</p>
@@ -62,7 +55,7 @@ export default async function ReviewsPage() {
           </div>
         </div>
 
-        <ReviewQueue initialReviews={initialReviews} />
+        <ReviewJobsTable items={items} />
       </section>
 
       <aside className="stack-lg">
@@ -71,7 +64,7 @@ export default async function ReviewsPage() {
             <p className="section-eyebrow">Queue Signals</p>
             <h2 className="section-title">阅读节奏</h2>
             <p className="section-copy">
-              这里优先回答两个问题：哪些任务还在后台运行，哪些任务现在已经值得进入详情页仔细看。
+              表格页优先回答两个问题：哪一批任务正在处理，哪些任务已经值得进入详情页仔细看。
             </p>
           </div>
 
@@ -80,14 +73,14 @@ export default async function ReviewsPage() {
               <span className="feature-kicker">进行中</span>
               <div>
                 <strong>用动态状态感知后台进度</strong>
-                <p className="muted">评审中的任务会自动刷新，但不会强制把你带离列表。</p>
+                <p className="muted">处理中任务会明确标出状态，避免把未完成任务误当成可读报告。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">已完成</span>
               <div>
                 <strong>结果一旦可读，就显示评分与问题数</strong>
-                <p className="muted">你可以直接判断先看哪份报告，而不用挨个点开详情页。</p>
+                <p className="muted">筛选后能直接判断先看哪份报告，而不用挨个点开详情页。</p>
               </div>
             </div>
             <div className="feature-row">

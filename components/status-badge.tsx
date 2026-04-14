@@ -1,14 +1,6 @@
 import { ReviewStatus } from "@prisma/client";
 
-import { cn } from "@/lib/utils";
-
-const statusMap: Record<ReviewStatus, string> = {
-  pending: "待处理",
-  running: "评审中",
-  completed: "已完成",
-  partial: "部分完成",
-  failed: "失败",
-};
+import { cn, reviewStatusLabel } from "@/lib/utils";
 
 export function StatusBadge({ status }: { status: ReviewStatus }) {
   return (
@@ -16,7 +8,7 @@ export function StatusBadge({ status }: { status: ReviewStatus }) {
       {status === ReviewStatus.pending || status === ReviewStatus.running ? (
         <span aria-hidden="true" className="status-badge-signal" />
       ) : null}
-      {statusMap[status]}
+      {reviewStatusLabel(status)}
     </span>
   );
 }

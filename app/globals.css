@@ -315,6 +315,72 @@ svg {
   gap: 12px;
 }
 
+.table-toolbar,
+.table-actions,
+.drawer {
+  display: flex;
+  gap: 16px;
+}
+
+.table-toolbar {
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.table-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.table-search {
+  min-width: min(360px, 100%);
+  flex: 1 1 320px;
+}
+
+.table-shell {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.data-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table th {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-strong);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.data-table tr:last-child td,
+.data-table tr:last-child th[scope="row"] {
+  border-bottom: 0;
+}
+
+.table-cell-stack {
+  gap: 6px;
+}
+
+.drawer {
+  flex-direction: column;
+}
+
 .section-title {
   margin: 0 0 8px;
   font-size: clamp(24px, 2.2vw, 34px);
@@ -1320,7 +1386,8 @@ svg {
   }
 
   .queue-toolbar,
-  .queue-item-main {
+  .queue-item-main,
+  .table-toolbar {
     flex-direction: column;
   }
 
