@@ -62,6 +62,18 @@ npm run desktop:dist
 
 打包配置位于 [electron-builder.yml](/Users/jiangdongzhe/Dev/ai-project/plreview/.worktrees/codex-local-first-desktop-delivery/electron-builder.yml)。产物默认输出到 `release/`。
 
+### Win11 打包（当前环境推荐）
+
+```bash
+ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ \
+ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/ \
+npm run desktop:dist -- --win --x64 --dir
+```
+
+若需要正式安装包（`nsis`），建议在 Win11 主机上执行 `npm run desktop:dist -- --win --x64`，避免跨平台下载和签名工具链导致的不稳定。
+
+Win11 手工烟测步骤见 [2026-04-14-win11-smoke-test-checklist.md](/Users/jiangdongzhe/Dev/ai-project/plreview/.worktrees/codex-local-first-desktop-delivery/docs/qa/2026-04-14-win11-smoke-test-checklist.md)。
+
 ## 模型接口
 
 - `baseURL`: `https://dashscope.aliyuncs.com/compatible-mode/v1`
