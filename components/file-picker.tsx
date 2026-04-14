@@ -8,6 +8,7 @@ type FilePickerProps = {
   title?: string;
   accept?: string;
   multiple?: boolean;
+  onFilesSelected?: (files: File[]) => void;
 };
 
 export function FilePicker({
@@ -16,6 +17,7 @@ export function FilePicker({
   title = "选择待导入文件",
   accept = ".docx,.txt,.md",
   multiple = false,
+  onFilesSelected,
 }: FilePickerProps) {
   const inputId = useId();
   const [fileName, setFileName] = useState("尚未选择文件");
@@ -39,6 +41,8 @@ export function FilePicker({
         multiple={multiple}
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
+
+          onFilesSelected?.(files);
 
           if (files.length === 0) {
             setFileName("尚未选择文件");

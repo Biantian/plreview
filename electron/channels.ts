@@ -15,15 +15,18 @@ export type DesktopHandlerRegistrar = (
   handler: DesktopHandler,
 ) => void;
 
-export function registerDesktopHandlers(register: DesktopHandlerRegistrar) {
+export function registerDesktopHandlers(
+  register: DesktopHandlerRegistrar,
+  handlers: Partial<Record<DesktopChannel, DesktopHandler>> = {},
+) {
   const notImplemented: DesktopHandler = async () => {
     throw new Error("Desktop handler not implemented yet.");
   };
 
-  register(CHANNELS.reviewBatchesCreate, notImplemented);
-  register(CHANNELS.reviewJobsList, notImplemented);
-  register(CHANNELS.reviewJobsSearch, notImplemented);
-  register(CHANNELS.rulesList, notImplemented);
-  register(CHANNELS.rulesSearch, notImplemented);
-  register(CHANNELS.filesPick, notImplemented);
+  register(CHANNELS.reviewBatchesCreate, handlers[CHANNELS.reviewBatchesCreate] ?? notImplemented);
+  register(CHANNELS.reviewJobsList, handlers[CHANNELS.reviewJobsList] ?? notImplemented);
+  register(CHANNELS.reviewJobsSearch, handlers[CHANNELS.reviewJobsSearch] ?? notImplemented);
+  register(CHANNELS.rulesList, handlers[CHANNELS.rulesList] ?? notImplemented);
+  register(CHANNELS.rulesSearch, handlers[CHANNELS.rulesSearch] ?? notImplemented);
+  register(CHANNELS.filesPick, handlers[CHANNELS.filesPick] ?? notImplemented);
 }

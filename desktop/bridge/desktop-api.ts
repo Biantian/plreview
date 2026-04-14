@@ -1,6 +1,14 @@
 import type { DesktopChannel } from "@/electron/channels";
 import { CHANNELS } from "../../electron/channels";
 
+export type ImportedDocumentRecord = {
+  id: string;
+  name: string;
+  fileType: string;
+  status: string;
+  note: string;
+};
+
 export type DesktopInvoke = <T = unknown>(
   channel: DesktopChannel,
   payload?: unknown,
@@ -11,11 +19,13 @@ export type ReviewBatchRequest = {
   llmProfileId: string;
   modelName: string;
   ruleIds: string[];
-  items: unknown[];
+  documents: Array<{
+    documentId: string;
+  }>;
 };
 
 export interface DesktopApi {
-  pickFiles: () => Promise<unknown>;
+  pickFiles: () => Promise<ImportedDocumentRecord[]>;
   listReviewJobs: () => Promise<unknown>;
   searchReviewJobs: (query: string) => Promise<unknown>;
   listRules: () => Promise<unknown>;
@@ -25,7 +35,7 @@ export interface DesktopApi {
 
 export function createDesktopApi(invoke: DesktopInvoke): DesktopApi {
   return {
-    pickFiles: () => invoke(CHANNELS.filesPick),
+    pickFiles: () => invoke<ImportedDocumentRecord[]>(CHANNELS.filesPick),
     listReviewJobs: () => invoke(CHANNELS.reviewJobsList),
     searchReviewJobs: (query: string) => invoke(CHANNELS.reviewJobsSearch, { query }),
     listRules: () => invoke(CHANNELS.rulesList),

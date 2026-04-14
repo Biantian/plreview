@@ -16,7 +16,7 @@ describe("createDesktopApi", () => {
       llmProfileId: "profile_1",
       modelName: "qwen-plus",
       ruleIds: ["rule_a"],
-      items: [],
+      documents: [],
     });
 
     expect(invoke).toHaveBeenCalledWith(CHANNELS.reviewBatchesCreate, {
@@ -24,7 +24,7 @@ describe("createDesktopApi", () => {
       llmProfileId: "profile_1",
       modelName: "qwen-plus",
       ruleIds: ["rule_a"],
-      items: [],
+      documents: [],
     });
   });
 

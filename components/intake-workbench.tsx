@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { FilePicker } from "@/components/file-picker";
 
@@ -25,6 +26,7 @@ type ImportedFile = {
   fileType?: string | null;
   status?: string;
   note?: string;
+  documentId?: string | null;
 };
 
 type IntakeWorkbenchProps = {
@@ -33,16 +35,129 @@ type IntakeWorkbenchProps = {
   importedFiles?: ImportedFile[];
 };
 
+const EMPTY_IMPORTED_FILES: ImportedFile[] = [];
+const BROWSER_FALLBACK_NOTE = "网页回退入口已记录，请使用“导入本地文件”完成本地解析。";
+
+function inferFileType(filename: string) {
+  const extension = filename.split(".").pop()?.trim().toLowerCase();
+  return extension || "待识别";
+}
+
+function createBrowserFallbackFiles(files: File[]): ImportedFile[] {
+  return files.map((file) => ({
+    id: `browser:${file.name}:${file.lastModified}:${file.size}`,
+    documentId: null,
+    name: file.name,
+    fileType: inferFileType(file.name),
+    status: "待从桌面导入",
+    note: BROWSER_FALLBACK_NOTE,
+  }));
+}
+
+function normalizeImportedFile(file: ImportedFile): ImportedFile {
+  return {
+    ...file,
+    documentId: file.documentId === undefined ? file.id : file.documentId,
+  };
+}
+
+function mergeImportedFiles(existing: ImportedFile[], incoming: ImportedFile[]) {
+  const filesById = new Map<string, ImportedFile>();
+
+  for (const file of existing) {
+    filesById.set(file.id, normalizeImportedFile(file));
+  }
+
+  for (const file of incoming) {
+    filesById.set(file.id, normalizeImportedFile(file));
+  }
+
+  return Array.from(filesById.values());
+}
+
 export function IntakeWorkbench({
   llmProfiles,
   rules,
-  importedFiles = [],
+  importedFiles,
 }: IntakeWorkbenchProps) {
+  const router = useRouter();
+  const incomingImportedFiles = importedFiles ?? EMPTY_IMPORTED_FILES;
   const defaultProfile = llmProfiles[0];
   const [selectedProfileId, setSelectedProfileId] = useState(defaultProfile?.id ?? "");
   const selectedProfile =
     llmProfiles.find((profile) => profile.id === selectedProfileId) ?? defaultProfile;
   const [modelName, setModelName] = useState(defaultProfile?.defaultModel ?? "");
+  const [batchName, setBatchName] = useState("");
+  const [selectedRuleIds, setSelectedRuleIds] = useState<string[]>(() =>
+    rules.map((rule) => rule.id),
+  );
+  const [workbenchFiles, setWorkbenchFiles] = useState<ImportedFile[]>(() =>
+    mergeImportedFiles([], incomingImportedFiles),
+  );
+  const [isPickingFiles, setIsPickingFiles] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const readyDocuments = workbenchFiles.filter(
+    (file): file is ImportedFile & { documentId: string } => Boolean(file.documentId?.trim()),
+  );
+
+  useEffect(() => {
+    setWorkbenchFiles((current) => mergeImportedFiles(current, incomingImportedFiles));
+  }, [incomingImportedFiles]);
+
+  useEffect(() => {
+    if (selectedProfile) {
+      setModelName(selectedProfile.defaultModel);
+    }
+  }, [selectedProfile]);
+
+  const handlePickFiles = async () => {
+    if (!window.plreview?.pickFiles) {
+      return;
+    }
+
+    setErrorMessage("");
+    setIsPickingFiles(true);
+
+    try {
+      const nextFiles = await window.plreview.pickFiles();
+      setWorkbenchFiles((current) => mergeImportedFiles(current, nextFiles ?? []));
+    } catch {
+      setErrorMessage("本地文件导入失败，请重试。");
+    } finally {
+      setIsPickingFiles(false);
+    }
+  };
+
+  const handleCreateReviewBatch = async () => {
+    if (
+      !window.plreview?.createReviewBatch ||
+      !selectedProfileId ||
+      readyDocuments.length === 0 ||
+      selectedRuleIds.length === 0 ||
+      batchName.trim().length === 0
+    ) {
+      return;
+    }
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      await window.plreview.createReviewBatch({
+        batchName,
+        llmProfileId: selectedProfileId,
+        modelName,
+        ruleIds: selectedRuleIds,
+        documents: readyDocuments.map((file) => ({ documentId: file.documentId })),
+      });
+      router.push("/reviews");
+    } catch {
+      setErrorMessage("批量评审创建失败，请重试。");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="grid-main">
@@ -59,7 +174,7 @@ export function IntakeWorkbench({
           <div>
             <h2 className="subsection-title">批量配置</h2>
             <p className="section-copy">
-              这些控件先展示批次级别的模型与规则选项，真正的提交逻辑会在下一步补齐。
+              这些控件会直接驱动本地批次创建，提交时会把当前选择的模型、规则和文件一起发送到桌面端。
             </p>
           </div>
 
@@ -104,6 +219,17 @@ export function IntakeWorkbench({
               />
             </div>
           </div>
+
+          <div className="field">
+            <label htmlFor="batchName">批次名称</label>
+            <input
+              id="batchName"
+              name="batchName"
+              onChange={(event) => setBatchName(event.target.value)}
+              placeholder="例如 四月策划案"
+              value={batchName}
+            />
+          </div>
         </section>
 
         <section className="form-section">
@@ -117,10 +243,34 @@ export function IntakeWorkbench({
           <FilePicker
             accept=".docx,.txt,.md,.xlsx"
             badgeLabel="本地文件入口"
-            description="暂时保留导入入口，下一步会把这里接到多文件本地工作流。"
+            description="浏览器回退入口会先把文件记录进工作台；桌面版请使用下方“导入本地文件”完成本地解析。"
             multiple
+            onFilesSelected={(files) => {
+              setErrorMessage("");
+              setWorkbenchFiles((current) =>
+                mergeImportedFiles(current, createBrowserFallbackFiles(files)),
+              );
+            }}
             title="选择待导入文件"
           />
+
+          <div className="actions">
+            <button
+              aria-label="导入本地文件"
+              className="button"
+              disabled={isPickingFiles || isSubmitting}
+              onClick={handlePickFiles}
+              type="button"
+            >
+              {isPickingFiles ? "正在导入..." : "导入本地文件"}
+            </button>
+          </div>
+
+          {errorMessage ? (
+            <p className="muted" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
 
           <table aria-label="已导入文件">
             <thead>
@@ -132,14 +282,14 @@ export function IntakeWorkbench({
               </tr>
             </thead>
             <tbody>
-              {importedFiles.length === 0 ? (
+              {workbenchFiles.length === 0 ? (
                 <tr>
                   <td className="muted" colSpan={4}>
                     尚未导入文件，文件解析结果会在这里逐行呈现。
                   </td>
                 </tr>
               ) : (
-                importedFiles.map((file) => (
+                workbenchFiles.map((file) => (
                   <tr key={file.id}>
                     <th scope="row">{file.name}</th>
                     <td>{file.fileType ?? "待识别"}</td>
@@ -177,7 +327,19 @@ export function IntakeWorkbench({
             ) : (
               rules.map((rule) => (
                 <label className="checkbox-card" key={rule.id}>
-                  <input defaultChecked name="ruleIds" type="checkbox" value={rule.id} />
+                  <input
+                    checked={selectedRuleIds.includes(rule.id)}
+                    onChange={(event) => {
+                      setSelectedRuleIds((current) =>
+                        event.target.checked
+                          ? [...current, rule.id]
+                          : current.filter((ruleId) => ruleId !== rule.id),
+                      );
+                    }}
+                    name="ruleIds"
+                    type="checkbox"
+                    value={rule.id}
+                  />
                   <div>
                     <strong>{rule.name}</strong>
                     <p className="muted">
@@ -187,6 +349,25 @@ export function IntakeWorkbench({
                 </label>
               ))
             )}
+          </div>
+
+          <div className="actions">
+            <button
+              aria-label="开始批量评审"
+              className="button"
+              disabled={
+                isPickingFiles ||
+                isSubmitting ||
+                batchName.trim().length === 0 ||
+                selectedProfileId.length === 0 ||
+                readyDocuments.length === 0 ||
+                selectedRuleIds.length === 0
+              }
+              onClick={handleCreateReviewBatch}
+              type="button"
+            >
+              {isSubmitting ? "正在提交..." : "开始批量评审"}
+            </button>
           </div>
         </section>
       </section>
@@ -204,7 +385,7 @@ export function IntakeWorkbench({
               <div>
                 <strong>文件先入表，再接提交</strong>
                 <p className="muted">
-                  现在先把导入文件整理成可扫描的表格工作台，后续会接上批量处理逻辑。
+                  先通过桌面桥接导入本地文件，再把去重后的文档行合并到工作台表格。
                 </p>
               </div>
             </div>
@@ -213,7 +394,7 @@ export function IntakeWorkbench({
               <div>
                 <strong>批量配置与规则保持同屏</strong>
                 <p className="muted">
-                  模型配置、模型名称和规则选择会一起固定为本次批次的评审参数。
+                  模型配置、模型名称、批次名称和已选规则会一起成为本次提交参数。
                 </p>
               </div>
             </div>
@@ -222,7 +403,7 @@ export function IntakeWorkbench({
               <div>
                 <strong>后续会扩展为多文件队列</strong>
                 <p className="muted">
-                  下一步会把本地文件选取、队列管理和任务创建补进同一条工作流。
+                  现在先保留文件选择回退，后续仍可继续扩展队列管理和移除操作。
                 </p>
               </div>
             </div>
@@ -256,7 +437,7 @@ export function IntakeWorkbench({
             <div className="feature-row">
               <span className="feature-kicker">导入</span>
               <div>
-                <strong>{importedFiles.length} 个文件位已预留</strong>
+                <strong>{workbenchFiles.length} 个文件位已预留</strong>
                 <p className="muted">文件工作台先按表格布局好，后续再接真正的本地批量导入。</p>
               </div>
             </div>

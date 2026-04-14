@@ -1,8 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BrowserWindow, app, ipcMain } from "electron";
+import type { OpenDialogOptions } from "electron";
+import { BrowserWindow, app, dialog, ipcMain } from "electron";
 
-import { registerDesktopHandlers } from "./channels";
+import { importDocumentsIntoStore } from "../desktop/core/files/import-documents-into-store";
+import { createReviewBatch } from "../desktop/core/reviews/create-review-batch";
+import { listReviewJobs } from "../desktop/core/reviews/list-review-jobs";
+import { searchReviewJobs } from "../desktop/core/reviews/search-review-jobs";
+import { listRules } from "../desktop/core/rules/list-rules";
+import { searchRules } from "../desktop/core/rules/search-rules";
+import { prisma } from "../lib/prisma";
+import { CHANNELS, registerDesktopHandlers } from "./channels";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
@@ -80,9 +88,41 @@ async function createWindow() {
 }
 
 void app.whenReady().then(async () => {
-  registerDesktopHandlers((channel, handler) => {
-    ipcMain.handle(channel, handler);
-  });
+  registerDesktopHandlers(
+    (channel, handler) => {
+      ipcMain.handle(channel, handler);
+    },
+    {
+      [CHANNELS.filesPick]: async () => {
+        const dialogOptions: OpenDialogOptions = {
+          filters: [
+            {
+              name: "策划案文件",
+              extensions: ["docx", "txt", "md", "xlsx"],
+            },
+          ],
+          properties: ["openFile", "multiSelections"],
+        };
+        const result = mainWindow
+          ? await dialog.showOpenDialog(mainWindow, dialogOptions)
+          : await dialog.showOpenDialog(dialogOptions);
+
+        if (result.canceled || result.filePaths.length === 0) {
+          return [];
+        }
+
+        return importDocumentsIntoStore(prisma, result.filePaths);
+      },
+      [CHANNELS.reviewBatchesCreate]: async (_event, payload) =>
+        createReviewBatch(prisma, payload as Parameters<typeof createReviewBatch>[1]),
+      [CHANNELS.reviewJobsList]: async () => listReviewJobs(prisma),
+      [CHANNELS.reviewJobsSearch]: async (_event, payload) =>
+        searchReviewJobs(prisma, String((payload as { query?: string } | undefined)?.query ?? "")),
+      [CHANNELS.rulesList]: async () => listRules(prisma),
+      [CHANNELS.rulesSearch]: async (_event, payload) =>
+        searchRules(prisma, String((payload as { query?: string } | undefined)?.query ?? "")),
+    },
+  );
   await createWindow();
 
   app.on("activate", async () => {
