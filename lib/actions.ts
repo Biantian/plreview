@@ -174,9 +174,14 @@ export async function toggleLlmProfileEnabledAction(formData: FormData) {
 
 export async function deleteLlmProfileAction(formData: FormData) {
   const id = String(formData.get("id") || "").trim();
+  const confirmed = formData.get("confirmed") === "true";
 
   if (!id) {
     throw new Error("缺少模型配置 ID。");
+  }
+
+  if (!confirmed) {
+    throw new Error("删除模型配置前需要明确确认。");
   }
 
   await prisma.llmProfile.delete({
