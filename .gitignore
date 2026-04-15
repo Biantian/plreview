@@ -32,6 +32,8 @@ pnpm-debug.log*
 
 # local git worktrees
 /.worktrees
+/.superpowers
+/release
 
 # macOS/editor noise
 .DS_Store
