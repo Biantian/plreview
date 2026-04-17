@@ -188,6 +188,20 @@ export async function getReviewDashboardData(limit?: number) {
   };
 }
 
+export async function deleteReviewJobs(reviewJobIds: string[]) {
+  const result = await prisma.reviewJob.deleteMany({
+    where: {
+      id: {
+        in: reviewJobIds,
+      },
+    },
+  });
+
+  return {
+    count: result.count,
+  };
+}
+
 export async function executeReviewJob(input: ExecuteReviewJobInput) {
   const { documentTitle, llmProfile, modelName, parsedDocument, reviewJobId, rules } = input;
 

@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { reviewJobFindMany, reviewBatchFindMany } = vi.hoisted(() => ({
+const { reviewJobFindMany, reviewBatchFindMany, reviewJobDeleteMany } = vi.hoisted(() => ({
   reviewJobFindMany: vi.fn(),
   reviewBatchFindMany: vi.fn(),
+  reviewJobDeleteMany: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     reviewJob: {
       findMany: reviewJobFindMany,
+      deleteMany: reviewJobDeleteMany,
     },
     reviewBatch: {
       findMany: reviewBatchFindMany,
@@ -16,12 +18,13 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { getReviewListItems } from "../../lib/review-jobs";
+import { deleteReviewJobs, getReviewListItems } from "../../lib/review-jobs";
 
 describe("review-jobs", () => {
   beforeEach(() => {
     reviewJobFindMany.mockReset();
     reviewBatchFindMany.mockReset();
+    reviewJobDeleteMany.mockReset();
   });
 
   it("hydrates batch names from batch ids without relying on reviewBatch include", async () => {
@@ -105,5 +108,23 @@ describe("review-jobs", () => {
         finishedAt: "2026-04-15T08:05:00.000Z",
       },
     ]);
+  });
+
+  it("deletes review jobs by ids and returns the deleted count", async () => {
+    reviewJobDeleteMany.mockResolvedValue({
+      count: 2,
+    });
+
+    await expect(deleteReviewJobs(["review_1", "review_2"])).resolves.toEqual({
+      count: 2,
+    });
+
+    expect(reviewJobDeleteMany).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: ["review_1", "review_2"],
+        },
+      },
+    });
   });
 });
