@@ -119,28 +119,21 @@ function mapReviewListItem(
   };
 }
 
-export async function getReviewListItems(limit?: number) {
-  const reviews = await prisma.reviewJob.findMany({
-    include: {
+async function hydrateReviewListItems(
+  reviews: Array<
+    ReviewJob & {
+      batchId: string | null;
       document: {
-        select: {
-          fileType: true,
-          title: true,
-          filename: true,
-        },
-      },
+        fileType: string;
+        title: string;
+        filename: string;
+      };
       _count: {
-        select: {
-          annotations: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    ...(typeof limit === "number" ? { take: limit } : {}),
-  });
-
+        annotations: number;
+      };
+    }
+  >,
+) {
   const batchIds = Array.from(
     new Set(
       reviews
@@ -170,6 +163,71 @@ export async function getReviewListItems(limit?: number) {
       batchName: review.batchId ? batchNameMap.get(review.batchId) ?? null : null,
     }),
   );
+}
+
+export async function getReviewListItems(limit?: number) {
+  const reviews = await prisma.reviewJob.findMany({
+    include: {
+      document: {
+        select: {
+          fileType: true,
+          title: true,
+          filename: true,
+        },
+      },
+      _count: {
+        select: {
+          annotations: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    ...(typeof limit === "number" ? { take: limit } : {}),
+  });
+
+  return hydrateReviewListItems(reviews);
+}
+
+export async function getReviewListItemsByIds(reviewJobIds: string[]) {
+  if (reviewJobIds.length === 0) {
+    return [];
+  }
+
+  const reviews = await prisma.reviewJob.findMany({
+    where: {
+      id: {
+        in: reviewJobIds,
+      },
+    },
+    include: {
+      document: {
+        select: {
+          fileType: true,
+          title: true,
+          filename: true,
+        },
+      },
+      _count: {
+        select: {
+          annotations: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const reviewById = new Map(reviews.map((review) => [review.id, review]));
+  const missingReviewIds = reviewJobIds.filter((reviewJobId) => !reviewById.has(reviewJobId));
+
+  if (missingReviewIds.length > 0) {
+    throw new Error(`未找到以下评审任务：${missingReviewIds.join("、")}。`);
+  }
+
+  return hydrateReviewListItems(reviewJobIds.map((reviewJobId) => reviewById.get(reviewJobId)!));
 }
 
 export async function getReviewDashboardData(limit?: number) {
