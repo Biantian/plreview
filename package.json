@@ -4,8 +4,8 @@
   "main": "electron/main.cjs",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "desktop:main": "cross-env ELECTRON_RENDERER_URL=http://localhost:3000 electron ./electron/main.cjs",
+    "dev": "node --import tsx ./scripts/run-with-dev-env.ts next dev",
+    "desktop:main": "node --import tsx ./scripts/run-with-dev-env.ts cross-env ELECTRON_RENDERER_URL=http://localhost:3000 electron ./electron/main.cjs",
     "desktop:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && npm run desktop:main\"",
     "build": "next build",
     "desktop:build": "next build --no-lint",
