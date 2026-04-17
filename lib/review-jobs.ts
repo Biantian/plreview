@@ -1,15 +1,10 @@
-import {
-  ReviewStatus,
-  Severity,
-  type LlmProfile,
-  type ReviewJob,
-  type Rule,
-} from "@prisma/client";
+import { Prisma, ReviewStatus, Severity, type LlmProfile, type ReviewJob, type Rule } from "@prisma/client";
 
 import { reviewDocument } from "@/lib/llm-client";
 import type { ParsedDocument } from "@/lib/parse-document";
 import { prisma } from "@/lib/prisma";
 import { resolveReviewRuntime } from "@/lib/review-runtime";
+import { reviewStatusLabel } from "@/lib/utils";
 
 type ExecuteReviewJobInput = {
   reviewJobId: string;
@@ -36,6 +31,70 @@ export type ReviewListItem = {
   createdAt: string;
   finishedAt: string | null;
 };
+
+export type ReviewReportRow = {
+  id: string;
+  title: string;
+  filename: string;
+  status: ReviewJob["status"];
+  reportMarkdown: string | null;
+};
+
+export function buildReviewJobSearchWhere(
+  query: string,
+): Prisma.ReviewJobWhereInput | undefined {
+  const textQuery = query.trim();
+  const normalizedQuery = textQuery.toLowerCase();
+
+  if (!textQuery) {
+    return undefined;
+  }
+
+  const matchingStatuses = (Object.values(ReviewStatus) as ReviewStatus[]).filter((status) => {
+    return `${status} ${reviewStatusLabel(status)}`.toLowerCase().includes(normalizedQuery);
+  });
+
+  const searchConditions: Prisma.ReviewJobWhereInput[] = [
+    {
+      document: {
+        title: {
+          contains: textQuery,
+        },
+      },
+    },
+    {
+      document: {
+        filename: {
+          contains: textQuery,
+        },
+      },
+    },
+    {
+      reviewBatch: {
+        name: {
+          contains: textQuery,
+        },
+      },
+    },
+    {
+      modelNameSnapshot: {
+        contains: textQuery,
+      },
+    },
+  ];
+
+  if (matchingStatuses.length > 0) {
+    searchConditions.push({
+      status: {
+        in: matchingStatuses,
+      },
+    });
+  }
+
+  return {
+    OR: searchConditions,
+  };
+}
 
 function mapReviewListItem(
   review: ReviewJob & {
@@ -68,28 +127,90 @@ function mapReviewListItem(
   };
 }
 
-export async function getReviewListItems(limit?: number) {
-  const reviews = await prisma.reviewJob.findMany({
-    include: {
-      document: {
-        select: {
-          fileType: true,
-          title: true,
-          filename: true,
-        },
-      },
-      _count: {
-        select: {
-          annotations: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    ...(typeof limit === "number" ? { take: limit } : {}),
-  });
+function isRecordNotFoundError(error: unknown) {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2025"
+  );
+}
 
+function isUniqueConstraintError(error: unknown) {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
+}
+
+function ruleVersionMatchesRule(
+  ruleVersion: {
+    nameSnapshot: string;
+    descriptionSnapshot: string;
+    promptTemplateSnapshot: string;
+    severitySnapshot: Rule["severity"];
+  },
+  rule: Rule,
+) {
+  return (
+    ruleVersion.nameSnapshot === rule.name &&
+    ruleVersion.descriptionSnapshot === rule.description &&
+    ruleVersion.promptTemplateSnapshot === rule.promptTemplate &&
+    ruleVersion.severitySnapshot === rule.severity
+  );
+}
+
+async function ensureRuleVersionSnapshot(rule: Rule) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const latest = await prisma.ruleVersion.findFirst({
+      where: { ruleId: rule.id },
+      orderBy: { version: "desc" },
+    });
+
+    if (latest && ruleVersionMatchesRule(latest, rule)) {
+      return latest;
+    }
+
+    try {
+      return await prisma.ruleVersion.create({
+        data: {
+          ruleId: rule.id,
+          version: (latest?.version ?? 0) + 1,
+          nameSnapshot: rule.name,
+          descriptionSnapshot: rule.description,
+          promptTemplateSnapshot: rule.promptTemplate,
+          severitySnapshot: rule.severity,
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`评审规则快照初始化失败：${rule.name}`);
+}
+
+async function hydrateReviewListItems(
+  reviews: Array<
+    ReviewJob & {
+      batchId: string | null;
+      document: {
+        fileType: string;
+        title: string;
+        filename: string;
+      };
+      _count: {
+        annotations: number;
+      };
+    }
+  >,
+) {
   const batchIds = Array.from(
     new Set(
       reviews
@@ -121,6 +242,118 @@ export async function getReviewListItems(limit?: number) {
   );
 }
 
+export async function getReviewListItems(limit?: number) {
+  const reviews = await prisma.reviewJob.findMany({
+    include: {
+      document: {
+        select: {
+          fileType: true,
+          title: true,
+          filename: true,
+        },
+      },
+      _count: {
+        select: {
+          annotations: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    ...(typeof limit === "number" ? { take: limit } : {}),
+  });
+
+  return hydrateReviewListItems(reviews);
+}
+
+export async function getReviewListItemsByIds(reviewJobIds: string[]) {
+  if (reviewJobIds.length === 0) {
+    return [];
+  }
+
+  const reviews = await prisma.reviewJob.findMany({
+    where: {
+      id: {
+        in: reviewJobIds,
+      },
+    },
+    include: {
+      document: {
+        select: {
+          fileType: true,
+          title: true,
+          filename: true,
+        },
+      },
+      _count: {
+        select: {
+          annotations: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const reviewById = new Map(reviews.map((review) => [review.id, review]));
+  const missingReviewIds = reviewJobIds.filter((reviewJobId) => !reviewById.has(reviewJobId));
+
+  if (missingReviewIds.length > 0) {
+    throw new Error(`未找到以下评审任务：${missingReviewIds.join("、")}。`);
+  }
+
+  return hydrateReviewListItems(reviewJobIds.map((reviewJobId) => reviewById.get(reviewJobId)!));
+}
+
+export async function getReviewReportRowsByIds(reviewJobIds: string[]) {
+  if (reviewJobIds.length === 0) {
+    return [];
+  }
+
+  const reviews = await prisma.reviewJob.findMany({
+    where: {
+      id: {
+        in: reviewJobIds,
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+      reportMarkdown: true,
+      document: {
+        select: {
+          title: true,
+          filename: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const reviewById = new Map(reviews.map((review) => [review.id, review]));
+  const missingReviewIds = reviewJobIds.filter((reviewJobId) => !reviewById.has(reviewJobId));
+
+  if (missingReviewIds.length > 0) {
+    throw new Error(`未找到以下评审任务：${missingReviewIds.join("、")}。`);
+  }
+
+  return reviewJobIds.map((reviewJobId) => {
+    const review = reviewById.get(reviewJobId)!;
+
+    return {
+      id: review.id,
+      title: review.document.title,
+      filename: review.document.filename,
+      status: review.status,
+      reportMarkdown: review.reportMarkdown,
+    };
+  });
+}
+
 export async function getReviewDashboardData(limit?: number) {
   const items = await getReviewListItems(limit);
 
@@ -137,6 +370,20 @@ export async function getReviewDashboardData(limit?: number) {
   };
 }
 
+export async function deleteReviewJobs(reviewJobIds: string[]) {
+  const result = await prisma.reviewJob.deleteMany({
+    where: {
+      id: {
+        in: reviewJobIds,
+      },
+    },
+  });
+
+  return {
+    count: result.count,
+  };
+}
+
 export async function executeReviewJob(input: ExecuteReviewJobInput) {
   const { documentTitle, llmProfile, modelName, parsedDocument, reviewJobId, rules } = input;
 
@@ -150,25 +397,7 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       },
     });
 
-    const ruleVersions = await Promise.all(
-      rules.map(async (rule) => {
-        const latest = await prisma.ruleVersion.findFirst({
-          where: { ruleId: rule.id },
-          orderBy: { version: "desc" },
-        });
-
-        return prisma.ruleVersion.create({
-          data: {
-            ruleId: rule.id,
-            version: (latest?.version ?? 0) + 1,
-            nameSnapshot: rule.name,
-            descriptionSnapshot: rule.description,
-            promptTemplateSnapshot: rule.promptTemplate,
-            severitySnapshot: rule.severity,
-          },
-        });
-      }),
-    );
+    const ruleVersions = await Promise.all(rules.map((rule) => ensureRuleVersionSnapshot(rule)));
 
     const runtime = resolveReviewRuntime({
       mode: llmProfile.mode,
@@ -254,15 +483,27 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       });
     });
   } catch (error) {
+    if (isRecordNotFoundError(error)) {
+      return;
+    }
+
     const message = error instanceof Error ? error.message : "评审失败，请稍后重试。";
 
-    await prisma.reviewJob.update({
-      where: { id: reviewJobId },
-      data: {
-        status: ReviewStatus.failed,
-        errorMessage: message,
-        finishedAt: new Date(),
-      },
-    });
+    try {
+      await prisma.reviewJob.update({
+        where: { id: reviewJobId },
+        data: {
+          status: ReviewStatus.failed,
+          errorMessage: message,
+          finishedAt: new Date(),
+        },
+      });
+    } catch (updateError) {
+      if (isRecordNotFoundError(updateError)) {
+        return;
+      }
+
+      throw updateError;
+    }
   }
 }

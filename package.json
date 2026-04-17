@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:bulk-regression": "vitest run tests/components/intake-workbench.test.tsx tests/desktop/create-review-batch.test.ts tests/lib/review-jobs-selection.test.ts tests/lib/review-jobs.test.ts tests/lib/review-jobs-export.test.ts tests/api/reviews-delete-route.test.ts tests/api/reviews-export-list-route.test.ts tests/api/reviews-export-report-route.test.ts tests/components/review-jobs-table.test.tsx",
     "test:watch": "vitest",
     "test:node": "node --import tsx --test tests/lib/*.test.ts",
     "db:generate": "prisma generate",
@@ -22,6 +23,7 @@
   "dependencies": {
     "@prisma/client": "^6.6.0",
     "clsx": "^2.1.1",
+    "jszip": "^3.10.1",
     "mammoth": "^1.8.0",
     "next": "^15.3.0",
     "openai": "^4.95.0",

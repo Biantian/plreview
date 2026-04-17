@@ -1,9 +1,21 @@
 import { ReviewStatus, Severity } from "@prisma/client";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { executeReviewJob } = vi.hoisted(() => ({
+  executeReviewJob: vi.fn(),
+}));
+
+vi.mock("@/lib/review-jobs", () => ({
+  executeReviewJob,
+}));
 
 import { createReviewBatch } from "@/desktop/core/reviews/create-review-batch";
 
 describe("createReviewBatch", () => {
+  beforeEach(() => {
+    executeReviewJob.mockReset();
+  });
+
   it("creates one batch and one pending review job per imported document", async () => {
     const batch = { id: "batch_1" };
 
@@ -48,6 +60,66 @@ describe("createReviewBatch", () => {
       },
       reviewJob: {
         createMany: vi.fn().mockResolvedValue({ count: 2 }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "review_job_1",
+            documentId: "doc_1",
+            document: {
+              title: "文档一",
+              filename: "doc-1.docx",
+              fileType: "docx",
+              rawText: "内容一",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容一",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容一",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+          {
+            id: "review_job_2",
+            documentId: "doc_2",
+            document: {
+              title: "文档二",
+              filename: "doc-2.docx",
+              fileType: "docx",
+              rawText: "内容二",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容二",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容二",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+        ]),
       },
     };
 
@@ -134,6 +206,37 @@ describe("createReviewBatch", () => {
       },
       reviewJob: {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "review_job_3",
+            documentId: "doc_1",
+            document: {
+              title: "文档一",
+              filename: "doc-1.docx",
+              fileType: "docx",
+              rawText: "内容一",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容一",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容一",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+        ]),
       },
     };
 
@@ -170,5 +273,258 @@ describe("createReviewBatch", () => {
         documents: [],
       }),
     ).rejects.toThrow("请至少选择一份待评审文档。");
+  });
+
+  it("starts review execution for each created job in a three-document batch", async () => {
+    const batch = { id: "batch_3" };
+    const tx = {
+      llmProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "profile_1",
+          provider: "dashscope",
+          defaultModel: "qwen-plus",
+          mode: "demo",
+          apiKeyEncrypted: null,
+        }),
+      },
+      rule: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rule_a",
+            name: "规则 A",
+            description: "说明 A",
+            promptTemplate: "提示 A",
+            severity: Severity.high,
+          },
+        ]),
+      },
+      ruleVersion: {
+        findFirst: vi.fn().mockResolvedValue({ id: "rule_version_a", ruleId: "rule_a" }),
+        create: vi.fn(),
+      },
+      reviewBatch: {
+        create: vi.fn().mockResolvedValue(batch),
+      },
+      reviewBatchRule: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      reviewJob: {
+        createMany: vi.fn().mockResolvedValue({ count: 3 }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "review_job_4",
+            documentId: "doc_1",
+            document: {
+              title: "文档一",
+              filename: "doc-1.docx",
+              fileType: "docx",
+              rawText: "内容一",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容一",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容一",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+          {
+            id: "review_job_5",
+            documentId: "doc_2",
+            document: {
+              title: "文档二",
+              filename: "doc-2.docx",
+              fileType: "docx",
+              rawText: "内容二",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容二",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容二",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+          {
+            id: "review_job_6",
+            documentId: "doc_3",
+            document: {
+              title: "文档三",
+              filename: "doc-3.md",
+              fileType: "md",
+              rawText: "内容三",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容三",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容三",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+        ]),
+      },
+    };
+
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx as never)),
+      ...tx,
+    };
+
+    executeReviewJob.mockResolvedValue(undefined);
+
+    await createReviewBatch(prisma as never, {
+      batchName: "批量评审",
+      llmProfileId: "profile_1",
+      ruleIds: ["rule_a"],
+      documents: [{ documentId: "doc_1" }, { documentId: "doc_2" }, { documentId: "doc_3" }],
+    });
+
+    expect(executeReviewJob).toHaveBeenCalledTimes(3);
+    expect(executeReviewJob).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        reviewJobId: expect.any(String),
+        documentTitle: "文档一",
+        modelName: "qwen-plus",
+      }),
+    );
+    expect(executeReviewJob).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        reviewJobId: expect.any(String),
+        documentTitle: "文档三",
+        modelName: "qwen-plus",
+      }),
+    );
+    expect(executeReviewJob).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        reviewJobId: expect.any(String),
+        documentTitle: "文档二",
+        modelName: "qwen-plus",
+      }),
+    );
+  });
+
+  it("fails fast when created jobs cannot be reloaded for execution", async () => {
+    const tx = {
+      llmProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "profile_1",
+          provider: "dashscope",
+          defaultModel: "qwen-plus",
+          mode: "demo",
+          apiKeyEncrypted: null,
+        }),
+      },
+      rule: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rule_a",
+            name: "规则 A",
+            description: "说明 A",
+            promptTemplate: "提示 A",
+            severity: Severity.high,
+          },
+        ]),
+      },
+      ruleVersion: {
+        findFirst: vi.fn().mockResolvedValue({ id: "rule_version_a", ruleId: "rule_a" }),
+        create: vi.fn(),
+      },
+      reviewBatch: {
+        create: vi.fn().mockResolvedValue({ id: "batch_4" }),
+      },
+      reviewBatchRule: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      reviewJob: {
+        createMany: vi.fn().mockResolvedValue({ count: 2 }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "review_job_6",
+            documentId: "doc_1",
+            document: {
+              title: "文档一",
+              filename: "doc-1.docx",
+              fileType: "docx",
+              rawText: "内容一",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容一",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容一",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+        ]),
+      },
+    };
+
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx as never)),
+      ...tx,
+    };
+
+    await expect(
+      createReviewBatch(prisma as never, {
+        batchName: "批量评审",
+        llmProfileId: "profile_1",
+        ruleIds: ["rule_a"],
+        documents: [{ documentId: "doc_1" }, { documentId: "doc_2" }],
+      }),
+    ).rejects.toThrow("评审任务初始化失败，请重试。");
+
+    expect(executeReviewJob).not.toHaveBeenCalled();
   });
 });

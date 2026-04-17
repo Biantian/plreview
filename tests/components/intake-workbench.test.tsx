@@ -369,6 +369,61 @@ describe("IntakeWorkbench", () => {
     expect(push).toHaveBeenCalledWith("/reviews");
   });
 
+  it("submits a three-document batch through the desktop launch flow", async () => {
+    const user = userEvent.setup();
+    const createReviewBatch = vi.fn().mockResolvedValue({ id: "batch_3" });
+
+    window.plreview.createReviewBatch = createReviewBatch;
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+            note: "标题：四月活动排期 · 1 个文档块",
+          },
+          {
+            id: "doc_2",
+            documentId: "doc_2",
+            name: "launch-plan.docx",
+            fileType: "docx",
+            status: "已导入",
+            note: "标题：四月活动玩法 · 3 个文档块",
+          },
+          {
+            id: "doc_3",
+            documentId: "doc_3",
+            name: "announcement.md",
+            fileType: "md",
+            status: "已导入",
+            note: "标题：上线公告 · 2 个文档块",
+          },
+        ]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
+
+    expect(screen.getByText("已导入 3 条")).toBeInTheDocument();
+    expect(screen.getByText("待评审 3 条")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("批次名称"), "四月批量回归");
+    await user.click(screen.getByRole("button", { name: "开始评审" }));
+
+    expect(createReviewBatch).toHaveBeenCalledWith({
+      batchName: "四月批量回归",
+      llmProfileId: "profile-1",
+      modelName: "qwen-plus",
+      ruleIds: ["rule-1"],
+      documents: [{ documentId: "doc_1" }, { documentId: "doc_2" }, { documentId: "doc_3" }],
+    });
+    expect(push).toHaveBeenCalledWith("/reviews");
+  });
+
   it("shows an error message when review batch creation fails", async () => {
     const user = userEvent.setup();
 
