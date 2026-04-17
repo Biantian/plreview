@@ -14,7 +14,7 @@ const navItems: NavItem[] = [
   { href: "/reviews/new", label: "新建评审" },
   { href: "/rules", label: "规则管理" },
   { href: "/models", label: "模型设置" },
-  { href: "/docs", label: "帮助" },
+  { href: "/docs", label: "文档" },
 ];
 
 function getActiveNavHref(currentPathname: string) {

@@ -39,9 +39,7 @@ export type ReviewListItem = {
 
 function mapReviewListItem(
   review: ReviewJob & {
-    reviewBatch: {
-      name: string;
-    } | null;
+    batchName: string | null;
     document: {
       fileType: string;
       title: string;
@@ -57,7 +55,7 @@ function mapReviewListItem(
     title: review.document.title,
     filename: review.document.filename,
     fileType: review.document.fileType,
-    batchName: review.reviewBatch?.name ?? null,
+    batchName: review.batchName,
     status: review.status,
     provider: review.providerSnapshot,
     modelName: review.modelNameSnapshot,
@@ -73,11 +71,6 @@ function mapReviewListItem(
 export async function getReviewListItems(limit?: number) {
   const reviews = await prisma.reviewJob.findMany({
     include: {
-      reviewBatch: {
-        select: {
-          name: true,
-        },
-      },
       document: {
         select: {
           fileType: true,
@@ -97,7 +90,31 @@ export async function getReviewListItems(limit?: number) {
     ...(typeof limit === "number" ? { take: limit } : {}),
   });
 
-  return reviews.map(mapReviewListItem);
+  const batchIds = Array.from(
+    new Set(reviews.map((review) => review.batchId).filter((batchId): batchId is string => Boolean(batchId))),
+  );
+  const reviewBatches =
+    batchIds.length === 0
+      ? []
+      : await prisma.reviewBatch.findMany({
+          where: {
+            id: {
+              in: batchIds,
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+  const batchNameMap = new Map(reviewBatches.map((batch) => [batch.id, batch.name]));
+
+  return reviews.map((review) =>
+    mapReviewListItem({
+      ...review,
+      batchName: review.batchId ? batchNameMap.get(review.batchId) ?? null : null,
+    }),
+  );
 }
 
 export async function getReviewDashboardData(limit?: number) {

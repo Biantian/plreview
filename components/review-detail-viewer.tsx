@@ -75,7 +75,7 @@ export function ReviewDetailViewer({
           <div>
             <p className="section-eyebrow">Annotated Source</p>
             <h2 className="section-title">原文命中</h2>
-            <p className="section-copy">正文与问题联动阅读，详细使用说明可在帮助页查看。</p>
+            <p className="section-copy">正文与问题联动阅读，详细使用说明可在文档页查看。</p>
           </div>
 
           <div className="document-stream document-reading-flow document-stream-dense">

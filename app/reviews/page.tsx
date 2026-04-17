@@ -17,7 +17,7 @@ export default async function ReviewsPage() {
             <span className="pill pill-brand">Review Queue</span>
             <span className="pill">后台任务中心</span>
             <Link className="button-ghost button-inline" href="/docs">
-              查看帮助
+              查看文档
             </Link>
           </div>
 

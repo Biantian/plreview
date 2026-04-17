@@ -1,148 +1,104 @@
+import { DocsShell, type DocsDocument } from "@/components/docs-shell";
+
+const documents: DocsDocument[] = [
+  {
+    id: "getting-started",
+    title: "快速开始",
+    description: "第一次上手时，先把评审主流程跑通。",
+    intro:
+      "推荐先确认模型与规则，再从新建评审页导入本地文件并发起批量任务，最后回到结果页做核对。",
+    sections: [
+      {
+        id: "prepare-config",
+        title: "准备模型与规则",
+        body: "先在模型设置里确认供应商连接、默认模型和 API Key，再到规则管理里只保留本次真正需要的规则。",
+      },
+      {
+        id: "launch-batch",
+        title: "发起批量评审",
+        body: "进入新建评审页后，按顺序填写批次信息、勾选规则、导入本地文件，确认出现可提交文件后再创建批次。",
+      },
+      {
+        id: "review-output",
+        title: "复核评审结果",
+        body: "任务完成后回到结果页，先看摘要和状态，再逐条核对命中项与原文证据，确认结论是否成立。",
+      },
+    ],
+  },
+  {
+    id: "models",
+    title: "模型设置",
+    description: "维护供应商、模型和密钥的统一入口。",
+    intro:
+      "模型设置页已经改成列表 + 抽屉流程，适合先浏览现有配置，再按需新增、编辑或启停。",
+    sections: [
+      {
+        id: "choose-provider",
+        title: "选择供应商与地址",
+        body: "如果接入的是兼容 OpenAI 风格的服务，先把 Base URL 填对，再检查供应商名称、接口格式和默认模型是否一致。",
+      },
+      {
+        id: "manage-profiles",
+        title: "通过列表管理配置",
+        body: "先在列表里搜索和筛选，再从工具栏或行操作打开抽屉编辑，避免页面内嵌表单打断浏览节奏。",
+      },
+      {
+        id: "verify-key",
+        title: "确认密钥可用性",
+        body: "只要 API Key 无效，后台任务就会失败；提交前最好确认密钥尾号和启用状态都符合预期。",
+      },
+    ],
+  },
+  {
+    id: "rules",
+    title: "规则管理",
+    description: "把检查口径写清楚，减少误判和返工。",
+    intro:
+      "规则页现在聚焦于列表浏览和弹窗编辑，帮助你先整理规则库，再决定这次批量评审具体启用哪些条目。",
+    sections: [
+      {
+        id: "define-goal",
+        title: "先写检查目标",
+        body: "明确这条规则到底在看什么，例如一致性、缺失项、越权表述、数字错误或格式偏差。",
+      },
+      {
+        id: "define-criteria",
+        title: "再写判断标准",
+        body: "避免只写抽象要求，而是清楚说明什么情况算命中、什么情况算通过，并尽量给出可观察的判断条件。",
+      },
+      {
+        id: "set-severity",
+        title: "定义输出与严重程度",
+        body: "建议补齐问题摘要、命中依据、修正建议和风险等级，让结果页里的问题更容易被复核和处理。",
+      },
+    ],
+  },
+  {
+    id: "results",
+    title: "结果阅读",
+    description: "顺着摘要、命中项和原文联动做复核。",
+    intro:
+      "结果页不是只看总数，而是要结合任务状态、问题列表和正文定位，判断这次评审是否可靠、哪里需要回头调整。",
+    sections: [
+      {
+        id: "check-status",
+        title: "先看整体状态",
+        body: "如果任务是 completed，可以直接进入核对；如果是 partial 或 failed，先查看错误信息和可恢复的任务片段。",
+      },
+      {
+        id: "inspect-evidence",
+        title: "再看命中与证据",
+        body: "每个问题都应该能对应回原文位置，优先检查证据片段是否完整，是否真的支持当前结论。",
+      },
+      {
+        id: "decide-next-step",
+        title: "最后决定下一步",
+        body: "如果是规则问题，回到规则管理调整描述；如果是模型问题，回到模型设置切换配置；如果是文档问题，重新导入再跑一次。",
+      },
+    ],
+  },
+];
+
 export default function DocsPage() {
-  return (
-    <div className="page-stack">
-      <section className="panel stack-lg">
-        <div className="page-header">
-          <p className="section-eyebrow">Docs</p>
-          <h1 className="section-title">帮助中心</h1>
-          <p className="section-copy">
-            这里把模型配置、规则编写、提交流程和结果阅读整理成一份连续的操作说明。先看工作流程，再按需跳到对应章节。
-          </p>
-        </div>
-
-        <div className="inline-actions">
-          <span className="pill pill-brand">建议先读工作流程</span>
-          <span className="pill">模型配置</span>
-          <span className="pill">规则编写</span>
-          <span className="pill">结果阅读</span>
-        </div>
-
-        <section className="stack" id="workflow">
-          <div className="page-header">
-            <h2 className="subsection-title">工作流程</h2>
-            <p className="section-copy">
-              这条路径适合第一次上手。目标是先确认模型和规则都准备好，再把文档送进评审队列，最后回到结果页做核对。
-            </p>
-          </div>
-
-          <div className="list">
-            <article className="list-item">
-              <div>
-                <h3>1. 先检查模型配置</h3>
-                <p className="muted">确认供应商连接可用、默认模型已选好、API Key 已填写或至少有可用的演示配置。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>2. 再确认本次要用的规则</h3>
-                <p className="muted">只保留这次评审真正需要的规则，避免一次性塞入太多口径，导致结果难以解释。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>3. 上传文档并提交评审</h3>
-                <p className="muted">文档会被拆成段落和片段，系统会把规则和模型一起送去后台处理，前台只负责显示状态。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>4. 回到结果页做复核</h3>
-                <p className="muted">等任务完成后，打开结果页先看摘要，再逐条检查命中项和原文位置，确认结论是否成立。</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="stack" id="models">
-          <div className="page-header">
-            <h2 className="subsection-title">模型配置</h2>
-            <p className="section-copy">
-              模型设置页负责维护供应商、Base URL、默认模型和 API Key。帮助页只说明怎么选，不替代实际配置界面。
-            </p>
-          </div>
-
-          <div className="list">
-            <article className="list-item">
-              <div>
-                <h3>供应商与连接地址</h3>
-                <p className="muted">如果你接入的是兼容 OpenAI 风格的服务，先填对 Base URL，再确认供应商名称和接口格式没有偏差。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>默认模型</h3>
-                <p className="muted">默认模型应该覆盖日常评审场景，优先选稳定、成本可控、输出格式一致的配置，减少每次手动切换。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>API Key 与可用性</h3>
-                <p className="muted">只要密钥无效，后台任务就会失败；提交前最好先确认模型页显示的连接状态和密钥尾号是否符合预期。</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="stack" id="rules">
-          <div className="page-header">
-            <h2 className="subsection-title">规则编写</h2>
-            <p className="section-copy">
-              规则要像清晰的评审指令，而不是抽象的愿望清单。把目标、判断标准、输出格式和严重程度都写明白，模型才更容易稳定执行。
-            </p>
-          </div>
-
-          <div className="list">
-            <article className="list-item">
-              <div>
-                <h3>先写检查目标</h3>
-                <p className="muted">说明这条规则到底在看什么，例如一致性、缺失项、越权表述、数字错误或格式偏差。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>再写判断标准</h3>
-                <p className="muted">避免只说“注意表达”，而是明确什么情况算命中、什么情况算通过，并尽量给出可观察的判断条件。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>最后定义命中输出</h3>
-                <p className="muted">建议写清楚问题摘要、命中的原文依据、建议修正方式，以及是否需要标记为低/中/高风险。</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="stack" id="results">
-          <div className="page-header">
-            <h2 className="subsection-title">结果阅读</h2>
-            <p className="section-copy">
-              结果页不是只看总分，而是要顺着摘要、命中列表和原文联动逐步核对。这样能快速判断结论是否可靠，哪里需要回头修规则。
-            </p>
-          </div>
-
-          <div className="list">
-            <article className="list-item">
-              <div>
-                <h3>先看整体状态</h3>
-                <p className="muted">如果任务是 completed，可以直接进入核对；如果是 partial 或 failed，先看错误信息和可恢复的任务片段。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>再看命中与证据</h3>
-                <p className="muted">每个问题都应该能对应回原文位置。优先检查命中片段是否足够完整，是否真的支持当前结论。</p>
-              </div>
-            </article>
-            <article className="list-item">
-              <div>
-                <h3>最后决定下一步</h3>
-                <p className="muted">如果是规则问题，回到规则页调整描述；如果是模型问题，回到模型页换配置；如果是文档问题，重新上传再跑一次。</p>
-              </div>
-            </article>
-          </div>
-        </section>
-      </section>
-    </div>
-  );
+  return <DocsShell documents={documents} />;
 }

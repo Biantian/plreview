@@ -49,7 +49,7 @@ npm run dev
 
 默认地址为 [http://localhost:3000](http://localhost:3000)。
 
-SQLite 数据会落在 [prisma/dev.db](/Users/jiangdongzhe/Dev/ai-project/plreview/prisma/dev.db)。
+SQLite 数据会落在 [prisma/dev.db](./prisma/dev.db)。
 
 ## 桌面应用调试
 
@@ -68,7 +68,7 @@ npm run desktop:build
 npm run desktop:dist
 ```
 
-打包配置位于 [electron-builder.yml](/Users/jiangdongzhe/Dev/ai-project/plreview/.worktrees/codex-local-first-desktop-delivery/electron-builder.yml)。产物默认输出到 `release/`。
+打包配置位于 [electron-builder.yml](./electron-builder.yml)。产物默认输出到 `release/`。
 
 ### Win11 打包（当前环境推荐）
 
@@ -80,17 +80,24 @@ npm run desktop:dist -- --win --x64 --dir
 
 若需要正式安装包（`nsis`），建议在 Win11 主机上执行 `npm run desktop:dist -- --win --x64`，避免跨平台下载和签名工具链导致的不稳定。
 
-Win11 手工烟测步骤见 [2026-04-14-win11-smoke-test-checklist.md](/Users/jiangdongzhe/Dev/ai-project/plreview/.worktrees/codex-local-first-desktop-delivery/docs/qa/2026-04-14-win11-smoke-test-checklist.md)。
+Win11 手工烟测步骤见 [2026-04-14-win11-smoke-test-checklist.md](./docs/qa/2026-04-14-win11-smoke-test-checklist.md)。
 
 ## 模型接口
 
 - `baseURL`: `https://dashscope.aliyuncs.com/compatible-mode/v1`
 - 目前仅支持 OpenAI 兼容格式接口
 
+## 界面文案规范
+
+- 不要把设计说明、布局说明、实现说明直接写进产品界面。
+- 这类说明只允许出现在代码注释、设计文档、实现文档或评审说明中。
+- 面向用户的界面文案只保留任务信息、状态信息、操作提示和业务内容。
+
 ## 使用流程
 
-1. 在顶部“模型设置”中创建一个实时或演示配置
-2. 在“规则管理”中确认启用规则
-3. 在“新建评审”中选择模型配置与模型名称
-4. 在“评审列表”中等待后台任务完成
-5. 在“帮助”页查看完整说明
+1. 在“模型设置”中通过列表查看现有配置，按需打开抽屉新增或编辑模型
+2. 在“规则管理”中确认本次评审真正需要启用的规则
+3. 在“新建评审”中按单列流程依次填写批次信息、勾选规则并导入本地文件
+4. 确认至少有 1 个可提交文件后，点击“开始批量评审”创建任务
+5. 在“评审列表”中等待后台任务完成，并进入结果页做核对
+6. 需要查操作说明时，打开“文档”页，按左侧目录和右侧文章目录快速跳转

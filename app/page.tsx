@@ -58,7 +58,7 @@ export default async function HomePage() {
                 打开评审列表
               </Link>
               <Link className="button-ghost" href="/docs">
-                查看帮助
+                查看文档
               </Link>
             </div>
           </div>
