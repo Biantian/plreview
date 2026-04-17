@@ -32,6 +32,14 @@ export type ReviewListItem = {
   finishedAt: string | null;
 };
 
+export type ReviewReportRow = {
+  id: string;
+  title: string;
+  filename: string;
+  status: ReviewJob["status"];
+  reportMarkdown: string | null;
+};
+
 export function buildReviewJobSearchWhere(
   query: string,
 ): Prisma.ReviewJobWhereInput | undefined {
@@ -228,6 +236,53 @@ export async function getReviewListItemsByIds(reviewJobIds: string[]) {
   }
 
   return hydrateReviewListItems(reviewJobIds.map((reviewJobId) => reviewById.get(reviewJobId)!));
+}
+
+export async function getReviewReportRowsByIds(reviewJobIds: string[]) {
+  if (reviewJobIds.length === 0) {
+    return [];
+  }
+
+  const reviews = await prisma.reviewJob.findMany({
+    where: {
+      id: {
+        in: reviewJobIds,
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+      reportMarkdown: true,
+      document: {
+        select: {
+          title: true,
+          filename: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const reviewById = new Map(reviews.map((review) => [review.id, review]));
+  const missingReviewIds = reviewJobIds.filter((reviewJobId) => !reviewById.has(reviewJobId));
+
+  if (missingReviewIds.length > 0) {
+    throw new Error(`未找到以下评审任务：${missingReviewIds.join("、")}。`);
+  }
+
+  return reviewJobIds.map((reviewJobId) => {
+    const review = reviewById.get(reviewJobId)!;
+
+    return {
+      id: review.id,
+      title: review.document.title,
+      filename: review.document.filename,
+      status: review.status,
+      reportMarkdown: review.reportMarkdown,
+    };
+  });
 }
 
 export async function getReviewDashboardData(limit?: number) {

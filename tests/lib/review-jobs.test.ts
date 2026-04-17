@@ -22,6 +22,7 @@ import {
   deleteReviewJobs,
   getReviewListItems,
   getReviewListItemsByIds,
+  getReviewReportRowsByIds,
 } from "../../lib/review-jobs";
 
 describe("review-jobs", () => {
@@ -283,6 +284,67 @@ describe("review-jobs", () => {
     ]);
 
     await expect(getReviewListItemsByIds(["review_1", "review_2"])).rejects.toThrow(
+      "未找到以下评审任务：review_1。",
+    );
+  });
+
+  it("preserves the requested id order when loading report rows by ids", async () => {
+    reviewJobFindMany.mockResolvedValue([
+      {
+        id: "review_2",
+        status: "failed",
+        reportMarkdown: "# report 2",
+        document: {
+          title: "第二条",
+          filename: "second.txt",
+        },
+      },
+      {
+        id: "review_1",
+        status: "completed",
+        reportMarkdown: "# report 1",
+        document: {
+          title: "第一条",
+          filename: "first.docx",
+        },
+      },
+    ]);
+
+    const rows = await getReviewReportRowsByIds(["review_1", "review_2"]);
+
+    expect(rows.map((row) => row.id)).toEqual(["review_1", "review_2"]);
+    expect(rows).toEqual([
+      {
+        id: "review_1",
+        title: "第一条",
+        filename: "first.docx",
+        status: "completed",
+        reportMarkdown: "# report 1",
+      },
+      {
+        id: "review_2",
+        title: "第二条",
+        filename: "second.txt",
+        status: "failed",
+        reportMarkdown: "# report 2",
+      },
+    ]);
+  });
+
+  it("throws when a requested report row id is missing", async () => {
+    reviewJobFindMany.mockResolvedValue([
+      {
+        id: "review_2",
+        status: "completed",
+        reportMarkdown: "# report 2",
+        document: {
+          title: "第二条",
+          filename: "second.txt",
+        },
+      },
+    ]);
+
+    await expect(getReviewReportRowsByIds(["review_1", "review_2"])).rejects.toThrow(
       "未找到以下评审任务：review_1。",
     );
   });
