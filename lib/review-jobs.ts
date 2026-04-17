@@ -1,15 +1,10 @@
-import {
-  ReviewStatus,
-  Severity,
-  type LlmProfile,
-  type ReviewJob,
-  type Rule,
-} from "@prisma/client";
+import { Prisma, ReviewStatus, Severity, type LlmProfile, type ReviewJob, type Rule } from "@prisma/client";
 
 import { reviewDocument } from "@/lib/llm-client";
 import type { ParsedDocument } from "@/lib/parse-document";
 import { prisma } from "@/lib/prisma";
 import { resolveReviewRuntime } from "@/lib/review-runtime";
+import { reviewStatusLabel } from "@/lib/utils";
 
 type ExecuteReviewJobInput = {
   reviewJobId: string;
@@ -36,6 +31,62 @@ export type ReviewListItem = {
   createdAt: string;
   finishedAt: string | null;
 };
+
+export function buildReviewJobSearchWhere(
+  query: string,
+): Prisma.ReviewJobWhereInput | undefined {
+  const textQuery = query.trim();
+  const normalizedQuery = textQuery.toLowerCase();
+
+  if (!textQuery) {
+    return undefined;
+  }
+
+  const matchingStatuses = (Object.values(ReviewStatus) as ReviewStatus[]).filter((status) => {
+    return `${status} ${reviewStatusLabel(status)}`.toLowerCase().includes(normalizedQuery);
+  });
+
+  const searchConditions: Prisma.ReviewJobWhereInput[] = [
+    {
+      document: {
+        title: {
+          contains: textQuery,
+        },
+      },
+    },
+    {
+      document: {
+        filename: {
+          contains: textQuery,
+        },
+      },
+    },
+    {
+      reviewBatch: {
+        name: {
+          contains: textQuery,
+        },
+      },
+    },
+    {
+      modelNameSnapshot: {
+        contains: textQuery,
+      },
+    },
+  ];
+
+  if (matchingStatuses.length > 0) {
+    searchConditions.push({
+      status: {
+        in: matchingStatuses,
+      },
+    });
+  }
+
+  return {
+    OR: searchConditions,
+  };
+}
 
 function mapReviewListItem(
   review: ReviewJob & {
