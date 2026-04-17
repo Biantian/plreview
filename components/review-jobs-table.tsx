@@ -433,7 +433,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   }
 
   const deleteDialogDescription = selectionHasRunningOrPending
-    ? "你选中了仍在运行或排队中的任务，删除后这些任务会被直接终止。"
+    ? "你选中了仍在运行或排队中的任务，删除后这些任务会从列表中移除，后台处理不一定会立即停止。"
     : `确认删除这 ${selectedCount} 条评审任务吗？删除后无法恢复。`;
 
   return (

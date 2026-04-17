@@ -417,7 +417,7 @@ describe("ReviewJobsTable", () => {
 
     expect(screen.getByRole("dialog", { name: "删除评审任务" })).toBeInTheDocument();
     expect(
-      screen.getByText("你选中了仍在运行或排队中的任务，删除后这些任务会被直接终止。"),
+      screen.getByText("你选中了仍在运行或排队中的任务，删除后这些任务会从列表中移除，后台处理不一定会立即停止。"),
     ).toBeInTheDocument();
   });
 

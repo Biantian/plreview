@@ -127,6 +127,15 @@ function mapReviewListItem(
   };
 }
 
+function isRecordNotFoundError(error: unknown) {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2025"
+  );
+}
+
 async function hydrateReviewListItems(
   reviews: Array<
     ReviewJob & {
@@ -432,15 +441,27 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       });
     });
   } catch (error) {
+    if (isRecordNotFoundError(error)) {
+      return;
+    }
+
     const message = error instanceof Error ? error.message : "评审失败，请稍后重试。";
 
-    await prisma.reviewJob.update({
-      where: { id: reviewJobId },
-      data: {
-        status: ReviewStatus.failed,
-        errorMessage: message,
-        finishedAt: new Date(),
-      },
-    });
+    try {
+      await prisma.reviewJob.update({
+        where: { id: reviewJobId },
+        data: {
+          status: ReviewStatus.failed,
+          errorMessage: message,
+          finishedAt: new Date(),
+        },
+      });
+    } catch (updateError) {
+      if (isRecordNotFoundError(updateError)) {
+        return;
+      }
+
+      throw updateError;
+    }
   }
 }
