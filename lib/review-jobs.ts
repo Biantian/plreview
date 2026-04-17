@@ -91,7 +91,11 @@ export async function getReviewListItems(limit?: number) {
   });
 
   const batchIds = Array.from(
-    new Set(reviews.map((review) => review.batchId).filter((batchId): batchId is string => Boolean(batchId))),
+    new Set(
+      reviews
+        .map((review) => review.batchId)
+        .filter((batchId): batchId is string => Boolean(batchId)),
+    ),
   );
   const reviewBatches =
     batchIds.length === 0
