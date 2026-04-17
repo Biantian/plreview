@@ -3,6 +3,7 @@
 ## Scope
 
 - Validate that newly created review jobs do not stay in `pending` / `running` forever without state change
+- Validate that the desktop batch-creation flow actually launches background review execution
 - Validate that deleting a `pending` / `running` review no longer causes unsafe persistence errors
 - Provide a fixed evidence-gathering flow when “任务一直处理中” appears again
 
@@ -10,11 +11,15 @@
 
 This checklist exists because we found a recurring failure mode in the review-job lifecycle:
 
+- the desktop `createReviewBatch()` path created `ReviewJob` rows with `pending` status
+- but it never launched `executeReviewJob()` after the batch was created
+- when users created several tasks from the desktop flow, the jobs could sit in `pending` forever and look like “一直处理中”
+
+We also keep a secondary regression check for “deleted while in flight” because that bug class made stuck-job diagnosis noisier:
+
 - a review job could be deleted while `executeReviewJob()` was still running
 - the background execution path then tried to update a deleted `ReviewJob` row
-- that produced record-not-found persistence errors and made the “处理中” lifecycle harder to reason about
-
-The current fix does **not** implement hard cancellation of the upstream model call. It makes deleted-row persistence safe and keeps the UI copy honest.
+- the current fix makes deleted-row persistence safe, but it is **not** hard cancellation of the upstream model call
 
 ## Automated Regression Gate
 
@@ -22,6 +27,7 @@ Run from repository root:
 
 ```bash
 npm test -- --run \
+  tests/desktop/create-review-batch.test.ts \
   tests/lib/review-jobs-selection.test.ts \
   tests/lib/review-jobs.test.ts \
   tests/lib/review-jobs-export.test.ts \
@@ -31,10 +37,10 @@ npm test -- --run \
   tests/components/review-jobs-table.test.tsx
 ```
 
-Expected:
+Expected after the current fix:
 
-- `7` test files pass
-- `39` tests pass
+- `8` test files pass
+- all tests pass with `0` failures
 - `0` failures
 
 If this gate fails, do not trust any manual smoke result until the failing suite is understood.
@@ -61,7 +67,7 @@ Pass criteria:
 Observe for each task:
 
 - initial state should appear as `pending`
-- state should move to `running` or directly to a terminal state
+- within the next refresh cycle, state should move to `running` or directly to a terminal state
 - each task should eventually end in one of:
   - `completed`
   - `partial`
@@ -69,10 +75,36 @@ Observe for each task:
 
 Pass criteria:
 
-- no task remains in `pending` / `running` forever without any later transition
+- no task remains in `pending` forever without any later transition
 - the table refresh keeps reflecting the latest state
 
-### 3) “Stuck processing” timeout rule
+### 3) Desktop execution-start evidence
+
+If any task remains in `pending` beyond the normal first refresh window, verify whether execution ever started.
+
+Database snapshot:
+
+```bash
+sqlite3 prisma/dev.db "
+  select id, batchId, status, createdAt, finishedAt, errorMessage
+  from ReviewJob
+  order by createdAt desc
+  limit 20;
+"
+```
+
+Runtime evidence:
+
+- watch the app terminal right after clicking `开始批量评审`
+- confirm there is no immediate exception from `review-batches:create`
+- if available, add a temporary log around `createReviewBatch()` and `executeReviewJob()` to confirm launch count matches created jobs
+
+Pass criteria:
+
+- a newly created desktop batch causes one execution launch per created `ReviewJob`
+- if the batch cannot reload all created jobs, the create flow fails fast instead of leaving silent `pending` tasks
+
+### 4) “Stuck processing” timeout rule
 
 Treat a task as suspicious when **all** of the following are true:
 
@@ -87,7 +119,7 @@ Current recommended triage threshold:
 
 If the threshold is crossed, stop and collect evidence instead of repeatedly recreating jobs.
 
-### 4) Running-job delete smoke
+### 5) Running-job delete smoke
 
 1. Create at least 1 task and wait until it shows `pending` or `running`.
 2. In `评审列表`, select that task.
@@ -102,7 +134,7 @@ Pass criteria:
 - no unhandled crash or visible server error is introduced
 - subsequent refresh still works
 
-### 5) Post-delete follow-up
+### 6) Post-delete follow-up
 
 After deleting a running/pending task:
 
@@ -158,7 +190,7 @@ Classify the failure into one bucket before fixing:
 
 1. `Never started`
    - job remains `pending`
-   - no sign that execution began
+   - desktop batch creation finished, but no sign that `executeReviewJob()` was launched
 2. `Started but never finalized`
    - job moved to `running`
    - no terminal write-back
@@ -175,7 +207,7 @@ Do not jump to fixes until the bucket is known.
 This bug class is considered fixed only when all three are true:
 
 - automated regression gate is green
-- the three-task creation smoke reaches terminal states
+- the three-task creation smoke reaches terminal states and does not leave silent `pending` tasks
 - deleting a running/pending task no longer causes unsafe persistence behavior
 
 ## Follow-up Notes
