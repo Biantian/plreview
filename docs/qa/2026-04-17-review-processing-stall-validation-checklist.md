@@ -21,6 +21,12 @@ We also keep a secondary regression check for “deleted while in flight” beca
 - the background execution path then tried to update a deleted `ReviewJob` row
 - the current fix makes deleted-row persistence safe, but it is **not** hard cancellation of the upstream model call
 
+During validation we also uncovered a concurrency bug in rule snapshot creation:
+
+- multiple jobs starting at the same time could each read the same latest `RuleVersion`
+- they then tried to create the same next `(ruleId, version)` pair
+- Prisma raised `P2002` on `RuleVersion(ruleId, version)`, causing the whole review job to fail immediately
+
 ## Automated Regression Gate
 
 Run from repository root:
@@ -182,6 +188,7 @@ Capture:
 
 - terminal output from the running app process
 - any Prisma error mentioning missing records or failed updates
+- any Prisma `P2002` error mentioning `RuleVersion` or `(ruleId, version)`
 - any model/API timeout or transport error
 
 ### D. Repro classification
@@ -197,7 +204,10 @@ Classify the failure into one bucket before fixing:
 3. `Deleted while in flight`
    - row removed by user action
    - later persistence or logging still references the deleted job
-4. `External dependency stall`
+4. `Concurrent snapshot conflict`
+   - multiple jobs fail quickly with the same Prisma `P2002`
+   - stack trace points to `ruleVersion.create()` / `(ruleId, version)`
+5. `External dependency stall`
    - model/API call hangs or times out
 
 Do not jump to fixes until the bucket is known.

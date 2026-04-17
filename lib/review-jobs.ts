@@ -136,6 +136,66 @@ function isRecordNotFoundError(error: unknown) {
   );
 }
 
+function isUniqueConstraintError(error: unknown) {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
+}
+
+function ruleVersionMatchesRule(
+  ruleVersion: {
+    nameSnapshot: string;
+    descriptionSnapshot: string;
+    promptTemplateSnapshot: string;
+    severitySnapshot: Rule["severity"];
+  },
+  rule: Rule,
+) {
+  return (
+    ruleVersion.nameSnapshot === rule.name &&
+    ruleVersion.descriptionSnapshot === rule.description &&
+    ruleVersion.promptTemplateSnapshot === rule.promptTemplate &&
+    ruleVersion.severitySnapshot === rule.severity
+  );
+}
+
+async function ensureRuleVersionSnapshot(rule: Rule) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const latest = await prisma.ruleVersion.findFirst({
+      where: { ruleId: rule.id },
+      orderBy: { version: "desc" },
+    });
+
+    if (latest && ruleVersionMatchesRule(latest, rule)) {
+      return latest;
+    }
+
+    try {
+      return await prisma.ruleVersion.create({
+        data: {
+          ruleId: rule.id,
+          version: (latest?.version ?? 0) + 1,
+          nameSnapshot: rule.name,
+          descriptionSnapshot: rule.description,
+          promptTemplateSnapshot: rule.promptTemplate,
+          severitySnapshot: rule.severity,
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`评审规则快照初始化失败：${rule.name}`);
+}
+
 async function hydrateReviewListItems(
   reviews: Array<
     ReviewJob & {
@@ -337,25 +397,7 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       },
     });
 
-    const ruleVersions = await Promise.all(
-      rules.map(async (rule) => {
-        const latest = await prisma.ruleVersion.findFirst({
-          where: { ruleId: rule.id },
-          orderBy: { version: "desc" },
-        });
-
-        return prisma.ruleVersion.create({
-          data: {
-            ruleId: rule.id,
-            version: (latest?.version ?? 0) + 1,
-            nameSnapshot: rule.name,
-            descriptionSnapshot: rule.description,
-            promptTemplateSnapshot: rule.promptTemplate,
-            severitySnapshot: rule.severity,
-          },
-        });
-      }),
-    );
+    const ruleVersions = await Promise.all(rules.map((rule) => ensureRuleVersionSnapshot(rule)));
 
     const runtime = resolveReviewRuntime({
       mode: llmProfile.mode,

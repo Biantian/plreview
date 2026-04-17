@@ -62,6 +62,12 @@ function createNotFoundError() {
   });
 }
 
+function createUniqueConstraintError() {
+  return Object.assign(new Error("Unique constraint failed."), {
+    code: "P2002",
+  });
+}
+
 function createTransactionContext() {
   return {
     reviewJob: {
@@ -450,6 +456,92 @@ describe("review-jobs", () => {
         errorMessage: null,
         finishedAt: null,
       },
+    });
+  });
+
+  it("reuses the latest matching rule version after a concurrent unique conflict", async () => {
+    reviewJobUpdate.mockResolvedValueOnce(undefined);
+
+    let finalJobUpdate: ReturnType<typeof vi.fn> | null = null;
+    reviewJobTransaction.mockImplementation(
+      async (callback: (tx: ReturnType<typeof createTransactionContext>) => Promise<void>) => {
+        const tx = createTransactionContext();
+        finalJobUpdate = tx.reviewJob.update;
+        await callback(tx);
+      },
+    );
+
+    ruleVersionFindFirst
+      .mockResolvedValueOnce({
+        id: "rule_version_1",
+        ruleId: "rule_1",
+        version: 1,
+        nameSnapshot: "旧规则",
+        descriptionSnapshot: "旧说明",
+        promptTemplateSnapshot: "旧提示",
+        severitySnapshot: "medium",
+      })
+      .mockResolvedValueOnce({
+        id: "rule_version_2",
+        ruleId: "rule_1",
+        version: 2,
+        nameSnapshot: "新规则",
+        descriptionSnapshot: "新说明",
+        promptTemplateSnapshot: "新提示",
+        severitySnapshot: "high",
+      });
+    ruleVersionCreate.mockRejectedValueOnce(createUniqueConstraintError());
+
+    reviewDocument.mockResolvedValue({
+      response: {
+        summary: "完成",
+        overallScore: 92,
+        ruleFindings: [],
+      },
+      reportMarkdown: "# report",
+      mode: "live",
+    });
+    resolveReviewRuntime.mockReturnValue({
+      mode: "live",
+      apiKey: "test-key",
+    });
+
+    await expect(
+      executeReviewJob({
+        reviewJobId: "review_1",
+        documentTitle: "四月活动方案",
+        modelName: "qwen-plus",
+        llmProfile: {
+          provider: "DashScope",
+          mode: "live",
+          apiKeyEncrypted: "encrypted",
+          baseUrl: null,
+        } as never,
+        parsedDocument: {
+          rawText: "正文",
+          blocks: [],
+        } as never,
+        rules: [
+          {
+            id: "rule_1",
+            name: "新规则",
+            description: "新说明",
+            promptTemplate: "新提示",
+            severity: "high",
+          },
+        ] as never,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(ruleVersionFindFirst).toHaveBeenCalledTimes(2);
+    expect(ruleVersionCreate).toHaveBeenCalledTimes(1);
+    expect(finalJobUpdate).toHaveBeenCalledWith({
+      where: { id: "review_1" },
+      data: expect.objectContaining({
+        status: "completed",
+        errorMessage: null,
+        reportMarkdown: "# report",
+      }),
     });
   });
 });
