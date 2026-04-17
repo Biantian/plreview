@@ -32,24 +32,22 @@ During validation we also uncovered a concurrency bug in rule snapshot creation:
 Run from repository root:
 
 ```bash
-npm test -- --run \
-  tests/desktop/create-review-batch.test.ts \
-  tests/lib/review-jobs-selection.test.ts \
-  tests/lib/review-jobs.test.ts \
-  tests/lib/review-jobs-export.test.ts \
-  tests/api/reviews-delete-route.test.ts \
-  tests/api/reviews-export-list-route.test.ts \
-  tests/api/reviews-export-report-route.test.ts \
-  tests/components/review-jobs-table.test.tsx
+npm run test:bulk-regression
 ```
 
 Expected after the current fix:
 
-- `8` test files pass
-- all tests pass with `0` failures
+- the dedicated bulk regression suite passes
 - `0` failures
 
 If this gate fails, do not trust any manual smoke result until the failing suite is understood.
+
+Any feature that touches one of the following paths must add or update at least one automated test in this suite before merge:
+
+- desktop batch creation
+- review execution lifecycle
+- bulk selection / delete / export
+- intake workbench submission and file counts
 
 ## Manual Validation Flow
 

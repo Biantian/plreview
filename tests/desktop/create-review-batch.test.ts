@@ -275,7 +275,7 @@ describe("createReviewBatch", () => {
     ).rejects.toThrow("请至少选择一份待评审文档。");
   });
 
-  it("starts review execution for each created job", async () => {
+  it("starts review execution for each created job in a three-document batch", async () => {
     const batch = { id: "batch_3" };
     const tx = {
       llmProfile: {
@@ -309,7 +309,7 @@ describe("createReviewBatch", () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       reviewJob: {
-        createMany: vi.fn().mockResolvedValue({ count: 2 }),
+        createMany: vi.fn().mockResolvedValue({ count: 3 }),
         findMany: vi.fn().mockResolvedValue([
           {
             id: "review_job_4",
@@ -369,6 +369,35 @@ describe("createReviewBatch", () => {
               ],
             },
           },
+          {
+            id: "review_job_6",
+            documentId: "doc_3",
+            document: {
+              title: "文档三",
+              filename: "doc-3.md",
+              fileType: "md",
+              rawText: "内容三",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容三",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容三",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
         ]),
       },
     };
@@ -384,15 +413,23 @@ describe("createReviewBatch", () => {
       batchName: "批量评审",
       llmProfileId: "profile_1",
       ruleIds: ["rule_a"],
-      documents: [{ documentId: "doc_1" }, { documentId: "doc_2" }],
+      documents: [{ documentId: "doc_1" }, { documentId: "doc_2" }, { documentId: "doc_3" }],
     });
 
-    expect(executeReviewJob).toHaveBeenCalledTimes(2);
+    expect(executeReviewJob).toHaveBeenCalledTimes(3);
     expect(executeReviewJob).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         reviewJobId: expect.any(String),
         documentTitle: "文档一",
+        modelName: "qwen-plus",
+      }),
+    );
+    expect(executeReviewJob).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        reviewJobId: expect.any(String),
+        documentTitle: "文档三",
         modelName: "qwen-plus",
       }),
     );
