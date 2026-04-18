@@ -69,6 +69,30 @@ npm run desktop:dist
 ```
 
 打包配置位于 [electron-builder.yml](./electron-builder.yml)。产物默认输出到 `release/`。
+`npm run desktop:dist` 现在会在打包完成后自动输出一份机器可读的桌面产物体积报告。
+
+如需单独查看当前本地产物清单与体积，可执行：
+
+```bash
+npm run desktop:report-size
+```
+
+该命令会输出 JSON，汇总当前工作区内与桌面打包直接相关的本地产物，例如：
+
+- `.next/standalone`
+- `.next/static`
+- `electron/main.cjs`
+- `electron/preload.cjs`
+- `desktop/worker/background-entry.cjs`
+- `desktop/worker/task-entry.cjs`
+- `release/`
+
+调整桌面打包输入后，建议先运行：
+
+```bash
+npm test -- --run tests/desktop/desktop-packaging.test.ts tests/desktop/desktop-size-report.test.ts
+npm run desktop:report-size
+```
 
 ### Win11 打包（当前环境推荐）
 

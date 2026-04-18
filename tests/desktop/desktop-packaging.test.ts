@@ -17,6 +17,11 @@ describe("desktop packaging scripts", () => {
     expect(packageJson.scripts["desktop:main"]).not.toContain("electron ./electron/main.ts");
   });
 
+  it("keeps desktop distribution reporting wired through an explicit script", () => {
+    expect(packageJson.scripts["desktop:dist"]).toContain("electron-builder");
+    expect(packageJson.scripts["desktop:dist"]).toContain("npm run desktop:report-size");
+  });
+
   it("keeps the preload bootstrap free of tsx runtime hooks", () => {
     const preloadBootstrap = fs.readFileSync(path.resolve("electron/preload.cjs"), "utf8");
 
@@ -28,6 +33,9 @@ describe("desktop packaging scripts", () => {
     const workerBootstrap = fs.readFileSync(path.resolve("desktop/worker/background-entry.cjs"), "utf8");
 
     expect(builderConfig).toContain("desktop/worker/**/*.{ts,cjs}");
+    expect(builderConfig).toContain(".next/standalone/**");
+    expect(builderConfig).toContain(".next/static/**");
+    expect(builderConfig).not.toContain(".next/**");
     expect(workerBootstrap).toContain('require("tsx/cjs")');
     expect(workerBootstrap).not.toContain('require("./background-entry.ts")');
   });

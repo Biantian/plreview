@@ -8,7 +8,6 @@ files:
   - desktop/worker/**/*.{ts,cjs}
   - .next/standalone/**
   - .next/static/**
-  - public/**
   - package.json
 extraMetadata:
   main: electron/main.cjs
