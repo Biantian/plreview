@@ -33,25 +33,80 @@ describe("createWorkerManager", () => {
     vi.restoreAllMocks();
   });
 
-  it("forks exactly one long-lived background worker", async () => {
-    fork.mockReturnValue({
-      postMessage: vi.fn(),
-      on: vi.fn(),
-      once: vi.fn(),
-      kill: vi.fn(),
-    } as never);
+  function createWorkerProcessMock() {
+    const handlers: Record<string, (...args: unknown[]) => void> = {};
+
+    return {
+      handlers,
+      process: {
+        on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+          handlers[event] = handler;
+        }),
+        once: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+          handlers[event] = handler;
+        }),
+        off: vi.fn(),
+        postMessage: vi.fn(),
+        kill: vi.fn(),
+      } as never,
+    };
+  }
+
+  it("waits for the worker-ready handshake before resolving", async () => {
+    const worker = createWorkerProcessMock();
+    fork.mockReturnValue(worker.process);
 
     const manager = createWorkerManager();
+    const startPromise = manager.start();
+
+    expect(fork).toHaveBeenCalledTimes(1);
+
+    let settled = false;
+    startPromise.then(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    worker.handlers.message?.({ type: "desktop-worker:started" });
+
+    await expect(startPromise).resolves.toBe(worker.process);
+  });
+
+  it("does not fork twice when the worker is healthy", async () => {
+    const worker = createWorkerProcessMock();
+    fork.mockReturnValue(worker.process);
+
+    const manager = createWorkerManager();
+    const startPromise = manager.start();
+    worker.handlers.message?.({ type: "desktop-worker:started" });
+    await startPromise;
+
     await manager.start();
 
     expect(fork).toHaveBeenCalledTimes(1);
-    expect(fork).toHaveBeenCalledWith(
-      expect.stringContaining("background-entry.ts"),
-      [],
-      expect.objectContaining({
-        execArgv: ["-r", expect.stringContaining("background-entry.cjs")],
-      }),
-    );
+  });
+
+  it("clears cached state after an unexpected exit so a later start reforks", async () => {
+    const firstWorker = createWorkerProcessMock();
+    const secondWorker = createWorkerProcessMock();
+    fork.mockReturnValueOnce(firstWorker.process).mockReturnValueOnce(secondWorker.process);
+
+    const manager = createWorkerManager();
+    const startPromise = manager.start();
+    firstWorker.handlers.message?.({ type: "desktop-worker:started" });
+    await startPromise;
+
+    firstWorker.handlers.exit?.(1, null);
+
+    expect(manager.getChild()).toBeNull();
+
+    const restartPromise = manager.start();
+    secondWorker.handlers.message?.({ type: "desktop-worker:started" });
+    await restartPromise;
+
+    expect(fork).toHaveBeenCalledTimes(2);
   });
 
   it("keeps the background entry alive after startup", async () => {
