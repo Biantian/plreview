@@ -36,8 +36,9 @@ export async function POST(request: Request) {
       bookType: "xlsx",
       type: "buffer",
     });
+    const bytes = new Uint8Array(buffer);
 
-    return new Response(buffer, {
+    return new Response(bytes, {
       headers: {
         "Content-Type": XLSX_CONTENT_TYPE,
         "Content-Disposition": `attachment; filename="${buildExportFilename()}"`,

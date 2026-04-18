@@ -384,6 +384,179 @@ export async function deleteReviewJobs(reviewJobIds: string[]) {
   };
 }
 
+type RetryableReviewRecord = {
+  id: string;
+  status: ReviewStatus;
+  modelNameSnapshot: string;
+  llmProfile: LlmProfile | null;
+  document: {
+    title: string;
+    filename: string;
+    fileType: string;
+    rawText: string;
+    blocks: ParsedDocument["blocks"];
+    paragraphs: ParsedDocument["paragraphs"];
+  };
+  reviewBatch: {
+    batchRules: Array<{
+      ruleVersion: {
+        rule: Rule | null;
+      };
+    }>;
+  } | null;
+};
+
+function getRetryableRules(review: RetryableReviewRecord) {
+  const rules =
+    review.reviewBatch?.batchRules
+      .map((batchRule) => batchRule.ruleVersion.rule)
+      .filter((rule): rule is Rule => Boolean(rule)) ?? [];
+
+  if (rules.length === 0) {
+    throw new Error("当前评审任务缺少可重试的规则配置。");
+  }
+
+  return rules;
+}
+
+function toRetryParsedDocument(document: RetryableReviewRecord["document"]): ParsedDocument {
+  return {
+    title: document.title,
+    filename: document.filename,
+    fileType: document.fileType,
+    rawText: document.rawText,
+    blocks: document.blocks.map((block) => ({
+      blockIndex: block.blockIndex,
+      blockType: block.blockType,
+      text: block.text,
+      level: block.level,
+      listKind: block.listKind,
+      charStart: block.charStart,
+      charEnd: block.charEnd,
+    })),
+    paragraphs: document.paragraphs.map((paragraph) => ({
+      paragraphIndex: paragraph.paragraphIndex,
+      text: paragraph.text,
+      charStart: paragraph.charStart,
+      charEnd: paragraph.charEnd,
+    })),
+  };
+}
+
+async function prepareRetryReviewJob(reviewJobId: string) {
+  const review = await prisma.reviewJob.findUnique({
+    where: {
+      id: reviewJobId,
+    },
+    include: {
+      document: {
+        select: {
+          title: true,
+          filename: true,
+          fileType: true,
+          rawText: true,
+          blocks: {
+            orderBy: {
+              blockIndex: "asc",
+            },
+            select: {
+              blockIndex: true,
+              blockType: true,
+              text: true,
+              level: true,
+              listKind: true,
+              charStart: true,
+              charEnd: true,
+            },
+          },
+          paragraphs: {
+            orderBy: {
+              paragraphIndex: "asc",
+            },
+            select: {
+              paragraphIndex: true,
+              text: true,
+              charStart: true,
+              charEnd: true,
+            },
+          },
+        },
+      },
+      llmProfile: true,
+      reviewBatch: {
+        include: {
+          batchRules: {
+            include: {
+              ruleVersion: {
+                include: {
+                  rule: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!review) {
+    throw new Error("未找到对应的评审任务。");
+  }
+
+  if (review.status !== ReviewStatus.failed && review.status !== ReviewStatus.partial) {
+    throw new Error("只有失败或部分完成的任务支持重试。");
+  }
+
+  if (!review.llmProfile) {
+    throw new Error("当前评审任务缺少模型配置，无法重试。");
+  }
+
+  const rules = getRetryableRules(review);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.annotation.deleteMany({
+      where: {
+        reviewJobId,
+      },
+    });
+
+    await tx.reviewJob.update({
+      where: {
+        id: reviewJobId,
+      },
+      data: {
+        status: ReviewStatus.pending,
+        summary: null,
+        overallScore: null,
+        reportMarkdown: null,
+        errorMessage: null,
+        finishedAt: null,
+      },
+    });
+  });
+
+  return {
+    reviewJobId,
+    documentTitle: review.document.title,
+    modelName: review.modelNameSnapshot,
+    llmProfile: review.llmProfile,
+    parsedDocument: toRetryParsedDocument(review.document),
+    rules,
+  } satisfies ExecuteReviewJobInput;
+}
+
+export async function queueReviewJobRetry(reviewJobId: string) {
+  const input = await prepareRetryReviewJob(reviewJobId);
+
+  void executeReviewJob(input);
+}
+
+export async function retryReviewJob(reviewJobId: string) {
+  const input = await prepareRetryReviewJob(reviewJobId);
+
+  return executeReviewJob(input);
+}
+
 export async function executeReviewJob(input: ExecuteReviewJobInput) {
   const { documentTitle, llmProfile, modelName, parsedDocument, reviewJobId, rules } = input;
 

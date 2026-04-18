@@ -51,6 +51,10 @@ function canOpenReview(status: ReviewStatus) {
   return status !== ReviewStatus.pending && status !== ReviewStatus.running;
 }
 
+function canRetryReview(status: ReviewStatus) {
+  return status === ReviewStatus.failed || status === ReviewStatus.partial;
+}
+
 type SelectionMode = "manual" | "all-filtered";
 
 type SelectionState = {
@@ -125,7 +129,16 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   });
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
   const [isBulkWorking, setIsBulkWorking] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteScope, setDeleteScope] = useState<
+    | {
+        mode: "selection";
+      }
+    | {
+        mode: "row";
+        reviewId: string;
+      }
+    | null
+  >(null);
   const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(query);
   const keyword = deferredQuery.trim().toLowerCase();
@@ -138,10 +151,15 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   const hasSelection = selectedCount > 0;
   const allFilteredSelected =
     filteredItems.length > 0 && selectedVisibleCount === filteredItems.length;
-  const selectionHasRunningOrPending = selectedReviews.some(
+  const allFilteredMode = selection.mode === "all-filtered";
+  const deleteTargetReviews =
+    deleteScope?.mode === "row"
+      ? reviews.filter((item) => item.id === deleteScope.reviewId)
+      : selectedReviews;
+  const deleteTargetCount = deleteTargetReviews.length;
+  const deleteTargetHasRunningOrPending = deleteTargetReviews.some(
     (item) => item.status === ReviewStatus.pending || item.status === ReviewStatus.running,
   );
-  const allFilteredMode = selection.mode === "all-filtered";
 
   useEffect(() => {
     if (!selectAllCheckboxRef.current) {
@@ -385,17 +403,21 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   }
 
   async function handleDeleteSelected() {
-    if (typeof window === "undefined" || typeof window.fetch !== "function" || !hasSelection) {
+    if (typeof window === "undefined" || typeof window.fetch !== "function" || !deleteScope) {
       return;
     }
 
-    setIsDeleteDialogOpen(false);
+    setDeleteScope(null);
     setIsBulkWorking(true);
 
     try {
-      const response = await fetch("/api/reviews/delete", {
-        body: JSON.stringify(
-          allFilteredMode
+      const payload =
+        deleteScope.mode === "row"
+          ? {
+              allMatching: false,
+              selectedIds: [deleteScope.reviewId],
+            }
+          : allFilteredMode
             ? {
                 allMatching: true,
                 query: deferredQuery.trim(),
@@ -403,8 +425,9 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
             : {
                 allMatching: false,
                 selectedIds: selectedReviews.map((item) => item.id),
-              },
-        ),
+              };
+      const response = await fetch("/api/reviews/delete", {
+        body: JSON.stringify(payload),
         headers: {
           "content-type": "application/json",
         },
@@ -417,10 +440,14 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
         return;
       }
 
-      const payload = (await response.json()) as { deletedCount?: number };
-      const deletedCount = Number.isFinite(payload.deletedCount) ? payload.deletedCount! : 0;
+      const responsePayload = (await response.json()) as { deletedCount?: number };
+      const deletedCount = typeof responsePayload.deletedCount === "number"
+        ? responsePayload.deletedCount
+        : 0;
 
-      clearSelection();
+      if (deleteScope.mode === "selection") {
+        clearSelection();
+      }
       setBulkFeedback(
         deletedCount > 0 ? `已删除 ${deletedCount} 条评审任务。` : "已删除评审任务，列表已同步最新结果。",
       );
@@ -432,9 +459,43 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     }
   }
 
-  const deleteDialogDescription = selectionHasRunningOrPending
+  async function retrySingleReview(reviewId: string) {
+    if (typeof window === "undefined" || typeof window.fetch !== "function") {
+      return;
+    }
+
+    setIsBulkWorking(true);
+    setBulkFeedback(null);
+
+    try {
+      const response = await fetch("/api/reviews/retry", {
+        body: JSON.stringify({
+          reviewJobId: reviewId,
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const message = await readResponseMessage(response, "重新发起评审失败。");
+        setBulkFeedback(`重试失败：${message}`);
+        return;
+      }
+
+      setBulkFeedback("已重新发起 1 条评审任务。");
+      await refreshReviews();
+    } catch (error) {
+      setBulkFeedback(error instanceof Error ? `重试失败：${error.message}` : "重试失败，请稍后重试。");
+    } finally {
+      setIsBulkWorking(false);
+    }
+  }
+
+  const deleteDialogDescription = deleteTargetHasRunningOrPending
     ? "你选中了仍在运行或排队中的任务，删除后这些任务会从列表中移除，后台处理不一定会立即停止。"
-    : `确认删除这 ${selectedCount} 条评审任务吗？删除后无法恢复。`;
+    : `确认删除这 ${deleteTargetCount} 条评审任务吗？删除后无法恢复。`;
 
   return (
     <section className="card stack">
@@ -485,7 +546,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
             <button
               className="button-secondary button-inline"
               disabled={isBulkWorking}
-              onClick={() => setIsDeleteDialogOpen(true)}
+              onClick={() => setDeleteScope({ mode: "selection" })}
               type="button"
             >
               删除
@@ -500,8 +561,8 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
         confirmLabel="仍要删除"
         destructive
         description={deleteDialogDescription}
-        open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
+        open={deleteScope !== null}
+        onClose={() => setDeleteScope(null)}
         onConfirm={() => void handleDeleteSelected()}
         title="删除评审任务"
       />
@@ -589,6 +650,17 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                     <td>{formatDate(item.createdAt)}</td>
                     <td>
                       <div className="table-actions">
+                        {canRetryReview(item.status) ? (
+                          <button
+                            aria-label={`重试评审任务 ${item.title}`}
+                            className="button-ghost button-inline"
+                            disabled={isBulkWorking}
+                            onClick={() => void retrySingleReview(item.id)}
+                            type="button"
+                          >
+                            重试
+                          </button>
+                        ) : null}
                         {canOpenReview(item.status) ? (
                           <Link className="button-ghost button-inline" href={`/reviews/${item.id}`}>
                             查看详情
@@ -596,6 +668,15 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                         ) : (
                           <span className="pill pill-brand">处理中</span>
                         )}
+                        <button
+                          aria-label={`删除评审任务 ${item.title}`}
+                          className="button-ghost button-inline"
+                          disabled={isBulkWorking}
+                          onClick={() => setDeleteScope({ mode: "row", reviewId: item.id })}
+                          type="button"
+                        >
+                          删除
+                        </button>
                       </div>
                     </td>
                   </tr>

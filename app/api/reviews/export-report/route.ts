@@ -49,8 +49,9 @@ export async function POST(request: Request) {
     }
 
     const archive = await buildReviewReportArchive(exportableRows);
+    const bytes = new Uint8Array(archive);
 
-    return new Response(archive, {
+    return new Response(bytes, {
       headers: {
         "Content-Type": ZIP_CONTENT_TYPE,
         "Content-Disposition": `attachment; filename="${buildExportFilename()}"`,

@@ -2,20 +2,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   reviewJobFindMany,
+  reviewJobFindUnique,
   reviewBatchFindMany,
   reviewJobDeleteMany,
   reviewJobUpdate,
   reviewJobTransaction,
+  annotationDeleteMany,
   ruleVersionFindFirst,
   ruleVersionCreate,
   reviewDocument,
   resolveReviewRuntime,
 } = vi.hoisted(() => ({
   reviewJobFindMany: vi.fn(),
+  reviewJobFindUnique: vi.fn(),
   reviewBatchFindMany: vi.fn(),
   reviewJobDeleteMany: vi.fn(),
   reviewJobUpdate: vi.fn(),
   reviewJobTransaction: vi.fn(),
+  annotationDeleteMany: vi.fn(),
   ruleVersionFindFirst: vi.fn(),
   ruleVersionCreate: vi.fn(),
   reviewDocument: vi.fn(),
@@ -26,8 +30,12 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     reviewJob: {
       findMany: reviewJobFindMany,
+      findUnique: reviewJobFindUnique,
       update: reviewJobUpdate,
       deleteMany: reviewJobDeleteMany,
+    },
+    annotation: {
+      deleteMany: annotationDeleteMany,
     },
     reviewBatch: {
       findMany: reviewBatchFindMany,
@@ -54,6 +62,7 @@ import {
   getReviewListItems,
   getReviewListItemsByIds,
   getReviewReportRowsByIds,
+  retryReviewJob,
 } from "../../lib/review-jobs";
 
 function createNotFoundError() {
@@ -70,6 +79,9 @@ function createUniqueConstraintError() {
 
 function createTransactionContext() {
   return {
+    annotation: {
+      deleteMany: annotationDeleteMany,
+    },
     reviewJob: {
       update: vi.fn(),
     },
@@ -83,10 +95,12 @@ function createTransactionContext() {
 describe("review-jobs", () => {
   beforeEach(() => {
     reviewJobFindMany.mockReset();
+    reviewJobFindUnique.mockReset();
     reviewBatchFindMany.mockReset();
     reviewJobDeleteMany.mockReset();
     reviewJobUpdate.mockReset();
     reviewJobTransaction.mockReset();
+    annotationDeleteMany.mockReset();
     ruleVersionFindFirst.mockReset();
     ruleVersionCreate.mockReset();
     reviewDocument.mockReset();
@@ -192,6 +206,159 @@ describe("review-jobs", () => {
         },
       },
     });
+  });
+
+  it("clears previous output and re-executes a failed review job", async () => {
+    reviewJobFindUnique.mockResolvedValue({
+      id: "review_1",
+      status: "failed",
+      modelNameSnapshot: "qwen-plus",
+      llmProfile: {
+        id: "profile_1",
+        provider: "DashScope",
+        mode: "live",
+        apiKeyEncrypted: "encrypted",
+        baseUrl: "https://example.com",
+      },
+      document: {
+        title: "四月活动方案",
+        filename: "april-plan.docx",
+        fileType: "docx",
+        rawText: "正文",
+        blocks: [
+          {
+            blockIndex: 0,
+            blockType: "paragraph",
+            text: "正文",
+            level: null,
+            listKind: null,
+            charStart: 0,
+            charEnd: 2,
+          },
+        ],
+        paragraphs: [
+          {
+            paragraphIndex: 0,
+            text: "正文",
+            charStart: 0,
+            charEnd: 2,
+          },
+        ],
+      },
+      reviewBatch: {
+        batchRules: [
+          {
+            ruleVersion: {
+              rule: {
+                id: "rule_1",
+                name: "目标清晰度",
+                category: "基础质量",
+                description: "检查目标是否清晰",
+                promptTemplate: "请检查目标",
+                severity: "medium",
+              },
+            },
+          },
+        ],
+      },
+    });
+    reviewJobTransaction.mockImplementation(
+      async (callback: (tx: ReturnType<typeof createTransactionContext>) => Promise<void>) => {
+        const tx = createTransactionContext();
+        await callback(tx);
+      },
+    );
+    reviewJobUpdate.mockResolvedValue(undefined);
+    ruleVersionFindFirst.mockResolvedValue({
+      id: "rule_version_1",
+      ruleId: "rule_1",
+      version: 1,
+      nameSnapshot: "目标清晰度",
+      descriptionSnapshot: "检查目标是否清晰",
+      promptTemplateSnapshot: "请检查目标",
+      severitySnapshot: "medium",
+    });
+    reviewDocument.mockResolvedValue({
+      response: {
+        summary: "完成",
+        overallScore: 88,
+        ruleFindings: [],
+      },
+      reportMarkdown: "# report",
+      mode: "live",
+    });
+    resolveReviewRuntime.mockReturnValue({
+      mode: "live",
+      apiKey: "test-key",
+    });
+
+    await expect(retryReviewJob("review_1")).resolves.toBeUndefined();
+
+    expect(reviewJobFindUnique).toHaveBeenCalledWith({
+      where: {
+        id: "review_1",
+      },
+      include: {
+        document: {
+          select: {
+            title: true,
+            filename: true,
+            fileType: true,
+            rawText: true,
+            blocks: {
+              orderBy: {
+                blockIndex: "asc",
+              },
+              select: {
+                blockIndex: true,
+                blockType: true,
+                text: true,
+                level: true,
+                listKind: true,
+                charStart: true,
+                charEnd: true,
+              },
+            },
+            paragraphs: {
+              orderBy: {
+                paragraphIndex: "asc",
+              },
+              select: {
+                paragraphIndex: true,
+                text: true,
+                charStart: true,
+                charEnd: true,
+              },
+            },
+          },
+        },
+        llmProfile: true,
+        reviewBatch: {
+          include: {
+            batchRules: {
+              include: {
+                ruleVersion: {
+                  include: {
+                    rule: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(annotationDeleteMany).toHaveBeenCalledWith({
+      where: {
+        reviewJobId: "review_1",
+      },
+    });
+    expect(reviewDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentTitle: "四月活动方案",
+        model: "qwen-plus",
+      }),
+    );
   });
 
   it("loads review list items by ids", async () => {

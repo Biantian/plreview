@@ -10,7 +10,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
-    exclude: [".worktrees/**", "node_modules/**", ".next/**"],
+    exclude: [".worktrees/**", "node_modules/**", ".next/**", "release/**"],
     environmentMatchGlobs: [
       ["tests/desktop/**/*.test.ts", "node"],
       ["tests/desktop/**/*.test.tsx", "node"],

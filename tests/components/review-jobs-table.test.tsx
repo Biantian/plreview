@@ -421,6 +421,68 @@ describe("ReviewJobsTable", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens row-level delete confirmation and deletes a single review without bulk selection", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(global.fetch);
+
+    mockReviewsResponse([
+      {
+        annotationsCount: 1,
+        batchName: null,
+        createdAt: "2026-04-13T10:00:00.000Z",
+        fileType: "docx",
+        filename: "玩法.docx",
+        finishedAt: "2026-04-13T12:00:00.000Z",
+        id: "1",
+        modelName: "qwen-plus",
+        overallScore: 80,
+        status: "completed",
+        title: "玩法复盘",
+      },
+    ]);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ deletedCount: 1 }), { status: 200 }),
+    );
+    mockReviewsResponse([]);
+
+    render(
+      <ReviewJobsTable
+        items={[
+          {
+            annotationsCount: 1,
+            batchName: null,
+            createdAt: "2026-04-13T10:00:00.000Z",
+            fileType: "docx",
+            filename: "玩法.docx",
+            finishedAt: "2026-04-13T12:00:00.000Z",
+            id: "1",
+            modelName: "qwen-plus",
+            overallScore: 80,
+            status: "completed",
+            title: "玩法复盘",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "删除评审任务 玩法复盘" }));
+    expect(screen.getByRole("dialog", { name: "删除评审任务" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/reviews/delete",
+      expect.objectContaining({
+        body: JSON.stringify({
+          allMatching: false,
+          selectedIds: ["1"],
+        }),
+        method: "DELETE",
+      }),
+    );
+    expect(screen.getByText("已删除 1 条评审任务。")).toBeInTheDocument();
+  });
+
   it("shows delete success feedback from the server and refreshes afterward", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(global.fetch);
@@ -480,6 +542,78 @@ describe("ReviewJobsTable", () => {
       }),
     );
     expect(screen.getByText("已删除 1 条评审任务。")).toBeInTheDocument();
+  });
+
+  it("shows a row-level retry action for failed reviews and posts to the retry route", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(global.fetch);
+
+    mockReviewsResponse([
+      {
+        annotationsCount: 0,
+        batchName: "五月批次",
+        createdAt: "2026-04-13T10:00:00.000Z",
+        fileType: "docx",
+        filename: "包装.docx",
+        finishedAt: "2026-04-13T11:00:00.000Z",
+        id: "2",
+        modelName: "qwen-max",
+        overallScore: null,
+        status: "failed",
+        title: "活动包装",
+      },
+    ]);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ queued: true }), { status: 200 }),
+    );
+    mockReviewsResponse([
+      {
+        annotationsCount: 0,
+        batchName: "五月批次",
+        createdAt: "2026-04-13T10:00:00.000Z",
+        fileType: "docx",
+        filename: "包装.docx",
+        finishedAt: null,
+        id: "2",
+        modelName: "qwen-max",
+        overallScore: null,
+        status: "pending",
+        title: "活动包装",
+      },
+    ]);
+
+    render(
+      <ReviewJobsTable
+        items={[
+          {
+            annotationsCount: 0,
+            batchName: "五月批次",
+            createdAt: "2026-04-13T10:00:00.000Z",
+            fileType: "docx",
+            filename: "包装.docx",
+            finishedAt: "2026-04-13T11:00:00.000Z",
+            id: "2",
+            modelName: "qwen-max",
+            overallScore: null,
+            status: "failed",
+            title: "活动包装",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "重试评审任务 活动包装" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/reviews/retry",
+      expect.objectContaining({
+        body: JSON.stringify({
+          reviewJobId: "2",
+        }),
+        method: "POST",
+      }),
+    );
+    expect(screen.getByText("已重新发起 1 条评审任务。")).toBeInTheDocument();
   });
 
   it("calls export-report and shows skipped feedback", async () => {
