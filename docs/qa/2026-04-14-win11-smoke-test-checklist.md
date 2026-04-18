@@ -30,6 +30,21 @@ Current verification snapshot:
 - `PLReview.exe` size: about `180 MB`
 - `PLReview.exe` sha256: `56c84d8317c6a2048d00bd4c9685c9432d9b7971d05a5e6f9a4bcd79dc7f89bc`
 
+## Desktop Optimization Validation
+
+Run this verification sequence after any desktop runtime-boundary or packaging change:
+
+```bash
+npm test -- --run tests/desktop/worker-protocol.test.ts tests/desktop/worker-manager.test.ts tests/desktop/background-router.test.ts tests/desktop/task-runner.test.ts tests/desktop/runtime-metrics.test.ts tests/desktop/desktop-packaging.test.ts tests/desktop/desktop-size-report.test.ts
+npm run desktop:report-size
+```
+
+If you need a fresh Win11 smoke package after that, forwarded args still work through:
+
+```bash
+npm run desktop:dist -- --win --x64 --dir
+```
+
 ## Win11 Manual Smoke Steps
 
 ### 1) Launch and bootstrap
