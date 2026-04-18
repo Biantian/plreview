@@ -160,6 +160,60 @@ describe("createWorkerManager", () => {
     expect(onWorkerStopped).toHaveBeenCalledTimes(1);
   });
 
+  it("treats an unrequested exit with code 0 as an error", async () => {
+    const worker = createWorkerProcessMock();
+    const onWorkerError = vi.fn();
+    const onWorkerStopped = vi.fn();
+    fork.mockReturnValue(worker.process as never);
+
+    const manager = createWorkerManager({ onWorkerError, onWorkerStopped });
+    const startPromise = manager.start();
+    worker.emit("message", { type: "desktop-worker:started" });
+    await startPromise;
+
+    worker.emit("exit", 0);
+
+    expect(onWorkerStopped).not.toHaveBeenCalled();
+    expect(onWorkerError).toHaveBeenCalledTimes(1);
+    expect(onWorkerError.mock.calls[0]?.[0]).toEqual(
+      new Error("Desktop worker exited (0)"),
+    );
+  });
+
+  it("ignores stale exit callbacks after stopping and immediately restarting", async () => {
+    const firstWorker = createWorkerProcessMock();
+    const secondWorker = createWorkerProcessMock();
+    const onWorkerReady = vi.fn();
+    const onWorkerError = vi.fn();
+    const onWorkerStopped = vi.fn();
+    fork
+      .mockReturnValueOnce(firstWorker.process as never)
+      .mockReturnValueOnce(secondWorker.process as never);
+
+    const manager = createWorkerManager({
+      onWorkerReady,
+      onWorkerError,
+      onWorkerStopped,
+    });
+
+    const firstStart = manager.start();
+    firstWorker.emit("message", { type: "desktop-worker:started" });
+    await firstStart;
+
+    manager.stop();
+
+    const secondStart = manager.start();
+    secondWorker.emit("message", { type: "desktop-worker:started" });
+    await secondStart;
+
+    firstWorker.emit("exit", 0);
+
+    expect(onWorkerReady).toHaveBeenCalledTimes(2);
+    expect(onWorkerStopped).not.toHaveBeenCalled();
+    expect(onWorkerError).not.toHaveBeenCalled();
+    expect(manager.getChild()).toBe(secondWorker.process);
+  });
+
   it("resolves invoke with the matching worker response payload", async () => {
     const worker = createWorkerProcessMock();
     fork.mockReturnValue(worker.process as never);

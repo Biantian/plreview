@@ -19,7 +19,8 @@ type WorkerManagerOptions = {
 export function createWorkerManager(options: WorkerManagerOptions = {}) {
   let child: ReturnType<typeof utilityProcess.fork> | null = null;
   let pendingStart: Promise<ReturnType<typeof utilityProcess.fork>> | null = null;
-  let stoppingWorker: ReturnType<typeof utilityProcess.fork> | null = null;
+  let activeWorkerGeneration = 0;
+  let requestedStopGeneration: number | null = null;
   const pendingRequests = new Map<
     string,
     {
@@ -51,6 +52,10 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
     return new Error(`Desktop worker ${type} at ${location}`);
   }
 
+  function isActiveGeneration(generation: number) {
+    return generation === activeWorkerGeneration;
+  }
+
   return {
     async start() {
       if (child) {
@@ -61,6 +66,9 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
         return pendingStart;
       }
 
+      const generation = activeWorkerGeneration + 1;
+      activeWorkerGeneration = generation;
+      requestedStopGeneration = null;
       options.onWorkerStarting?.();
       const worker = utilityProcess.fork(workerPath, [], {
         execArgv: ["-r", bootstrapPath],
@@ -71,6 +79,14 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
         let ready = false;
 
         worker.once("message", (message: unknown) => {
+          if (
+            !isActiveGeneration(generation) ||
+            child !== worker ||
+            requestedStopGeneration === generation
+          ) {
+            return;
+          }
+
           if (message && typeof message === "object" && (message as { type?: string }).type === "desktop-worker:started") {
             ready = true;
             pendingStart = null;
@@ -80,27 +96,29 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
         });
 
         worker.once("exit", (code: number) => {
-          const wasIntentionalStop = stoppingWorker === worker;
-          const exitError =
-            code === 0 || wasIntentionalStop
-              ? new Error("Desktop worker stopped.")
-              : buildWorkerExitError(code);
-
+          const wasIntentionalStop = requestedStopGeneration === generation;
           if (wasIntentionalStop) {
-            stoppingWorker = null;
+            requestedStopGeneration = null;
           }
 
+          if (!isActiveGeneration(generation)) {
+            return;
+          }
+
+          const exitError = wasIntentionalStop
+            ? new Error("Desktop worker stopped.")
+            : buildWorkerExitError(code);
           clearCachedChild(worker);
           rejectPendingRequests(exitError);
-          if (code !== 0 && !wasIntentionalStop) {
-            options.onWorkerError?.(exitError);
-          } else {
+          if (wasIntentionalStop) {
             options.onWorkerStopped?.();
+          } else {
+            options.onWorkerError?.(exitError);
           }
           if (!ready) {
             pendingStart = null;
             reject(
-              code === 0 || wasIntentionalStop
+              wasIntentionalStop
                 ? exitError
                 : new Error(`Desktop worker exited before ready (${code})`),
             );
@@ -108,6 +126,13 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
         });
 
         worker.once("error", (type, location) => {
+          if (
+            !isActiveGeneration(generation) ||
+            requestedStopGeneration === generation
+          ) {
+            return;
+          }
+
           const error = buildWorkerFatalError(type, location);
           clearCachedChild(worker);
           rejectPendingRequests(error);
@@ -167,7 +192,7 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
       });
     },
     stop() {
-      stoppingWorker = child;
+      requestedStopGeneration = activeWorkerGeneration;
       child?.kill();
       child = null;
       pendingStart = null;
