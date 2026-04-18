@@ -108,6 +108,52 @@ describe("desktop bundle reporting", () => {
       }),
     );
   });
+
+  it("does not double-count symlinked bundle contents", () => {
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "plreview-desktop-size-symlink-"),
+    );
+    tempDirs.push(tempDir);
+
+    writeFile(tempDir, "release/PLReview.app/Contents/MacOS/PLReview", "binary");
+    fs.mkdirSync(
+      path.join(tempDir, "release/PLReview.app/Contents/Frameworks"),
+      { recursive: true },
+    );
+    fs.symlinkSync(
+      path.join(tempDir, "release/PLReview.app/Contents/MacOS/PLReview"),
+      path.join(tempDir, "release/PLReview.app/Contents/Frameworks/Current"),
+    );
+
+    const report = JSON.parse(
+      execFileSync("node", [reportScriptPath], {
+        cwd: tempDir,
+        encoding: "utf8",
+      }),
+    ) as {
+      artifacts: Array<{
+        id: string;
+        path: string;
+        exists: boolean;
+        type: "file" | "directory";
+        bytes: number;
+        fileCount: number;
+      }>;
+    };
+
+    expect(report.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "release",
+          path: "release",
+          exists: true,
+          type: "directory",
+          bytes: 6,
+          fileCount: 1,
+        }),
+      ]),
+    );
+  });
 });
 
 function writeFile(root: string, relativePath: string, content: string) {

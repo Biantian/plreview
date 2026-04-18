@@ -70,6 +70,7 @@ npm run desktop:dist
 
 打包配置位于 [electron-builder.yml](./electron-builder.yml)。产物默认输出到 `release/`。
 `npm run desktop:dist` 现在会在打包完成后自动输出一份机器可读的桌面产物体积报告。
+通过 `npm run desktop:dist -- ...` 追加的参数会继续原样转发给 `electron-builder`，例如 `--win --x64 --dir`。
 
 如需单独查看当前本地产物清单与体积，可执行：
 

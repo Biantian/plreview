@@ -9,7 +9,7 @@
     "desktop:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && npm run desktop:main\"",
     "build": "next build",
     "desktop:build": "next build --no-lint",
-    "desktop:dist": "npm run desktop:build && electron-builder && npm run desktop:report-size",
+    "desktop:dist": "node ./scripts/run-desktop-dist.mjs",
     "desktop:report-size": "node ./scripts/report-desktop-bundle-size.mjs",
     "start": "next start",
     "lint": "next lint",

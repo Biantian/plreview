@@ -93,7 +93,15 @@ console.log(
 );
 
 function readStats(targetPath) {
-  const stat = fs.statSync(targetPath);
+  const stat = fs.lstatSync(targetPath);
+
+  if (stat.isSymbolicLink()) {
+    return {
+      type: "symlink",
+      bytes: 0,
+      fileCount: 0,
+    };
+  }
 
   if (stat.isFile()) {
     return {
