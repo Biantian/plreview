@@ -1,24 +1,14 @@
 import { DESKTOP_REQUESTS } from "@/desktop/worker/protocol";
 
-const desktopChannels = {
+export const CHANNELS = {
   reviewBatchesCreate: DESKTOP_REQUESTS.reviewBatchesCreate,
   reviewJobsList: DESKTOP_REQUESTS.reviewJobsList,
   reviewJobsSearch: DESKTOP_REQUESTS.reviewJobsSearch,
   rulesList: DESKTOP_REQUESTS.rulesList,
   rulesSearch: DESKTOP_REQUESTS.rulesSearch,
   filesPick: DESKTOP_REQUESTS.filesPick,
+  runtimeStatus: DESKTOP_REQUESTS.runtimeStatus,
 } as const;
-
-Object.defineProperty(desktopChannels, "runtimeStatus", {
-  value: DESKTOP_REQUESTS.runtimeStatus,
-  enumerable: false,
-  configurable: false,
-  writable: false,
-});
-
-export const CHANNELS = desktopChannels as typeof desktopChannels & {
-  runtimeStatus: typeof DESKTOP_REQUESTS.runtimeStatus;
-};
 
 export type DesktopChannel = (typeof CHANNELS)[keyof typeof CHANNELS];
 
@@ -42,4 +32,5 @@ export function registerDesktopHandlers(
   register(CHANNELS.rulesList, handlers[CHANNELS.rulesList] ?? notImplemented);
   register(CHANNELS.rulesSearch, handlers[CHANNELS.rulesSearch] ?? notImplemented);
   register(CHANNELS.filesPick, handlers[CHANNELS.filesPick] ?? notImplemented);
+  register(CHANNELS.runtimeStatus, handlers[CHANNELS.runtimeStatus] ?? notImplemented);
 }
