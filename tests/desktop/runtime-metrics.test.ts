@@ -58,7 +58,7 @@ describe("createRuntimeStore", () => {
 });
 
 describe("createRuntimeMetricsService", () => {
-  it("tracks worker readiness, startup duration, and errors", () => {
+  it("clears worker readiness when the worker crashes after startup", () => {
     const nowSpy = vi
       .spyOn(performance, "now")
       .mockReturnValueOnce(100)
@@ -81,7 +81,7 @@ describe("createRuntimeMetricsService", () => {
 
     expect(service.markWorkerError(new Error("worker crashed"))).toEqual({
       shellReady: true,
-      workerReady: true,
+      workerReady: false,
       startupMs: 180,
       lastError: "worker crashed",
     });

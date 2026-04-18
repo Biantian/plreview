@@ -16,6 +16,7 @@ export function createRuntimeMetricsService() {
     },
     markWorkerError(error: Error) {
       return runtimeStore.update({
+        workerReady: false,
         lastError: error.message,
       });
     },
