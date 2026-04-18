@@ -13,7 +13,7 @@ export function createWorkerManager() {
         return child;
       }
 
-      child = utilityProcess.fork(path.join(currentDir, "../desktop/worker/background-entry.ts"));
+      child = utilityProcess.fork(path.join(currentDir, "../desktop/worker/background-entry.cjs"));
       return child;
     },
     getChild() {

@@ -22,4 +22,13 @@ describe("desktop packaging scripts", () => {
 
     expect(preloadBootstrap).not.toContain("tsx/cjs");
   });
+
+  it("packages the worker bootstrap and worker source files", () => {
+    const builderConfig = fs.readFileSync(path.resolve("electron-builder.yml"), "utf8");
+    const workerBootstrap = fs.readFileSync(path.resolve("desktop/worker/background-entry.cjs"), "utf8");
+
+    expect(builderConfig).toContain("desktop/worker/**/*.{ts,cjs}");
+    expect(workerBootstrap).toContain('require("tsx/cjs")');
+    expect(workerBootstrap).toContain('require("./background-entry.ts")');
+  });
 });

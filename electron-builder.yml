@@ -5,6 +5,7 @@ directories:
 files:
   - electron/**/*.{ts,cjs}
   - desktop/bridge/**/*.ts
+  - desktop/worker/**/*.{ts,cjs}
   - .next/standalone/**
   - .next/static/**
   - public/**
