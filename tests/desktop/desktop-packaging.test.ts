@@ -29,6 +29,6 @@ describe("desktop packaging scripts", () => {
 
     expect(builderConfig).toContain("desktop/worker/**/*.{ts,cjs}");
     expect(workerBootstrap).toContain('require("tsx/cjs")');
-    expect(workerBootstrap).toContain('require("./background-entry.ts")');
+    expect(workerBootstrap).not.toContain('require("./background-entry.ts")');
   });
 });

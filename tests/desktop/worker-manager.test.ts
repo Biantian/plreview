@@ -45,7 +45,13 @@ describe("createWorkerManager", () => {
     await manager.start();
 
     expect(fork).toHaveBeenCalledTimes(1);
-    expect(fork).toHaveBeenCalledWith(expect.stringContaining("background-entry.cjs"));
+    expect(fork).toHaveBeenCalledWith(
+      expect.stringContaining("background-entry.ts"),
+      [],
+      expect.objectContaining({
+        execArgv: ["-r", expect.stringContaining("background-entry.cjs")],
+      }),
+    );
   });
 
   it("keeps the background entry alive after startup", async () => {
