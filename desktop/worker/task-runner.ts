@@ -10,6 +10,7 @@ const workerPath = path.join(currentDir, "./task-entry.ts");
 type TaskName = "parse-document" | "execute-review-job";
 
 type TaskResponse = {
+  id?: string;
   ok?: boolean;
   result?: unknown;
   error?: string;
@@ -31,16 +32,22 @@ export function createTaskRunner() {
           }
 
           settled = true;
+          child.off("message", handleMessage);
           child.kill();
           reject(error);
         };
 
-        child.once("message", (message: TaskResponse) => {
+        const handleMessage = (message: TaskResponse) => {
           if (settled) {
             return;
           }
 
+          if (message?.id !== id) {
+            return;
+          }
+
           settled = true;
+          child.off("message", handleMessage);
           child.kill();
 
           if (message?.ok) {
@@ -49,7 +56,9 @@ export function createTaskRunner() {
           }
 
           reject(new Error(message?.error ?? "Task process failed."));
-        });
+        };
+
+        child.on("message", handleMessage);
 
         child.once("exit", (code: number) => {
           finishWithError(new Error(`Task process exited (${code})`));

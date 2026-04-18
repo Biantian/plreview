@@ -35,31 +35,53 @@ const parentPort = (process as typeof process & {
 }).parentPort;
 
 parentPort?.on("message", async (message: unknown) => {
-  if (!isTaskRequest(message)) {
+  const taskRequest = parseTaskRequest(message);
+
+  if (!taskRequest.ok) {
+    parentPort?.postMessage({
+      id: taskRequest.id,
+      ok: false,
+      error: taskRequest.error,
+    });
     return;
   }
 
   try {
-    if (message.task === "parse-document") {
-      const result = await parseLocalDocumentInProcess(message.payload.filePath);
-      parentPort?.postMessage({ id: message.id, ok: true, result });
+    if (taskRequest.value.task === "parse-document") {
+      const result = await parseLocalDocumentInProcess(taskRequest.value.payload.filePath);
+      parentPort?.postMessage({ id: taskRequest.value.id, ok: true, result });
       return;
     }
 
-    const result = await executeReviewJob(message.payload);
-    parentPort?.postMessage({ id: message.id, ok: true, result });
+    const result = await executeReviewJob(taskRequest.value.payload);
+    parentPort?.postMessage({ id: taskRequest.value.id, ok: true, result });
   } catch (error) {
     parentPort?.postMessage({
-      id: message.id,
+      id: taskRequest.value.id,
       ok: false,
       error: error instanceof Error ? error.message : "Unknown task error.",
     });
   }
 });
 
-function isTaskRequest(message: unknown): message is TaskRequest {
+function parseTaskRequest(
+  message: unknown,
+):
+  | {
+      ok: true;
+      value: TaskRequest;
+    }
+  | {
+      ok: false;
+      id: string;
+      error: string;
+    } {
   if (!message || typeof message !== "object") {
-    return false;
+    return {
+      ok: false,
+      id: "unknown",
+      error: "Malformed or unsupported task message.",
+    };
   }
 
   const candidate = message as {
@@ -67,18 +89,55 @@ function isTaskRequest(message: unknown): message is TaskRequest {
     task?: unknown;
     payload?: unknown;
   };
+  const id = typeof candidate.id === "string" ? candidate.id : "unknown";
 
   if (typeof candidate.id !== "string") {
-    return false;
+    return {
+      ok: false,
+      id,
+      error: "Malformed or unsupported task message.",
+    };
   }
 
   if (candidate.task === "parse-document") {
-    return (
+    if (
       !!candidate.payload &&
       typeof candidate.payload === "object" &&
       typeof (candidate.payload as { filePath?: unknown }).filePath === "string"
-    );
+    ) {
+      return {
+        ok: true,
+        value: {
+          id: candidate.id,
+          task: "parse-document",
+          payload: {
+            filePath: (candidate.payload as { filePath: string }).filePath,
+          },
+        },
+      };
+    }
+
+    return {
+      ok: false,
+      id,
+      error: "Malformed or unsupported task message.",
+    };
   }
 
-  return candidate.task === "execute-review-job";
+  if (candidate.task === "execute-review-job") {
+    return {
+      ok: true,
+      value: {
+        id: candidate.id,
+        task: "execute-review-job",
+        payload: candidate.payload as Parameters<typeof executeReviewJob>[0],
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    id,
+    error: "Malformed or unsupported task message.",
+  };
 }
