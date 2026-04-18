@@ -1,5 +1,3 @@
-import mammoth from "mammoth";
-
 export type ParsedBlock = {
   blockIndex: number;
   blockType: "heading" | "paragraph" | "list_item";
@@ -354,6 +352,7 @@ export async function parseUploadedDocument(file: File): Promise<ParsedDocument>
   let parsed: { rawText: string; blocks: ParsedBlock[] };
 
   if (fileType === "docx") {
+    const mammoth = await import("mammoth");
     const { value } = await mammoth.convertToHtml({ buffer });
     parsed = parseDocxHtmlToPendingBlocks(value);
   } else {

@@ -64,7 +64,20 @@ function toParsedDocument(document: {
   };
 }
 
-export async function createReviewBatch(prisma: PrismaClient, input: CreateReviewBatchInput) {
+export type ReviewJobExecutor = (input: {
+  reviewJobId: string;
+  documentTitle: string;
+  modelName: string;
+  llmProfile: Parameters<typeof executeReviewJob>[0]["llmProfile"];
+  parsedDocument: Parameters<typeof executeReviewJob>[0]["parsedDocument"];
+  rules: Parameters<typeof executeReviewJob>[0]["rules"];
+}) => Promise<unknown>;
+
+export async function createReviewBatch(
+  prisma: PrismaClient,
+  input: CreateReviewBatchInput,
+  executeJob: ReviewJobExecutor = executeReviewJob,
+) {
   const documentIds = uniqueDocumentIds(input.documents);
   let llmProfile: Parameters<typeof executeReviewJob>[0]["llmProfile"] | null = null;
   let modelNameSnapshot = "";
@@ -224,21 +237,19 @@ export async function createReviewBatch(prisma: PrismaClient, input: CreateRevie
 
   const reviewJobByDocumentId = new Map(reviewJobsToExecute.map((job) => [job.documentId, job]));
 
-  void Promise.allSettled(
-    documentIds
-      .map((documentId) => reviewJobByDocumentId.get(documentId))
-      .filter((job): job is NonNullable<typeof job> => Boolean(job))
-      .map((job) =>
-        executeReviewJob({
-          reviewJobId: job.id,
-          documentTitle: job.document.title,
-          modelName: modelNameSnapshot,
-          llmProfile: llmProfile!,
-          parsedDocument: toParsedDocument(job.document),
-          rules: orderedRules,
-        }),
-      ),
-  );
+  const reviewJobs = documentIds
+    .map((documentId) => reviewJobByDocumentId.get(documentId))
+    .filter((job): job is NonNullable<typeof job> => Boolean(job))
+    .map((job) => ({
+      reviewJobId: job.id,
+      documentTitle: job.document.title,
+      modelName: modelNameSnapshot,
+      llmProfile: llmProfile!,
+      parsedDocument: toParsedDocument(job.document),
+      rules: orderedRules,
+    }));
+
+  void Promise.allSettled(reviewJobs.map((job) => executeJob(job)));
 
   return batch;
 }
