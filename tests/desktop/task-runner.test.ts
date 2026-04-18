@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { fork } = vi.hoisted(() => ({
@@ -36,7 +38,17 @@ describe("createTaskRunner", () => {
 
     const runner = createTaskRunner();
     const result = await runner.run("parse-document", { filePath: "/tmp/demo.docx" });
+    const bootstrapPath = path.resolve("desktop/worker/task-entry.cjs");
 
+    expect(fs.existsSync(bootstrapPath)).toBe(true);
+    expect(fs.readFileSync(bootstrapPath, "utf8")).toContain('require("tsx/cjs")');
+    expect(fork).toHaveBeenCalledWith(
+      expect.stringMatching(/desktop\/worker\/task-entry\.ts$/),
+      [],
+      expect.objectContaining({
+        execArgv: ["-r", bootstrapPath],
+      }),
+    );
     expect(postMessage).toHaveBeenCalledWith({
       id: expect.any(String),
       task: "parse-document",
