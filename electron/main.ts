@@ -3,13 +3,6 @@ import { fileURLToPath } from "node:url";
 import type { OpenDialogOptions } from "electron";
 import { BrowserWindow, app, dialog, ipcMain } from "electron";
 
-import { importDocumentsIntoStore } from "../desktop/core/files/import-documents-into-store";
-import { createReviewBatch } from "../desktop/core/reviews/create-review-batch";
-import { listReviewJobs } from "../desktop/core/reviews/list-review-jobs";
-import { searchReviewJobs } from "../desktop/core/reviews/search-review-jobs";
-import { listRules } from "../desktop/core/rules/list-rules";
-import { searchRules } from "../desktop/core/rules/search-rules";
-import { prisma } from "../lib/prisma";
 import { CHANNELS, registerDesktopHandlers } from "./channels";
 import { createWorkerManager } from "./worker-manager";
 
@@ -115,16 +108,16 @@ void app.whenReady().then(async () => {
           return [];
         }
 
-        return importDocumentsIntoStore(prisma, result.filePaths);
+        return workerManager.invoke(CHANNELS.filesPick, result.filePaths);
       },
       [CHANNELS.reviewBatchesCreate]: async (_event, payload) =>
-        createReviewBatch(prisma, payload as Parameters<typeof createReviewBatch>[1]),
-      [CHANNELS.reviewJobsList]: async () => listReviewJobs(prisma),
+        workerManager.invoke(CHANNELS.reviewBatchesCreate, payload),
+      [CHANNELS.reviewJobsList]: async () => workerManager.invoke(CHANNELS.reviewJobsList),
       [CHANNELS.reviewJobsSearch]: async (_event, payload) =>
-        searchReviewJobs(prisma, String((payload as { query?: string } | undefined)?.query ?? "")),
-      [CHANNELS.rulesList]: async () => listRules(prisma),
+        workerManager.invoke(CHANNELS.reviewJobsSearch, payload),
+      [CHANNELS.rulesList]: async () => workerManager.invoke(CHANNELS.rulesList),
       [CHANNELS.rulesSearch]: async (_event, payload) =>
-        searchRules(prisma, String((payload as { query?: string } | undefined)?.query ?? "")),
+        workerManager.invoke(CHANNELS.rulesSearch, payload),
     },
   );
   await createWindow();
