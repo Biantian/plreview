@@ -11,9 +11,11 @@ import { listRules } from "../desktop/core/rules/list-rules";
 import { searchRules } from "../desktop/core/rules/search-rules";
 import { prisma } from "../lib/prisma";
 import { CHANNELS, registerDesktopHandlers } from "./channels";
+import { createWorkerManager } from "./worker-manager";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
+const workerManager = createWorkerManager();
 
 function getPreloadPath() {
   if (process.env.ELECTRON_PRELOAD_PATH) {
@@ -88,6 +90,8 @@ async function createWindow() {
 }
 
 void app.whenReady().then(async () => {
+  await workerManager.start();
+
   registerDesktopHandlers(
     (channel, handler) => {
       ipcMain.handle(channel, handler);
