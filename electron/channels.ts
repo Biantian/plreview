@@ -1,11 +1,24 @@
-export const CHANNELS = {
-  reviewBatchesCreate: "review-batches:create",
-  reviewJobsList: "review-jobs:list",
-  reviewJobsSearch: "review-jobs:search",
-  rulesList: "rules:list",
-  rulesSearch: "rules:search",
-  filesPick: "files:pick",
-} as const satisfies Record<string, string>;
+import { DESKTOP_REQUESTS } from "@/desktop/worker/protocol";
+
+const desktopChannels = {
+  reviewBatchesCreate: DESKTOP_REQUESTS.reviewBatchesCreate,
+  reviewJobsList: DESKTOP_REQUESTS.reviewJobsList,
+  reviewJobsSearch: DESKTOP_REQUESTS.reviewJobsSearch,
+  rulesList: DESKTOP_REQUESTS.rulesList,
+  rulesSearch: DESKTOP_REQUESTS.rulesSearch,
+  filesPick: DESKTOP_REQUESTS.filesPick,
+} as const;
+
+Object.defineProperty(desktopChannels, "runtimeStatus", {
+  value: DESKTOP_REQUESTS.runtimeStatus,
+  enumerable: false,
+  configurable: false,
+  writable: false,
+});
+
+export const CHANNELS = desktopChannels as typeof desktopChannels & {
+  runtimeStatus: typeof DESKTOP_REQUESTS.runtimeStatus;
+};
 
 export type DesktopChannel = (typeof CHANNELS)[keyof typeof CHANNELS];
 
