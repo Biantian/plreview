@@ -1,14 +1,12 @@
 import { createBackgroundRouter } from "@/desktop/worker/background-router";
 import { createWorkerPrisma } from "@/desktop/worker/prisma-provider";
+import {
+  DESKTOP_REQUESTS,
+  type WorkerEnvelope,
+} from "@/desktop/worker/protocol";
 import { createFileImportService } from "@/desktop/worker/services/file-import-service";
 import { createReviewService } from "@/desktop/worker/services/review-service";
 import { createRuleService } from "@/desktop/worker/services/rule-service";
-
-type WorkerRequest = {
-  id: string;
-  channel: string;
-  payload?: unknown;
-};
 
 type WorkerResponse =
   | {
@@ -43,7 +41,7 @@ parentPort?.postMessage({
   type: "desktop-worker:started",
 });
 
-parentPort?.on("message", async (message) => {
+parentPort?.on("message", async (message: unknown) => {
   if (!isWorkerRequest(message)) {
     return;
   }
@@ -68,11 +66,13 @@ setInterval(() => {
   // Keep the utility process alive as a long-lived worker.
 }, 60_000);
 
-function isWorkerRequest(message: unknown): message is WorkerRequest {
+const requestChannels = new Set<string>(Object.values(DESKTOP_REQUESTS));
+
+function isWorkerRequest(message: unknown): message is WorkerEnvelope {
   return (
     !!message &&
     typeof message === "object" &&
-    typeof (message as WorkerRequest).id === "string" &&
-    typeof (message as WorkerRequest).channel === "string"
+    typeof (message as WorkerEnvelope).id === "string" &&
+    requestChannels.has((message as WorkerEnvelope).channel)
   );
 }
