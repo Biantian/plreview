@@ -9,7 +9,12 @@ import {
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
-export function createWorkerManager() {
+type WorkerManagerOptions = {
+  onWorkerReady?: () => void;
+  onWorkerError?: (error: Error) => void;
+};
+
+export function createWorkerManager(options: WorkerManagerOptions = {}) {
   let child: ReturnType<typeof utilityProcess.fork> | null = null;
   let pendingStart: Promise<ReturnType<typeof utilityProcess.fork>> | null = null;
   const pendingRequests = new Map<
@@ -65,13 +70,16 @@ export function createWorkerManager() {
           if (message && typeof message === "object" && (message as { type?: string }).type === "desktop-worker:started") {
             ready = true;
             pendingStart = null;
+            options.onWorkerReady?.();
             resolve(worker);
           }
         });
 
         worker.once("exit", (code: number) => {
+          const error = buildWorkerExitError(code);
           clearCachedChild(worker);
-          rejectPendingRequests(buildWorkerExitError(code));
+          rejectPendingRequests(error);
+          options.onWorkerError?.(error);
           if (!ready) {
             pendingStart = null;
             reject(new Error(`Desktop worker exited before ready (${code})`));
@@ -82,6 +90,7 @@ export function createWorkerManager() {
           const error = buildWorkerFatalError(type, location);
           clearCachedChild(worker);
           rejectPendingRequests(error);
+          options.onWorkerError?.(error);
           if (!ready) {
             pendingStart = null;
             reject(error);

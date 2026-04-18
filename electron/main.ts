@@ -3,12 +3,33 @@ import { fileURLToPath } from "node:url";
 import type { OpenDialogOptions } from "electron";
 import { BrowserWindow, app, dialog, ipcMain } from "electron";
 
+import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
+import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
 import { CHANNELS, registerDesktopHandlers } from "./channels";
 import { createWorkerManager } from "./worker-manager";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
-const workerManager = createWorkerManager();
+const runtimeMetrics = createRuntimeMetricsService();
+
+function publishRuntimeStatus() {
+  const runtimeStatus = runtimeMetrics.getRuntimeStatus();
+
+  mainWindow?.webContents.send(DESKTOP_EVENTS.runtimeUpdated, runtimeStatus);
+
+  return runtimeStatus;
+}
+
+const workerManager = createWorkerManager({
+  onWorkerReady: () => {
+    runtimeMetrics.markWorkerReady();
+    publishRuntimeStatus();
+  },
+  onWorkerError: (error) => {
+    runtimeMetrics.markWorkerError(error);
+    publishRuntimeStatus();
+  },
+});
 
 function getPreloadPath() {
   if (process.env.ELECTRON_PRELOAD_PATH) {
@@ -83,8 +104,6 @@ async function createWindow() {
 }
 
 void app.whenReady().then(async () => {
-  await workerManager.start();
-
   registerDesktopHandlers(
     (channel, handler) => {
       ipcMain.handle(channel, handler);
@@ -118,13 +137,28 @@ void app.whenReady().then(async () => {
       [CHANNELS.rulesList]: async () => workerManager.invoke(CHANNELS.rulesList),
       [CHANNELS.rulesSearch]: async (_event, payload) =>
         workerManager.invoke(CHANNELS.rulesSearch, payload),
+      [CHANNELS.runtimeStatus]: async () => runtimeMetrics.getRuntimeStatus(),
     },
   );
+
+  try {
+    await workerManager.start();
+  } catch (error) {
+    const runtimeError =
+      error instanceof Error ? error : new Error(String(error));
+
+    if (runtimeMetrics.getRuntimeStatus().lastError !== runtimeError.message) {
+      runtimeMetrics.markWorkerError(runtimeError);
+    }
+  }
+
   await createWindow();
+  publishRuntimeStatus();
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       await createWindow();
+      publishRuntimeStatus();
     }
   });
 });
