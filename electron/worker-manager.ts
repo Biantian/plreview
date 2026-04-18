@@ -35,6 +35,14 @@ export function createWorkerManager() {
     pendingRequests.clear();
   }
 
+  function buildWorkerExitError(code: number) {
+    return new Error(`Desktop worker exited (${code})`);
+  }
+
+  function buildWorkerFatalError(type: string, location: string) {
+    return new Error(`Desktop worker ${type} at ${location}`);
+  }
+
   return {
     async start() {
       if (child) {
@@ -61,18 +69,17 @@ export function createWorkerManager() {
           }
         });
 
-        worker.once("exit", (code: number, signal: string | null) => {
+        worker.once("exit", (code: number) => {
           clearCachedChild(worker);
-          rejectPendingRequests(
-            new Error(`Desktop worker exited (${code}${signal ? `, ${signal}` : ""})`),
-          );
+          rejectPendingRequests(buildWorkerExitError(code));
           if (!ready) {
             pendingStart = null;
-            reject(new Error(`Desktop worker exited before ready (${code}${signal ? `, ${signal}` : ""})`));
+            reject(new Error(`Desktop worker exited before ready (${code})`));
           }
         });
 
-        worker.once("error", (error: Error) => {
+        worker.once("error", (type, location) => {
+          const error = buildWorkerFatalError(type, location);
           clearCachedChild(worker);
           rejectPendingRequests(error);
           if (!ready) {
