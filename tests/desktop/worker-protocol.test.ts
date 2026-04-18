@@ -31,6 +31,27 @@ describe("desktop worker protocol", () => {
     ).toBe(true);
   });
 
+  it("rejects runtime status payloads with missing fields", () => {
+    expect(
+      isRuntimeStatusPayload({
+        shellReady: true,
+        workerReady: false,
+        startupMs: 120,
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects runtime status payloads with wrong scalar types", () => {
+    expect(
+      isRuntimeStatusPayload({
+        shellReady: "yes",
+        workerReady: false,
+        startupMs: "120",
+        lastError: 404,
+      }),
+    ).toBe(false);
+  });
+
   it("exposes runtime channels through the public constants", () => {
     expect(DESKTOP_REQUESTS.runtimeStatus).toBe("desktop-runtime:status");
     expect(DESKTOP_EVENTS.runtimeUpdated).toBe("desktop-runtime:updated");

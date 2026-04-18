@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 export const DESKTOP_REQUESTS = {
   reviewBatchesCreate: "review-batches:create",
   reviewJobsList: "review-jobs:list",
@@ -30,12 +28,20 @@ export type RuntimeStatusPayload = {
   lastError: string | null;
 };
 
+function createEnvelopeId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `env_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
 export function createWorkerEnvelope<T>(
   channel: DesktopRequestChannel,
   payload?: T,
 ): WorkerEnvelope<T> {
   return {
-    id: randomUUID(),
+    id: createEnvelopeId(),
     channel,
     payload,
   };

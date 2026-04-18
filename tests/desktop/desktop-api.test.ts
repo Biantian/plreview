@@ -105,6 +105,7 @@ describe("electron preload bridge", () => {
     const off = vi.fn();
     const invoke = vi.fn();
     const exposeInMainWorld = vi.fn();
+    let wrappedListener: ((event: unknown, payload: unknown) => void) | undefined;
 
     vi.doMock("electron", () => ({
       contextBridge: {
@@ -112,8 +113,13 @@ describe("electron preload bridge", () => {
       },
       ipcRenderer: {
         invoke,
-        on,
-        off,
+        on: vi.fn((event, listener) => {
+          on(event, listener);
+          wrappedListener = listener;
+        }),
+        off: vi.fn((event, listener) => {
+          off(event, listener);
+        }),
       },
     }));
 
@@ -136,13 +142,28 @@ describe("electron preload bridge", () => {
       DESKTOP_EVENTS.runtimeUpdated,
       expect.any(Function),
     );
+    expect(wrappedListener).toEqual(expect.any(Function));
+
+    wrappedListener?.({} as unknown, {
+      shellReady: true,
+      workerReady: false,
+      startupMs: 12,
+      lastError: null,
+    });
+
+    expect(listener).toHaveBeenCalledWith({
+      shellReady: true,
+      workerReady: false,
+      startupMs: 12,
+      lastError: null,
+    });
     expect(typeof unsubscribe).toBe("function");
 
     unsubscribe();
 
     expect(off).toHaveBeenCalledWith(
       DESKTOP_EVENTS.runtimeUpdated,
-      expect.any(Function),
+      wrappedListener,
     );
   });
 });
