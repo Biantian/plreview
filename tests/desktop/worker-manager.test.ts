@@ -142,6 +142,24 @@ describe("createWorkerManager", () => {
     expect(fork).toHaveBeenCalledTimes(2);
   });
 
+  it("does not report an error when the worker is stopped intentionally", async () => {
+    const worker = createWorkerProcessMock();
+    const onWorkerError = vi.fn();
+    const onWorkerStopped = vi.fn();
+    fork.mockReturnValue(worker.process as never);
+
+    const manager = createWorkerManager({ onWorkerError, onWorkerStopped });
+    const startPromise = manager.start();
+    worker.emit("message", { type: "desktop-worker:started" });
+    await startPromise;
+
+    manager.stop();
+    worker.emit("exit", 0);
+
+    expect(onWorkerError).not.toHaveBeenCalled();
+    expect(onWorkerStopped).toHaveBeenCalledTimes(1);
+  });
+
   it("resolves invoke with the matching worker response payload", async () => {
     const worker = createWorkerProcessMock();
     fork.mockReturnValue(worker.process as never);

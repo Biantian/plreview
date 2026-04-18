@@ -10,13 +10,16 @@ import {
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 type WorkerManagerOptions = {
+  onWorkerStarting?: () => void;
   onWorkerReady?: () => void;
+  onWorkerStopped?: () => void;
   onWorkerError?: (error: Error) => void;
 };
 
 export function createWorkerManager(options: WorkerManagerOptions = {}) {
   let child: ReturnType<typeof utilityProcess.fork> | null = null;
   let pendingStart: Promise<ReturnType<typeof utilityProcess.fork>> | null = null;
+  let stoppingWorker: ReturnType<typeof utilityProcess.fork> | null = null;
   const pendingRequests = new Map<
     string,
     {
@@ -58,6 +61,7 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
         return pendingStart;
       }
 
+      options.onWorkerStarting?.();
       const worker = utilityProcess.fork(workerPath, [], {
         execArgv: ["-r", bootstrapPath],
       });
@@ -76,13 +80,30 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
         });
 
         worker.once("exit", (code: number) => {
-          const error = buildWorkerExitError(code);
+          const wasIntentionalStop = stoppingWorker === worker;
+          const exitError =
+            code === 0 || wasIntentionalStop
+              ? new Error("Desktop worker stopped.")
+              : buildWorkerExitError(code);
+
+          if (wasIntentionalStop) {
+            stoppingWorker = null;
+          }
+
           clearCachedChild(worker);
-          rejectPendingRequests(error);
-          options.onWorkerError?.(error);
+          rejectPendingRequests(exitError);
+          if (code !== 0 && !wasIntentionalStop) {
+            options.onWorkerError?.(exitError);
+          } else {
+            options.onWorkerStopped?.();
+          }
           if (!ready) {
             pendingStart = null;
-            reject(new Error(`Desktop worker exited before ready (${code})`));
+            reject(
+              code === 0 || wasIntentionalStop
+                ? exitError
+                : new Error(`Desktop worker exited before ready (${code})`),
+            );
           }
         });
 
@@ -146,6 +167,7 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
       });
     },
     stop() {
+      stoppingWorker = child;
       child?.kill();
       child = null;
       pendingStart = null;

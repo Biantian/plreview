@@ -21,8 +21,16 @@ function publishRuntimeStatus() {
 }
 
 const workerManager = createWorkerManager({
+  onWorkerStarting: () => {
+    runtimeMetrics.markWorkerStarting();
+    publishRuntimeStatus();
+  },
   onWorkerReady: () => {
     runtimeMetrics.markWorkerReady();
+    publishRuntimeStatus();
+  },
+  onWorkerStopped: () => {
+    runtimeMetrics.markWorkerStopped();
     publishRuntimeStatus();
   },
   onWorkerError: (error) => {
