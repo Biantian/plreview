@@ -19,6 +19,12 @@ type WorkerManagerOptions = {
 export function createWorkerManager(options: WorkerManagerOptions = {}) {
   let child: ReturnType<typeof utilityProcess.fork> | null = null;
   let pendingStart: Promise<ReturnType<typeof utilityProcess.fork>> | null = null;
+  let pendingStartState:
+    | {
+        generation: number;
+        reject: (error: Error) => void;
+      }
+    | null = null;
   let activeWorkerGeneration = 0;
   let requestedStopGeneration: number | null = null;
   const pendingRequests = new Map<
@@ -56,6 +62,13 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
     return generation === activeWorkerGeneration;
   }
 
+  function clearPendingStartForGeneration(generation: number) {
+    if (pendingStartState?.generation === generation) {
+      pendingStartState = null;
+      pendingStart = null;
+    }
+  }
+
   return {
     async start() {
       if (child) {
@@ -77,6 +90,10 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
 
       pendingStart = new Promise((resolve, reject) => {
         let ready = false;
+        pendingStartState = {
+          generation,
+          reject,
+        };
 
         worker.once("message", (message: unknown) => {
           if (
@@ -89,7 +106,7 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
 
           if (message && typeof message === "object" && (message as { type?: string }).type === "desktop-worker:started") {
             ready = true;
-            pendingStart = null;
+            clearPendingStartForGeneration(generation);
             options.onWorkerReady?.();
             resolve(worker);
           }
@@ -116,7 +133,7 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
             options.onWorkerError?.(exitError);
           }
           if (!ready) {
-            pendingStart = null;
+            clearPendingStartForGeneration(generation);
             reject(
               wasIntentionalStop
                 ? exitError
@@ -138,7 +155,7 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
           rejectPendingRequests(error);
           options.onWorkerError?.(error);
           if (!ready) {
-            pendingStart = null;
+            clearPendingStartForGeneration(generation);
             reject(error);
           }
         });
@@ -193,9 +210,15 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
     },
     stop() {
       requestedStopGeneration = activeWorkerGeneration;
+      if (pendingStartState?.generation === activeWorkerGeneration) {
+        const stopError = new Error("Desktop worker stopped.");
+        const { reject } = pendingStartState;
+
+        clearPendingStartForGeneration(activeWorkerGeneration);
+        reject(stopError);
+      }
       child?.kill();
       child = null;
-      pendingStart = null;
       rejectPendingRequests(new Error("Desktop worker stopped."));
     },
   };

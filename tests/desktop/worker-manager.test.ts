@@ -214,6 +214,46 @@ describe("createWorkerManager", () => {
     expect(manager.getChild()).toBe(secondWorker.process);
   });
 
+  it("rejects a canceled pre-ready start when stop is followed by an immediate restart", async () => {
+    const firstWorker = createWorkerProcessMock();
+    const secondWorker = createWorkerProcessMock();
+    const onWorkerReady = vi.fn();
+    const onWorkerError = vi.fn();
+    const onWorkerStopped = vi.fn();
+    fork
+      .mockReturnValueOnce(firstWorker.process as never)
+      .mockReturnValueOnce(secondWorker.process as never);
+
+    const manager = createWorkerManager({
+      onWorkerReady,
+      onWorkerError,
+      onWorkerStopped,
+    });
+
+    const firstStart = manager.start();
+    const firstStartRejected = vi.fn();
+    firstStart.catch(firstStartRejected);
+
+    manager.stop();
+
+    const secondStart = manager.start();
+    secondWorker.emit("message", { type: "desktop-worker:started" });
+
+    await vi.waitFor(() =>
+      expect(firstStartRejected).toHaveBeenCalledWith(
+        new Error("Desktop worker stopped."),
+      ),
+    );
+    await expect(secondStart).resolves.toBe(secondWorker.process);
+
+    firstWorker.emit("exit", 0);
+
+    expect(onWorkerReady).toHaveBeenCalledTimes(1);
+    expect(onWorkerStopped).not.toHaveBeenCalled();
+    expect(onWorkerError).not.toHaveBeenCalled();
+    expect(manager.getChild()).toBe(secondWorker.process);
+  });
+
   it("resolves invoke with the matching worker response payload", async () => {
     const worker = createWorkerProcessMock();
     fork.mockReturnValue(worker.process as never);
