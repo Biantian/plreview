@@ -45,7 +45,7 @@ export function DocsShell({ documents }: DocsShellProps) {
           className="desktop-surface docs-pane docs-pane-directory"
           role="complementary"
         >
-          <div className="stack docs-sidebar-content">
+          <div className="stack docs-pane-content">
             <div className="page-header docs-pane-header">
               <p className="section-eyebrow">DIRECTORY</p>
               <h2 className="subsection-title">文档目录</h2>
@@ -110,7 +110,7 @@ export function DocsShell({ documents }: DocsShellProps) {
           className="desktop-surface docs-pane docs-pane-toc"
           role="complementary"
         >
-          <div className="stack docs-sidebar-content">
+          <div className="stack docs-pane-content">
             <div className="page-header docs-pane-header">
               <p className="section-eyebrow">ARTICLE TOC</p>
               <h2 className="subsection-title">文章目录</h2>
