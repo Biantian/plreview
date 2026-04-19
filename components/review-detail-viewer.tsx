@@ -79,7 +79,7 @@ export function ReviewDetailViewer({
           <div>
             <p className="section-eyebrow">Annotated Source</p>
             <h2 className="subsection-title">原文定位</h2>
-            <p className="section-copy">正文与问题联动阅读，详细使用说明可在文档页查看。</p>
+            <p className="section-copy">查看正文与对应问题。</p>
           </div>
 
           <div className="document-stream document-reading-flow document-stream-dense">
@@ -149,7 +149,7 @@ export function ReviewDetailViewer({
           <div>
             <p className="section-eyebrow">Issue Navigator</p>
             <h2 className="subsection-title">问题导航</h2>
-            <p className="section-copy">点击问题项或正文中的提示标签，右侧详情和原文位置会同步聚焦。</p>
+            <p className="section-copy">选择问题后查看对应位置和详情。</p>
           </div>
 
           <nav aria-label="问题导航列表" className="issue-list">

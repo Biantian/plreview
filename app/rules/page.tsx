@@ -22,7 +22,7 @@ export default async function RulesPage() {
               </Link>
             </>
           }
-          description="按规则名称、分类与严重级别维护规则目录，先浏览筛选，再通过抽屉更新内容和启用状态。"
+          description="查看和管理规则。"
           eyebrow="Rule Library"
           title="规则库"
         />

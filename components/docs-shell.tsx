@@ -48,7 +48,6 @@ export function DocsShell({ documents }: DocsShellProps) {
           <div className="page-header docs-pane-header">
             <p className="section-eyebrow">DIRECTORY</p>
             <h2 className="subsection-title">文档目录</h2>
-            <p className="section-copy">左侧聚合各类操作文档，先选主题，再在正文中连续阅读。</p>
           </div>
           <div className="docs-pane-scroll">
             <div className="docs-directory-list">
@@ -109,7 +108,6 @@ export function DocsShell({ documents }: DocsShellProps) {
           <div className="page-header docs-pane-header">
             <p className="section-eyebrow">ARTICLE TOC</p>
             <h2 className="subsection-title">文章目录</h2>
-            <p className="section-copy">右侧只显示当前文档的章节锚点，方便在长文里快速跳转。</p>
           </div>
           <div className="docs-pane-scroll">
             <div className="docs-toc-list">

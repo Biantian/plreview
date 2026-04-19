@@ -582,7 +582,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
         <div className="queue-empty">
           <div>
             <h3>还没有评审任务</h3>
-            <p className="muted">从新建批次页发起第一份文档后，这里会成为你的评审任务工作区。</p>
+            <p className="muted">创建第一份评审后，这里会显示任务。</p>
           </div>
           <Link className="button" href="/reviews/new">
             去新建批次

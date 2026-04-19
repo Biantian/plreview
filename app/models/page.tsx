@@ -21,7 +21,7 @@ export default async function ModelsPage() {
               </Link>
             </>
           }
-          description="统一查看供应商连接、默认模型和启用状态，在桌面管理界面里完成搜索、启停、新增和维护。"
+          description="查看和管理模型配置。"
           eyebrow="Model Settings"
           title="模型配置"
         />

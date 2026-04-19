@@ -52,8 +52,8 @@ export default async function HomePage() {
                   查看帮助文档
                 </Link>
               </>
-            }
-            description="查看当前任务负载、配置准备度和最近产出，直接回到下一步要处理的评审工作。"
+          }
+            description="查看任务、配置和最近结果。"
             eyebrow="Workspace"
             title="评审工作台"
           />
@@ -62,9 +62,7 @@ export default async function HomePage() {
             <div className="desktop-mini-card">
               <p className="section-eyebrow">当前值班</p>
               <h2 className="subsection-title">本地评审工位已就绪</h2>
-              <p className="section-copy">
-                文档导入、规则快照和 OpenAI 兼容模型配置都从这套桌面工作区进入。
-              </p>
+              <p className="section-copy">可查看文档、规则、模型和评审结果。</p>
             </div>
 
             <div className="desktop-mini-card">
@@ -74,7 +72,7 @@ export default async function HomePage() {
                   <span className="feature-kicker">任务</span>
                   <div>
                     <strong>{reviewJobsCount} 条评审任务留存在队列中</strong>
-                    <p className="muted">先从最近任务继续，避免在不同页面间来回切换。</p>
+                    <p className="muted">可继续处理最近任务。</p>
                   </div>
                 </div>
                 <div className="feature-row">
@@ -83,7 +81,7 @@ export default async function HomePage() {
                     <strong>
                       {enabledRulesCount} 条启用规则，{llmProfiles.length} 个模型配置在线
                     </strong>
-                    <p className="muted">发起新评审前先确认本次所需规则和模型都已准备好。</p>
+                    <p className="muted">当前配置可用于新批次。</p>
                   </div>
                 </div>
               </div>
@@ -116,7 +114,7 @@ export default async function HomePage() {
           <div>
             <p className="section-eyebrow">Recent Reviews</p>
             <h2 className="subsection-title">最近评审</h2>
-            <p className="section-copy">从最近完成或失败的任务继续复核、重试或查看报告。</p>
+            <p className="section-copy">查看最近完成或失败的任务。</p>
           </div>
 
           <div className="list">
@@ -124,7 +122,7 @@ export default async function HomePage() {
               <div className="list-item">
                 <div>
                   <h3>还没有评审记录</h3>
-                  <p className="muted">先创建一个新评审，结果会出现在这里。</p>
+                  <p className="muted">创建新评审后，这里会显示结果。</p>
                 </div>
               </div>
             ) : (
@@ -147,14 +145,14 @@ export default async function HomePage() {
           <div>
             <p className="section-eyebrow">Workbench</p>
             <h2 className="subsection-title">常用入口</h2>
-            <p className="section-copy">从工作台直接进入任务、发起评审，或维护规则与模型配置。</p>
+            <p className="section-copy">快速进入任务、批次、规则和模型。</p>
           </div>
 
           <div className="list">
             <Link className="list-item" href="/reviews">
               <div>
                 <h3>查看评审任务列表与进度</h3>
-                <p className="muted">打开评审任务页，继续跟踪当前状态。</p>
+                <p className="muted">查看当前任务。</p>
               </div>
               <span className="pill pill-brand">评审任务</span>
             </Link>
@@ -162,7 +160,7 @@ export default async function HomePage() {
             <Link className="list-item" href="/reviews/new">
               <div>
                 <h3>创建新的策划案批次</h3>
-                <p className="muted">上传文件、选择规则和模型后开始执行。</p>
+                <p className="muted">填写批次信息并开始评审。</p>
               </div>
               <span className="pill pill-brand">主操作</span>
             </Link>
@@ -170,7 +168,7 @@ export default async function HomePage() {
             <Link className="list-item" href="/rules">
               <div>
                 <h3>维护规则库与提示词模板</h3>
-                <p className="muted">更新评审口径并保留历史版本可追踪。</p>
+                <p className="muted">管理规则和提示词。</p>
               </div>
               <span className="pill pill-accent">配置台</span>
             </Link>
@@ -183,7 +181,7 @@ export default async function HomePage() {
           <div>
             <p className="section-eyebrow">Readiness</p>
             <h2 className="subsection-title">配置准备度</h2>
-            <p className="section-copy">确认规则、模型和结果联动已经准备就绪，再进入新一轮评审。</p>
+            <p className="section-copy">查看当前规则、模型和结果状态。</p>
           </div>
 
           <div className="feature-list">
@@ -191,21 +189,21 @@ export default async function HomePage() {
               <span className="feature-kicker">规则</span>
               <div>
                 <strong>{rulesCount} 条规则已建档</strong>
-                <p className="muted">评审前确认规则已启用，执行时会保留快照。</p>
+                <p className="muted">当前启用规则会参与评审。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">模型</span>
               <div>
                 <strong>{llmProfiles.length} 个启用中的模型配置</strong>
-                <p className="muted">到模型配置页切换可用配置后再发起批次。</p>
+                <p className="muted">启用的模型可用于新批次。</p>
               </div>
             </div>
             <div className="feature-row">
-              <span className="feature-kicker">联动</span>
+              <span className="feature-kicker">结果</span>
               <div>
-                <strong>报告、问题、原文三处互相联动</strong>
-                <p className="muted">发现命中后可以直接跳到对应原文段落。</p>
+                <strong>可查看报告、问题和原文位置</strong>
+                <p className="muted">结果页会显示对应内容。</p>
               </div>
             </div>
           </div>

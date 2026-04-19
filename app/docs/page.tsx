@@ -4,9 +4,9 @@ const documents: DocsDocument[] = [
   {
     id: "getting-started",
     title: "快速开始",
-    description: "第一次上手时，先把评审主流程跑通。",
+    description: "完成首次评审。",
     intro:
-      "推荐先确认模型与规则，再从新建批次页导入本地文件并发起批量任务，最后回到结果详情页做核对。",
+      "确认模型和规则后，导入文件并发起评审。",
     sections: [
       {
         id: "prepare-config",
@@ -28,9 +28,9 @@ const documents: DocsDocument[] = [
   {
     id: "models",
     title: "模型配置",
-    description: "维护供应商、模型和密钥的统一入口。",
+    description: "管理供应商、模型和密钥。",
     intro:
-      "模型配置页已经改成列表 + 抽屉流程，适合先浏览现有配置，再按需新增、编辑或启停。",
+      "在这里查看、新增、编辑和启停模型配置。",
     sections: [
       {
         id: "choose-provider",
@@ -40,7 +40,7 @@ const documents: DocsDocument[] = [
       {
         id: "manage-profiles",
         title: "通过列表管理配置",
-        body: "先在列表里搜索和筛选，再从工具栏或行操作打开抽屉编辑，避免页面内嵌表单打断浏览节奏。",
+        body: "可搜索模型配置并打开详情编辑。",
       },
       {
         id: "verify-key",
@@ -52,9 +52,9 @@ const documents: DocsDocument[] = [
   {
     id: "rules",
     title: "规则库",
-    description: "把检查口径写清楚，减少误判和返工。",
+    description: "管理评审规则。",
     intro:
-      "规则页现在聚焦于列表浏览和弹窗编辑，帮助你先整理规则库，再决定这次批量评审具体启用哪些条目。",
+      "在这里查看、启用和编辑规则。",
     sections: [
       {
         id: "define-goal",
@@ -76,9 +76,9 @@ const documents: DocsDocument[] = [
   {
     id: "results",
     title: "结果阅读",
-    description: "顺着摘要、命中项和原文联动做复核。",
+    description: "核对状态、问题和原文位置。",
     intro:
-      "结果详情页不是只看总数，而是要结合任务状态、问题列表和正文定位，判断这次评审是否可靠、哪里需要回头调整。",
+      "在这里查看任务状态、问题列表和正文定位。",
     sections: [
       {
         id: "check-status",

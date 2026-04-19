@@ -30,7 +30,7 @@ export default async function NewReviewPage() {
               </Link>
             </>
           }
-          description="在桌面工作区里完成批次配置、规则勾选与本地文件导入，然后直接发起新的评审批次。"
+          description="填写批次信息、选择规则并导入文件。"
           eyebrow="Review Launch"
           title="新建批次"
         />

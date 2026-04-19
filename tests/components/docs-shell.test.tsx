@@ -60,6 +60,12 @@ describe("DocsShell", () => {
     expect(paneHeaders).toHaveLength(3);
     expect(screen.getByRole("heading", { level: 1, name: "开始使用" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "发起评审" })).toBeInTheDocument();
+    expect(
+      screen.queryByText("左侧聚合各类操作文档，先选主题，再在正文中连续阅读。"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("右侧只显示当前文档的章节锚点，方便在长文里快速跳转。"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("经典三栏阅读模式")).not.toBeInTheDocument();
   });
 

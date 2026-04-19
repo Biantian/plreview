@@ -238,9 +238,7 @@ export function IntakeWorkbench({
             </div>
           </div>
 
-          <p className="section-copy">
-            先定义本次评审批次的命名与模型配置，右侧侧栏会实时告诉你是否已经达到发起条件。
-          </p>
+          <p className="section-copy">填写批次名称并选择模型。</p>
 
           <div className="form-grid two">
             <div className="field">
@@ -325,9 +323,7 @@ export function IntakeWorkbench({
                 </span>
               </div>
 
-              <p className="section-copy">
-                只保留本次批量评审需要的规则，提交时会和批次配置一起生效。
-              </p>
+              <p className="section-copy">选择本次评审要使用的规则。</p>
 
               <div className="checkbox-list">
                 {rules.length === 0 ? (
@@ -386,9 +382,7 @@ export function IntakeWorkbench({
                   <div>
                     <p className="section-eyebrow">Desktop Intake</p>
                     <strong>选择本地文件</strong>
-                    <p className="muted">
-                      在桌面应用中选择文件后，会立即完成本地导入与解析。
-                    </p>
+                    <p className="muted">选择文件后开始导入和解析。</p>
                   </div>
 
                   <div className="actions">
@@ -408,9 +402,7 @@ export function IntakeWorkbench({
                   <div>
                     <p className="section-eyebrow">Desktop Required</p>
                     <strong>请在桌面应用中启动后再导入本地文件。</strong>
-                    <p className="muted">
-                      当前环境不支持直接导入，文件区只展示桌面端的真实导入结果。
-                    </p>
+                    <p className="muted">当前环境仅显示桌面端导入结果。</p>
                   </div>
                 </div>
               )}
@@ -538,9 +530,7 @@ export function IntakeWorkbench({
                       <span className="feature-kicker">标题</span>
                       <div>
                         <strong>{selectedSummaryFile.summary?.title ?? "待完成本地解析"}</strong>
-                        <p className="muted">
-                          导入后的策划案标题会显示在这里，方便确认是否读对内容。
-                        </p>
+                        <p className="muted">导入后会显示文档标题。</p>
                       </div>
                     </div>
                     <div className="feature-row">
@@ -557,23 +547,21 @@ export function IntakeWorkbench({
                           {formatCount(selectedSummaryFile.summary?.blockCount, "文档块")} ·{" "}
                           {formatCount(selectedSummaryFile.summary?.paragraphCount, "段落")}
                         </strong>
-                        <p className="muted">
-                          文档块和段落数量可以帮助快速判断解析粒度是否合理。
-                        </p>
+                        <p className="muted">显示文档块和段落数量。</p>
                       </div>
                     </div>
                     <div className="feature-row">
                       <span className="feature-kicker">来源</span>
                       <div>
                         <strong>{selectedSummaryFile.summary?.sourceLabel ?? "待识别来源"}</strong>
-                        <p className="muted">用来确认这份文件来自哪一次本地导入。</p>
+                        <p className="muted">显示当前文件的导入来源。</p>
                       </div>
                     </div>
                     <div className="feature-row">
                       <span className="feature-kicker">摘要</span>
                       <div>
                         <strong>{selectedSummaryFile.note ?? "暂无解析摘要"}</strong>
-                        <p className="muted">这里会保留当前文件的解析说明，方便行级排查。</p>
+                        <p className="muted">显示当前文件的解析摘要。</p>
                       </div>
                     </div>
                   </div>
@@ -687,15 +675,6 @@ export function IntakeWorkbench({
           </div>
         </section>
 
-        <section className="desktop-surface stack">
-          <div>
-            <p className="section-eyebrow">Launch Guidance</p>
-            <h3 className="subsection-title">发起提示</h3>
-          </div>
-          <p className="muted">
-            右侧侧栏只负责显示准备状态与提交概览，真正的发起动作已经放回主工作区，方便连续完成规则、文件检查与提交。
-          </p>
-        </section>
       </aside>
     </section>
   );

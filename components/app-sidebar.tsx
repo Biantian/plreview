@@ -14,7 +14,7 @@ export function AppSidebar() {
           </span>
         </Link>
         <p className="sidebar-brand-description">
-          规则、批次、结果和文档都固定停靠在这条桌面导航轨道里。
+          规则、评审、模型和文档入口。
         </p>
       </div>
 
