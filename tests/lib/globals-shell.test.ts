@@ -6,14 +6,18 @@ import { describe, expect, it } from "vitest";
 const globalsCss = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8");
 
 describe("globals shell styles", () => {
-  const hasRule = (selector: string, required: string[]) => {
+  const getRuleBody = (selector: string) => {
     const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const blockRegex = new RegExp(`${escapedSelector}\\s*\\{([\\s\\S]*?)\\}`, "m");
     const match = globalsCss.match(blockRegex);
 
     expect(match, `missing CSS rule for ${selector}`).not.toBeNull();
 
-    const body = match?.[1] ?? "";
+    return match?.[1] ?? "";
+  };
+
+  const hasRule = (selector: string, required: string[]) => {
+    const body = getRuleBody(selector);
 
     for (const token of required) {
       expect(body, `expected ${selector} to contain ${token}`).toContain(token);
@@ -35,13 +39,22 @@ describe("globals shell styles", () => {
   it("defines the docs workspace as fixed master-detail panes with dedicated scrolling", () => {
     hasRule(".docs-shell", [
       "grid-template-columns: 240px minmax(0, 1fr) 200px;",
-      "height: 100vh;",
-      "overflow: hidden;",
+      "flex: 1 1 auto;",
+      "min-height: 0;",
     ]);
+    expect(getRuleBody(".docs-shell")).not.toContain("height: 100vh;");
+    expect(getRuleBody(".docs-shell")).not.toContain("min-height: 100vh;");
+    hasRule(".docs-page", ["flex: 1 1 auto;", "min-height: 0;"]);
+    hasRule(".docs-page-stack", ["flex: 1 1 auto;", "min-height: 0;"]);
     hasRule(".docs-pane", ["align-self: stretch;", "overflow: hidden;"]);
     hasRule(".docs-pane-directory", ["border-right: 1px solid var(--line);"]);
     hasRule(".docs-pane-toc", ["border-left: 1px solid var(--line);"]);
-    hasRule(".docs-pane-content", ["overflow-y: auto;"]);
-    hasRule(".docs-pane-article", ["overflow-y: auto;"]);
+    hasRule(".docs-pane-header", ["flex: 0 0 auto;"]);
+    hasRule(".docs-pane-scroll", [
+      "overflow: hidden;",
+      "overflow-y: auto;",
+      "min-height: 0;",
+    ]);
+    hasRule(".docs-pane-article", ["padding: 0;"]);
   });
 });

@@ -38,20 +38,19 @@ export function DocsShell({ documents }: DocsShellProps) {
   }
 
   return (
-    <div className="page-stack">
+    <div className="page-stack docs-page-stack">
       <div className="docs-shell docs-workspace" data-testid="docs-shell">
         <aside
           aria-label="文档目录"
           className="desktop-surface docs-pane docs-pane-directory"
           role="complementary"
         >
-          <div className="stack docs-pane-content">
-            <div className="page-header docs-pane-header">
-              <p className="section-eyebrow">DIRECTORY</p>
-              <h2 className="subsection-title">文档目录</h2>
-              <p className="section-copy">左侧聚合各类操作文档，先选主题，再在正文中连续阅读。</p>
-            </div>
-
+          <div className="page-header docs-pane-header">
+            <p className="section-eyebrow">DIRECTORY</p>
+            <h2 className="subsection-title">文档目录</h2>
+            <p className="section-copy">左侧聚合各类操作文档，先选主题，再在正文中连续阅读。</p>
+          </div>
+          <div className="docs-pane-scroll">
             <div className="docs-directory-list">
               {documents.map((document) => {
                 const isActive = document.id === activeDocument.id;
@@ -76,7 +75,7 @@ export function DocsShell({ documents }: DocsShellProps) {
 
         <article
           aria-label="文档正文"
-          className="desktop-surface docs-pane docs-pane-article stack-lg"
+          className="desktop-surface docs-pane docs-pane-article"
           role="article"
         >
           <div className="page-header docs-pane-header">
@@ -85,23 +84,20 @@ export function DocsShell({ documents }: DocsShellProps) {
             <p className="section-copy">{activeDocument.intro}</p>
           </div>
 
-          <div className="inline-actions">
-            <span className="pill pill-brand">{activeDocument.description}</span>
-            <span className="pill">{activeDocument.sections.length} 个章节</span>
-          </div>
-
-          <div className="docs-document-stream">
-            {activeDocument.sections.map((section, index) => (
-              <section className="docs-document-block" id={section.id} key={section.id}>
-                <div className="feature-row">
-                  <span className="feature-kicker">{String(index + 1).padStart(2, "0")}</span>
-                  <div>
-                    <h2 className="subsection-title">{section.title}</h2>
-                    <p className="section-copy">{section.body}</p>
+          <div className="docs-pane-scroll docs-pane-scroll-article">
+            <div className="docs-document-stream">
+              {activeDocument.sections.map((section, index) => (
+                <section className="docs-document-block" id={section.id} key={section.id}>
+                  <div className="feature-row">
+                    <span className="feature-kicker">{String(index + 1).padStart(2, "0")}</span>
+                    <div>
+                      <h2 className="subsection-title">{section.title}</h2>
+                      <p className="section-copy">{section.body}</p>
+                    </div>
                   </div>
-                </div>
-              </section>
-            ))}
+                </section>
+              ))}
+            </div>
           </div>
         </article>
 
@@ -110,13 +106,12 @@ export function DocsShell({ documents }: DocsShellProps) {
           className="desktop-surface docs-pane docs-pane-toc"
           role="complementary"
         >
-          <div className="stack docs-pane-content">
-            <div className="page-header docs-pane-header">
-              <p className="section-eyebrow">ARTICLE TOC</p>
-              <h2 className="subsection-title">文章目录</h2>
-              <p className="section-copy">右侧只显示当前文档的章节锚点，方便在长文里快速跳转。</p>
-            </div>
-
+          <div className="page-header docs-pane-header">
+            <p className="section-eyebrow">ARTICLE TOC</p>
+            <h2 className="subsection-title">文章目录</h2>
+            <p className="section-copy">右侧只显示当前文档的章节锚点，方便在长文里快速跳转。</p>
+          </div>
+          <div className="docs-pane-scroll">
             <div className="docs-toc-list">
               {activeDocument.sections.map((section, index) => (
                 <a className="docs-toc-link" href={`#${section.id}`} key={section.id}>

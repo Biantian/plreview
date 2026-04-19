@@ -78,16 +78,29 @@ describe("DocsShell", () => {
   it("renders a fixed three-pane docs workspace with pane headers", () => {
     render(<DocsShell documents={documents} />);
 
+    const directoryPane = screen.getByRole("complementary", { name: "文档目录" });
     const article = screen.getByRole("article", { name: "文档正文" });
+    const tocPane = screen.getByRole("complementary", { name: "文章目录" });
+    const directoryScroll = directoryPane.querySelector(".docs-pane-scroll");
+    const articleScroll = article.querySelector(".docs-pane-scroll");
+    const tocScroll = tocPane.querySelector(".docs-pane-scroll");
 
     expect(screen.getByText("DIRECTORY")).toBeInTheDocument();
     expect(screen.getByText("DOCS")).toBeInTheDocument();
     expect(screen.getByText("ARTICLE TOC")).toBeInTheDocument();
-    expect(screen.getByLabelText("文档目录")).toContainElement(screen.getByText("DIRECTORY"));
-    expect(screen.getByLabelText("文章目录")).toContainElement(screen.getByText("ARTICLE TOC"));
+    expect(directoryPane).toContainElement(screen.getByText("DIRECTORY"));
+    expect(tocPane).toContainElement(screen.getByText("ARTICLE TOC"));
     expect(article).toContainElement(screen.getByText("DOCS"));
+    expect(directoryScroll).not.toBeNull();
+    expect(articleScroll).not.toBeNull();
+    expect(tocScroll).not.toBeNull();
+    expect(directoryScroll).not.toContainElement(screen.getByText("DIRECTORY"));
+    expect(articleScroll).not.toContainElement(screen.getByText("DOCS"));
+    expect(tocScroll).not.toContainElement(screen.getByText("ARTICLE TOC"));
     expect(article.querySelector(".docs-document-stream")).not.toBeNull();
     expect(article.querySelectorAll(".docs-document-block")).toHaveLength(2);
+    expect(article.querySelector(".inline-actions")).toBeNull();
+    expect(screen.queryByText("2 个章节")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "打开文档 开始使用" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "查看结果" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "展开文档目录" })).not.toBeInTheDocument();

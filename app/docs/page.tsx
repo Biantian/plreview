@@ -101,7 +101,7 @@ const documents: DocsDocument[] = [
 
 export default function DocsPage() {
   return (
-    <div className="desktop-management-page stack-lg">
+    <div className="desktop-management-page docs-page stack-lg">
       <DocsShell documents={documents} />
     </div>
   );
