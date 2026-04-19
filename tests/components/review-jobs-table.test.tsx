@@ -269,6 +269,76 @@ describe("ReviewJobsTable", () => {
     expect(screen.getByRole("button", { name: "删除" })).toBeEnabled();
   });
 
+  it("renders the desktop queue shell with task counts", () => {
+    mockReviewsResponse([
+      {
+        annotationsCount: 3,
+        batchName: "四月批次",
+        createdAt: "2026-04-13T10:00:00.000Z",
+        fileType: "xlsx",
+        filename: "玩法.xlsx",
+        finishedAt: "2026-04-13T12:00:00.000Z",
+        id: "1",
+        modelName: "qwen-plus",
+        overallScore: 80,
+        status: "completed",
+        title: "玩法复盘",
+      },
+      {
+        annotationsCount: 0,
+        batchName: "五月批次",
+        createdAt: "2026-04-13T11:00:00.000Z",
+        fileType: "docx",
+        filename: "包装.docx",
+        finishedAt: null,
+        id: "2",
+        modelName: "qwen-max",
+        overallScore: null,
+        status: "failed",
+        title: "活动包装",
+      },
+    ]);
+
+    render(
+      <ReviewJobsTable
+        items={[
+          {
+            annotationsCount: 3,
+            batchName: "四月批次",
+            createdAt: "2026-04-13T10:00:00.000Z",
+            fileType: "xlsx",
+            filename: "玩法.xlsx",
+            finishedAt: "2026-04-13T12:00:00.000Z",
+            id: "1",
+            modelName: "qwen-plus",
+            overallScore: 80,
+            status: "completed",
+            title: "玩法复盘",
+          },
+          {
+            annotationsCount: 0,
+            batchName: "五月批次",
+            createdAt: "2026-04-13T11:00:00.000Z",
+            fileType: "docx",
+            filename: "包装.docx",
+            finishedAt: null,
+            id: "2",
+            modelName: "qwen-max",
+            overallScore: null,
+            status: "failed",
+            title: "活动包装",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("任务队列")).toBeInTheDocument();
+    expect(screen.getByText("共 2 条任务 · 当前显示 2 条")).toBeInTheDocument();
+    expect(
+      screen.getByRole("table", { name: "评审任务表格" }).closest(".desktop-table-card"),
+    ).toBeTruthy();
+  });
+
   it("sends an all-filtered payload for bulk export actions", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.mocked(global.fetch);

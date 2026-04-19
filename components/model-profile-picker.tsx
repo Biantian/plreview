@@ -44,7 +44,7 @@ export function ModelProfilePicker({ profiles }: { profiles: ProfileOption[] }) 
             ? "当前配置为演示模式，会生成示例评审结果。"
             : selected?.ready
               ? "当前配置已就绪，会调用对应供应商的真实模型。"
-              : "当前配置缺少 API Key，请先到模型设置页补全。"}
+              : "当前配置缺少 API Key，请先到模型配置页补全。"}
         </p>
       </div>
 

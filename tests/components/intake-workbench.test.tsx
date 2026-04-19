@@ -101,20 +101,29 @@ describe("IntakeWorkbench", () => {
   it("renders launch actions without the old split workbench copy", () => {
     render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "新建评审" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "文件工作台" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "评审启动工作区" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "启动摘要" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "查看帮助" })).not.toBeInTheDocument();
   });
 
-  it("renders the launch flow as four ordered sections", () => {
+  it("renders a desktop launch workspace with main zones and a readiness rail", () => {
     render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
 
-    const sectionHeadings = screen
-      .getAllByRole("heading", { level: 2 })
-      .map((heading) => heading.textContent);
+    const workspace = screen.getByRole("region", { name: "评审启动工作区" });
+    const readinessRail = screen.getByRole("complementary", { name: "启动摘要" });
 
-    expect(sectionHeadings).toEqual(["批次信息", "规则选择", "文件导入", "提交"]);
+    expect(within(workspace).getByRole("heading", { level: 2, name: "批次配置" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 3, name: "规则选择" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 3, name: "文件导入" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 3, name: "导入文件清单" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 3, name: "启动批次" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("button", { name: "开始评审" })).toBeInTheDocument();
+    expect(within(readinessRail).getByRole("heading", { name: "启动摘要" })).toBeInTheDocument();
+    expect(within(readinessRail).queryByRole("button", { name: "开始评审" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "批量配置" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "提交" })).not.toBeInTheDocument();
   });
 
   it("keeps batch submission disabled until the required launch fields are complete", async () => {
@@ -136,13 +145,17 @@ describe("IntakeWorkbench", () => {
       />,
     );
 
-    const submitButton = screen.getByRole("button", { name: "开始评审" });
+    const workspace = screen.getByRole("region", { name: "评审启动工作区" });
+    const readinessRail = screen.getByRole("complementary", { name: "启动摘要" });
+    const submitButton = within(workspace).getByRole("button", { name: "开始评审" });
 
     expect(submitButton).toBeDisabled();
+    expect(within(readinessRail).getByText("待补全启动信息")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("批次名称"), "四月策划案");
 
     expect(submitButton).toBeEnabled();
+    expect(within(readinessRail).getByText("可创建批次")).toBeInTheDocument();
   });
 
   it("shows desktop-oriented import counts instead of retry workflow counts", () => {
@@ -163,11 +176,27 @@ describe("IntakeWorkbench", () => {
       />,
     );
 
-    expect(screen.getByText("已导入 1 条")).toBeInTheDocument();
-    expect(screen.getByText("待评审 1 条")).toBeInTheDocument();
+    const fileZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+
+    expect(fileZone).not.toBeNull();
+    expect(within(fileZone as HTMLElement).getByText("已导入 1 条")).toBeInTheDocument();
+    expect(within(fileZone as HTMLElement).getByText("待评审 1 条")).toBeInTheDocument();
     expect(screen.queryByText(/可提交/)).not.toBeInTheDocument();
     expect(screen.queryByText(/待重新导入/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText("状态筛选")).not.toBeInTheDocument();
+  });
+
+  it("keeps the imported files table in a dedicated full-width launch zone", () => {
+    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+
+    const table = screen.getByRole("table", { name: "已导入文件" });
+    const fileBoard = screen.getByRole("heading", { level: 3, name: "导入文件清单" }).closest("section");
+    const intakeZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+
+    expect(fileBoard).not.toBeNull();
+    expect(intakeZone).not.toBeNull();
+    expect(table.closest("section")).toBe(fileBoard);
+    expect(fileBoard).not.toBe(intakeZone);
   });
 
   it("removes a workbench row from the table", async () => {
@@ -296,9 +325,12 @@ describe("IntakeWorkbench", () => {
     await user.click(screen.getByRole("button", { name: "选择本地文件" }));
 
     expect(pickFiles).toHaveBeenCalledTimes(1);
+    const fileZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+
+    expect(fileZone).not.toBeNull();
     expect(screen.getByRole("rowheader", { name: "schedule.xlsx" })).toBeInTheDocument();
     expect(screen.getByText("标题：四月活动排期 · 1 个文档块")).toBeInTheDocument();
-    expect(screen.getByText("已导入 1 条")).toBeInTheDocument();
+    expect(within(fileZone as HTMLElement).getByText("已导入 1 条")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /重新导入/ })).not.toBeInTheDocument();
   });
 
@@ -408,8 +440,11 @@ describe("IntakeWorkbench", () => {
       />,
     );
 
-    expect(screen.getByText("已导入 3 条")).toBeInTheDocument();
-    expect(screen.getByText("待评审 3 条")).toBeInTheDocument();
+    const fileZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+
+    expect(fileZone).not.toBeNull();
+    expect(within(fileZone as HTMLElement).getByText("已导入 3 条")).toBeInTheDocument();
+    expect(within(fileZone as HTMLElement).getByText("待评审 3 条")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("批次名称"), "四月批量回归");
     await user.click(screen.getByRole("button", { name: "开始评审" }));

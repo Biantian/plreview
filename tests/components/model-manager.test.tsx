@@ -40,20 +40,18 @@ describe("ModelManager", () => {
     },
   ];
 
+  it("renders the desktop model shell with toolbar summary", () => {
+    render(<ModelManager profiles={profiles} />);
+
+    expect(screen.getByText("模型配置矩阵")).toBeInTheDocument();
+    expect(screen.getByText("共 2 条配置 · 当前显示 2 条")).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "模型表格" }).closest(".desktop-table-card")).toBeTruthy();
+  });
+
   it("filters rows and opens the drawer for editing", async () => {
     const user = userEvent.setup();
 
-    render(
-      <ModelManager
-        metrics={{
-          totalCount: 2,
-          enabledCount: 1,
-          liveCount: 1,
-          latestUpdatedAtLabel: "2026-04-15 16:00",
-        }}
-        profiles={profiles}
-      />,
-    );
+    render(<ModelManager profiles={profiles} />);
 
     await user.type(screen.getByRole("searchbox", { name: "搜索模型" }), "演示");
     await user.click(screen.getByRole("button", { name: "编辑 演示配置" }));
@@ -66,17 +64,7 @@ describe("ModelManager", () => {
   it("opens the create drawer from the toolbar", async () => {
     const user = userEvent.setup();
 
-    render(
-      <ModelManager
-        metrics={{
-          totalCount: 0,
-          enabledCount: 0,
-          liveCount: 0,
-          latestUpdatedAtLabel: "--",
-        }}
-        profiles={[]}
-      />,
-    );
+    render(<ModelManager profiles={[]} />);
 
     await user.click(screen.getByRole("button", { name: "新增模型" }));
 

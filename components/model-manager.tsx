@@ -42,15 +42,8 @@ function matchesQuery(profile: ModelProfileRecord, query: string) {
 }
 
 export function ModelManager({
-  metrics,
   profiles,
 }: {
-  metrics: {
-    totalCount: number;
-    enabledCount: number;
-    liveCount: number;
-    latestUpdatedAtLabel: string;
-  };
   profiles: ModelProfileRecord[];
 }) {
   const [query, setQuery] = useState("");
@@ -68,29 +61,18 @@ export function ModelManager({
     null;
 
   return (
-    <section className="stack-lg">
-      <div className="metric-grid">
-        <div className="metric-card">
-          <p className="metric-label">模型总数</p>
-          <strong className="metric-value">{metrics.totalCount}</strong>
+    <section className="desktop-table-card stack-lg">
+      <div className="desktop-table-header">
+        <div className="desktop-table-heading">
+          <p className="section-eyebrow">模型配置矩阵</p>
+          <h2 className="subsection-title">模型目录</h2>
         </div>
-        <div className="metric-card">
-          <p className="metric-label">启用中</p>
-          <strong className="metric-value">{metrics.enabledCount}</strong>
-        </div>
-        <div className="metric-card">
-          <p className="metric-label">实时模式</p>
-          <strong className="metric-value">{metrics.liveCount}</strong>
-        </div>
-        <div className="metric-card">
-          <p className="metric-label">最近更新</p>
-          <strong className="metric-value">{metrics.latestUpdatedAtLabel}</strong>
-        </div>
+        <p className="desktop-table-summary">共 {profiles.length} 条配置 · 当前显示 {filteredProfiles.length} 条</p>
       </div>
 
-      <div className="table-toolbar">
+      <div className="desktop-table-toolbar">
         <TableSearchInput label="搜索模型" onChange={setQuery} value={query} />
-        <div className="actions">
+        <div className="desktop-table-toolbar-actions">
           <p className="muted">支持按配置名称、供应商、模式和默认模型筛选。</p>
           <button
             className="button"

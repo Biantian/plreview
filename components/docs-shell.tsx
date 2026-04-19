@@ -31,7 +31,7 @@ export function DocsShell({ documents }: DocsShellProps) {
   if (!activeDocument) {
     return (
       <div className="page-stack">
-        <section className="panel stack">
+        <section className="desktop-surface stack">
           <h1 className="section-title">文档</h1>
           <p className="section-copy">暂时还没有可展示的文档内容。</p>
         </section>
@@ -47,7 +47,7 @@ export function DocsShell({ documents }: DocsShellProps) {
   return (
     <div className="page-stack">
       <div
-        className="docs-shell"
+        className="docs-shell docs-workspace"
         data-left-collapsed={isDirectoryCollapsed}
         data-right-collapsed={isTocCollapsed}
         data-testid="docs-shell"
@@ -55,7 +55,7 @@ export function DocsShell({ documents }: DocsShellProps) {
       >
         <aside
           aria-label="文档目录"
-          className="card docs-sidebar docs-sidebar-left"
+          className="desktop-surface docs-sidebar docs-rail docs-sidebar-left"
           data-collapsed={isDirectoryCollapsed}
           data-testid="docs-directory-rail"
           role="complementary"
@@ -100,7 +100,7 @@ export function DocsShell({ documents }: DocsShellProps) {
           ) : null}
         </aside>
 
-        <article aria-label="文档正文" className="panel stack-lg docs-main" role="article">
+        <article aria-label="文档正文" className="desktop-surface stack-lg docs-main" role="article">
           <div className="page-header">
             <p className="section-eyebrow">Docs</p>
             <h1 className="section-title">{activeDocument.title}</h1>
@@ -129,7 +129,7 @@ export function DocsShell({ documents }: DocsShellProps) {
 
         <aside
           aria-label="文章目录"
-          className="card docs-sidebar docs-sidebar-right"
+          className="desktop-surface docs-sidebar docs-rail docs-sidebar-right"
           data-collapsed={isTocCollapsed}
           data-testid="docs-toc-rail"
           role="complementary"

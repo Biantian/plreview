@@ -114,6 +114,32 @@ export function IntakeWorkbench({
     selectedProfileId.length > 0 &&
     readyDocuments.length > 0 &&
     selectedRuleIds.length > 0;
+  const launchChecklist = [
+    {
+      id: "batch",
+      isReady: batchName.trim().length > 0,
+      label: "批次名称",
+      value: batchName.trim() || "待命名",
+    },
+    {
+      id: "profile",
+      isReady: selectedProfileId.length > 0,
+      label: "模型配置",
+      value: selectedProfile?.name ?? "未配置",
+    },
+    {
+      id: "rules",
+      isReady: selectedRuleIds.length > 0,
+      label: "评审规则",
+      value: selectedRuleIds.length > 0 ? `${selectedRuleIds.length} 条已选` : "待选择",
+    },
+    {
+      id: "documents",
+      isReady: readyDocuments.length > 0,
+      label: "待评审文件",
+      value: readyDocuments.length > 0 ? `${readyDocuments.length} 条待评审` : "待导入",
+    },
+  ];
 
   useEffect(() => {
     setWorkbenchFiles((current) => mergeImportedFiles(current, incomingImportedFiles));
@@ -196,24 +222,25 @@ export function IntakeWorkbench({
   };
 
   return (
-    <div className="launch-flow">
-      <section className="panel stack-lg">
-        <div className="page-header">
-          <p className="section-eyebrow">Review Launch</p>
-          <h1 className="section-title">新建评审</h1>
-          <p className="section-copy">
-            按顺序完成批次配置、规则选择和文件导入后，就可以直接创建本地评审任务。
-          </p>
-        </div>
-
-        <section className="form-section">
+    <section aria-label="评审启动工作区" className="launch-workspace">
+      <div className="launch-main-column">
+        <section className="desktop-surface stack-lg" aria-labelledby="launch-config-heading">
           <div className="launch-section-header">
             <div>
-              <p className="section-eyebrow">Step 1</p>
-              <h2 className="subsection-title">批次信息</h2>
+              <p className="section-eyebrow">Launch Setup</p>
+              <h2 className="subsection-title" id="launch-config-heading">
+                批次配置
+              </h2>
             </div>
-            <span className="pill pill-brand">当前模型：{selectedProfile?.name ?? "未配置"}</span>
+            <div className="launch-pill-row">
+              <span className="pill pill-brand">当前模型：{selectedProfile?.name ?? "未配置"}</span>
+              <span className="pill">模型名称：{modelName || "待填写"}</span>
+            </div>
           </div>
+
+          <p className="section-copy">
+            先定义本次评审批次的命名与模型配置，右侧侧栏会实时告诉你是否已经达到发起条件。
+          </p>
 
           <div className="form-grid two">
             <div className="field">
@@ -269,255 +296,383 @@ export function IntakeWorkbench({
           </div>
         </section>
 
-        <section className="form-section">
+        <section className="desktop-surface stack-lg" aria-labelledby="launch-flow-heading">
           <div className="launch-section-header">
             <div>
-              <p className="section-eyebrow">Step 2</p>
-              <h2 className="subsection-title">规则选择</h2>
-            </div>
-            <span className="pill">
-              {selectedRuleIds.length} / {rules.length} 条已选
-            </span>
-          </div>
-
-          <p className="section-copy">只保留本次批量评审需要的规则，提交时会和批次配置一起生效。</p>
-
-          <div className="checkbox-list">
-            {rules.length === 0 ? (
-              <div className="checkbox-card">
-                <div>
-                  <strong>还没有启用规则</strong>
-                  <p className="muted">
-                    先去 <Link href="/rules">规则管理</Link> 页面创建至少一条启用规则。
-                  </p>
-                </div>
-              </div>
-            ) : (
-              rules.map((rule) => (
-                <label className="checkbox-card" key={rule.id}>
-                  <input
-                    checked={selectedRuleIds.includes(rule.id)}
-                    onChange={(event) => {
-                      setSelectedRuleIds((current) =>
-                        event.target.checked
-                          ? [...current, rule.id]
-                          : current.filter((ruleId) => ruleId !== rule.id),
-                      );
-                    }}
-                    name="ruleIds"
-                    type="checkbox"
-                    value={rule.id}
-                  />
-                  <div>
-                    <strong>{rule.name}</strong>
-                    <p className="muted">
-                      {rule.category} · {rule.description}
-                    </p>
-                  </div>
-                </label>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="form-section">
-          <div className="launch-section-header">
-            <div>
-              <p className="section-eyebrow">Step 3</p>
-              <h2 className="subsection-title">文件导入</h2>
+              <p className="section-eyebrow">File Workbench</p>
+              <h2 className="subsection-title" id="launch-flow-heading">
+                文件工作台
+              </h2>
             </div>
             <div className="launch-pill-row">
+              <span className="pill">{selectedRuleIds.length} / {rules.length} 条规则已选</span>
               <span className="pill pill-brand">已导入 {workbenchFiles.length} 条</span>
               <span className="pill">待评审 {readyDocuments.length} 条</span>
             </div>
           </div>
 
-          {hasDesktopPicker ? (
-            <div className="upload-panel">
-              <div>
-                <p className="section-eyebrow">File Intake</p>
-                <strong>选择本地文件</strong>
-                <p className="muted">在桌面应用中选择文件后，会立即完成本地导入与解析。</p>
+          <div className="launch-zone-grid">
+            <section className="launch-zone stack" aria-labelledby="launch-rules-heading">
+              <div className="launch-section-header">
+                <div>
+                  <p className="section-eyebrow">Rules</p>
+                  <h3 className="subsection-title" id="launch-rules-heading">
+                    规则选择
+                  </h3>
+                </div>
+                <span className="pill">
+                  {selectedRuleIds.length} / {rules.length} 条已选
+                </span>
+              </div>
+
+              <p className="section-copy">
+                只保留本次批量评审需要的规则，提交时会和批次配置一起生效。
+              </p>
+
+              <div className="checkbox-list">
+                {rules.length === 0 ? (
+                  <div className="checkbox-card">
+                    <div>
+                      <strong>还没有启用规则</strong>
+                      <p className="muted">
+                        先去 <Link href="/rules">规则库</Link> 页面创建至少一条启用规则。
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  rules.map((rule) => (
+                    <label className="checkbox-card" key={rule.id}>
+                      <input
+                        checked={selectedRuleIds.includes(rule.id)}
+                        onChange={(event) => {
+                          setSelectedRuleIds((current) =>
+                            event.target.checked
+                              ? [...current, rule.id]
+                              : current.filter((ruleId) => ruleId !== rule.id),
+                          );
+                        }}
+                        name="ruleIds"
+                        type="checkbox"
+                        value={rule.id}
+                      />
+                      <div>
+                        <strong>{rule.name}</strong>
+                        <p className="muted">
+                          {rule.category} · {rule.description}
+                        </p>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section className="launch-zone stack" aria-labelledby="launch-files-heading">
+              <div className="launch-section-header">
+                <div>
+                  <p className="section-eyebrow">File Intake</p>
+                  <h3 className="subsection-title" id="launch-files-heading">
+                    文件导入
+                  </h3>
+                </div>
+                <div className="launch-pill-row">
+                  <span className="pill pill-brand">已导入 {workbenchFiles.length} 条</span>
+                  <span className="pill">待评审 {readyDocuments.length} 条</span>
+                </div>
+              </div>
+
+              {hasDesktopPicker ? (
+                <div className="upload-panel">
+                  <div>
+                    <p className="section-eyebrow">Desktop Intake</p>
+                    <strong>选择本地文件</strong>
+                    <p className="muted">
+                      在桌面应用中选择文件后，会立即完成本地导入与解析。
+                    </p>
+                  </div>
+
+                  <div className="actions">
+                    <button
+                      aria-label="选择本地文件"
+                      className="button"
+                      disabled={isPickingFiles || isSubmitting}
+                      onClick={handlePickFiles}
+                      type="button"
+                    >
+                      {isPickingFiles ? "正在导入..." : "选择本地文件"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="upload-panel">
+                  <div>
+                    <p className="section-eyebrow">Desktop Required</p>
+                    <strong>请在桌面应用中启动后再导入本地文件。</strong>
+                    <p className="muted">
+                      当前环境不支持直接导入，文件区只展示桌面端的真实导入结果。
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {errorMessage ? (
+                <p className="muted" role="alert">
+                  {errorMessage}
+                </p>
+              ) : null}
+
+            </section>
+
+            <section className="launch-file-board stack" aria-labelledby="launch-file-board-heading">
+              <div className="launch-section-header">
+                <div>
+                  <p className="section-eyebrow">Imported Files</p>
+                  <h3 className="subsection-title" id="launch-file-board-heading">
+                    导入文件清单
+                  </h3>
+                </div>
+                <div className="launch-pill-row">
+                  <span className="pill pill-brand">已导入 {workbenchFiles.length} 条</span>
+                  <span className="pill">待评审 {readyDocuments.length} 条</span>
+                </div>
+              </div>
+
+              <div className="table-toolbar">
+                <div className="table-actions">
+                  <span className="muted">
+                    共 {workbenchFiles.length} 条 · 待评审 {readyDocuments.length} 条
+                  </span>
+                  <button
+                    className="button-ghost button-inline"
+                    disabled={isSubmitting || workbenchFiles.length === 0}
+                    onClick={handleClearWorkbench}
+                    type="button"
+                  >
+                    清空工作台
+                  </button>
+                </div>
+              </div>
+
+              <div className="table-shell">
+                <table aria-label="已导入文件" className="data-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">文件名</th>
+                      <th scope="col">类型</th>
+                      <th scope="col">状态</th>
+                      <th scope="col">备注</th>
+                      <th scope="col">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {workbenchFiles.length === 0 ? (
+                      <tr>
+                        <td className="muted" colSpan={5}>
+                          尚未导入文件，文件解析结果会在这里逐行呈现。
+                        </td>
+                      </tr>
+                    ) : (
+                      workbenchFiles.map((file) => (
+                        <tr key={file.id}>
+                          <th scope="row">{file.name}</th>
+                          <td>{file.fileType ?? "待识别"}</td>
+                          <td>
+                            <span className="pill pill-brand">{file.status ?? "待处理"}</span>
+                          </td>
+                          <td className="muted">
+                            {file.note ?? "已完成本地导入，等待加入评审。"}
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                aria-label={`查看摘要 ${file.name}`}
+                                className="button-ghost button-inline"
+                                onClick={() => setSelectedSummaryId(file.id)}
+                                type="button"
+                              >
+                                查看摘要
+                              </button>
+                              <button
+                                aria-label={`移除 ${file.name}`}
+                                className="button-ghost button-inline"
+                                disabled={isSubmitting}
+                                onClick={() => handleRemoveFile(file.id)}
+                                type="button"
+                              >
+                                移除
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedSummaryFile ? (
+                <section className="card stack" aria-label="解析摘要面板">
+                  <div className="inline-actions">
+                    <div>
+                      <p className="section-eyebrow">Summary</p>
+                      <h3 className="subsection-title">解析摘要</h3>
+                    </div>
+                    <button
+                      className="button-ghost button-inline"
+                      onClick={() => setSelectedSummaryId(null)}
+                      type="button"
+                    >
+                      收起摘要
+                    </button>
+                  </div>
+
+                  <div className="feature-list">
+                    <div className="feature-row">
+                      <span className="feature-kicker">文件</span>
+                      <div>
+                        <strong>{selectedSummaryFile.name}</strong>
+                        <p className="muted">{selectedSummaryFile.fileType ?? "待识别"}</p>
+                      </div>
+                    </div>
+                    <div className="feature-row">
+                      <span className="feature-kicker">标题</span>
+                      <div>
+                        <strong>{selectedSummaryFile.summary?.title ?? "待完成本地解析"}</strong>
+                        <p className="muted">
+                          导入后的策划案标题会显示在这里，方便确认是否读对内容。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="feature-row">
+                      <span className="feature-kicker">状态</span>
+                      <div>
+                        <strong>{selectedSummaryFile.status ?? "待处理"}</strong>
+                        <p className="muted">这份文件已经完成本地导入，可以直接加入本次评审。</p>
+                      </div>
+                    </div>
+                    <div className="feature-row">
+                      <span className="feature-kicker">结构</span>
+                      <div>
+                        <strong>
+                          {formatCount(selectedSummaryFile.summary?.blockCount, "文档块")} ·{" "}
+                          {formatCount(selectedSummaryFile.summary?.paragraphCount, "段落")}
+                        </strong>
+                        <p className="muted">
+                          文档块和段落数量可以帮助快速判断解析粒度是否合理。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="feature-row">
+                      <span className="feature-kicker">来源</span>
+                      <div>
+                        <strong>{selectedSummaryFile.summary?.sourceLabel ?? "待识别来源"}</strong>
+                        <p className="muted">用来确认这份文件来自哪一次本地导入。</p>
+                      </div>
+                    </div>
+                    <div className="feature-row">
+                      <span className="feature-kicker">摘要</span>
+                      <div>
+                        <strong>{selectedSummaryFile.note ?? "暂无解析摘要"}</strong>
+                        <p className="muted">这里会保留当前文件的解析说明，方便行级排查。</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
+            </section>
+
+            <section className="launch-submit-zone stack" aria-labelledby="launch-submit-heading">
+              <div className="launch-section-header">
+                <div>
+                  <p className="section-eyebrow">Launch Action</p>
+                  <h3 className="subsection-title" id="launch-submit-heading">
+                    启动批次
+                  </h3>
+                </div>
+                <span className={`pill ${isLaunchReady ? "pill-brand" : ""}`}>
+                  {isLaunchReady ? "可创建批次" : "待补全启动信息"}
+                </span>
+              </div>
+
+              <div className="stats launch-submit-grid">
+                <div className="stat">
+                  <p className="metric-label">批次</p>
+                  <strong>{batchName.trim() || "待命名"}</strong>
+                  <p className="muted">
+                    模型 {modelName || "待选择"} · 配置 {selectedProfile?.name ?? "未配置"}
+                  </p>
+                </div>
+                <div className="stat">
+                  <p className="metric-label">规则</p>
+                  <strong>{selectedRuleIds.length} 条已选</strong>
+                  <p className="muted">当前页只会提交已勾选的启用规则。</p>
+                </div>
+                <div className="stat">
+                  <p className="metric-label">文件</p>
+                  <strong>{readyDocuments.length} 条待评审</strong>
+                  <p className="muted">导入完成的文件会直接进入本次评审批次。</p>
+                </div>
               </div>
 
               <div className="actions">
                 <button
-                  aria-label="选择本地文件"
+                  aria-label="开始评审"
                   className="button"
-                  disabled={isPickingFiles || isSubmitting}
-                  onClick={handlePickFiles}
+                  disabled={!isLaunchReady}
+                  onClick={handleCreateReviewBatch}
                   type="button"
                 >
-                  {isPickingFiles ? "正在导入..." : "选择本地文件"}
+                  {isSubmitting ? "正在提交..." : "开始评审"}
                 </button>
-              </div>
-            </div>
-          ) : (
-            <div className="upload-panel">
-              <div>
-                <p className="section-eyebrow">Desktop Required</p>
-                <strong>请在桌面应用中启动后再导入本地文件。</strong>
-                <p className="muted">当前环境不支持直接导入，文件区只展示桌面端的真实导入结果。</p>
-              </div>
-            </div>
-          )}
-
-          {errorMessage ? (
-            <p className="muted" role="alert">
-              {errorMessage}
-            </p>
-          ) : null}
-
-          <div className="table-toolbar">
-            <div className="table-actions">
-              <span className="muted">共 {workbenchFiles.length} 条 · 待评审 {readyDocuments.length} 条</span>
-              <button
-                className="button-ghost button-inline"
-                disabled={isSubmitting || workbenchFiles.length === 0}
-                onClick={handleClearWorkbench}
-                type="button"
-              >
-                清空工作台
-              </button>
-            </div>
-          </div>
-
-          <table aria-label="已导入文件">
-            <thead>
-              <tr>
-                <th scope="col">文件名</th>
-                <th scope="col">类型</th>
-                <th scope="col">状态</th>
-                <th scope="col">备注</th>
-                <th scope="col">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workbenchFiles.length === 0 ? (
-                <tr>
-                  <td className="muted" colSpan={5}>
-                    尚未导入文件，文件解析结果会在这里逐行呈现。
-                  </td>
-                </tr>
-              ) : (
-                workbenchFiles.map((file) => (
-                  <tr key={file.id}>
-                    <th scope="row">{file.name}</th>
-                    <td>{file.fileType ?? "待识别"}</td>
-                    <td>
-                      <span className="pill pill-brand">{file.status ?? "待处理"}</span>
-                    </td>
-                    <td className="muted">{file.note ?? "已完成本地导入，等待加入评审。"}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          aria-label={`查看摘要 ${file.name}`}
-                          className="button-ghost button-inline"
-                          onClick={() => setSelectedSummaryId(file.id)}
-                          type="button"
-                        >
-                          查看摘要
-                        </button>
-                        <button
-                          aria-label={`移除 ${file.name}`}
-                          className="button-ghost button-inline"
-                          disabled={isSubmitting}
-                          onClick={() => handleRemoveFile(file.id)}
-                          type="button"
-                        >
-                          移除
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          {selectedSummaryFile ? (
-            <section className="card stack" aria-label="解析摘要面板">
-              <div className="inline-actions">
-                <div>
-                  <p className="section-eyebrow">Summary</p>
-                  <h3 className="subsection-title">解析摘要</h3>
-                </div>
-                <button
-                  className="button-ghost button-inline"
-                  onClick={() => setSelectedSummaryId(null)}
-                  type="button"
-                >
-                  收起摘要
-                </button>
-              </div>
-
-              <div className="feature-list">
-                <div className="feature-row">
-                  <span className="feature-kicker">文件</span>
-                  <div>
-                    <strong>{selectedSummaryFile.name}</strong>
-                    <p className="muted">{selectedSummaryFile.fileType ?? "待识别"}</p>
-                  </div>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-kicker">标题</span>
-                  <div>
-                    <strong>{selectedSummaryFile.summary?.title ?? "待完成本地解析"}</strong>
-                    <p className="muted">导入后的策划案标题会显示在这里，方便确认是否读对内容。</p>
-                  </div>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-kicker">状态</span>
-                  <div>
-                    <strong>{selectedSummaryFile.status ?? "待处理"}</strong>
-                    <p className="muted">这份文件已经完成本地导入，可以直接加入本次评审。</p>
-                  </div>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-kicker">结构</span>
-                  <div>
-                    <strong>
-                      {formatCount(selectedSummaryFile.summary?.blockCount, "文档块")} ·{" "}
-                      {formatCount(selectedSummaryFile.summary?.paragraphCount, "段落")}
-                    </strong>
-                    <p className="muted">文档块和段落数量可以帮助快速判断解析粒度是否合理。</p>
-                  </div>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-kicker">来源</span>
-                  <div>
-                    <strong>{selectedSummaryFile.summary?.sourceLabel ?? "待识别来源"}</strong>
-                    <p className="muted">用来确认这份文件来自哪一次本地导入。</p>
-                  </div>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-kicker">摘要</span>
-                  <div>
-                    <strong>{selectedSummaryFile.note ?? "暂无解析摘要"}</strong>
-                    <p className="muted">这里会保留当前文件的解析说明，方便行级排查。</p>
-                  </div>
-                </div>
+                <p className="muted">需填写批次名称，并至少导入 1 个文件与保留 1 条规则。</p>
               </div>
             </section>
-          ) : null}
+          </div>
         </section>
+      </div>
 
-        <section className="form-section">
+      <aside aria-label="启动摘要" className="desktop-info-rail launch-readiness-rail">
+        <section className="desktop-surface stack" aria-labelledby="launch-readiness-heading">
           <div className="launch-section-header">
             <div>
-              <p className="section-eyebrow">Step 4</p>
-              <h2 className="subsection-title">提交</h2>
+              <p className="section-eyebrow">Launch Summary</p>
+              <h2 className="subsection-title" id="launch-readiness-heading">
+                启动摘要
+              </h2>
             </div>
             <span className={`pill ${isLaunchReady ? "pill-brand" : ""}`}>
               {isLaunchReady ? "可创建批次" : "待补全启动信息"}
             </span>
           </div>
 
-          <div className="stats launch-submit-grid">
+          <div className="launch-checklist" role="list" aria-label="启动摘要检查项">
+            {launchChecklist.map((item) => (
+              <div className="launch-check-row" key={item.id} role="listitem">
+                <div>
+                  <p className="metric-label">{item.label}</p>
+                  <strong>{item.value}</strong>
+                </div>
+                <span className={`pill ${item.isReady ? "pill-brand" : ""}`}>
+                  {item.isReady ? "已就绪" : "待补全"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="desktop-surface stack">
+          <div>
+            <p className="section-eyebrow">Launch Snapshot</p>
+            <h3 className="subsection-title">本次提交</h3>
+          </div>
+
+          <div className="launch-summary-grid">
             <div className="stat">
               <p className="metric-label">批次</p>
               <strong>{batchName.trim() || "待命名"}</strong>
-              <p className="muted">模型 {modelName || "待选择"} · 配置 {selectedProfile?.name ?? "未配置"}</p>
+              <p className="muted">
+                模型 {modelName || "待选择"} · 配置 {selectedProfile?.name ?? "未配置"}
+              </p>
             </div>
             <div className="stat">
               <p className="metric-label">规则</p>
@@ -530,21 +685,18 @@ export function IntakeWorkbench({
               <p className="muted">导入完成的文件会直接进入本次评审批次。</p>
             </div>
           </div>
-
-          <div className="actions">
-            <button
-              aria-label="开始评审"
-              className="button"
-              disabled={!isLaunchReady}
-              onClick={handleCreateReviewBatch}
-              type="button"
-            >
-              {isSubmitting ? "正在提交..." : "开始评审"}
-            </button>
-            <p className="muted">需填写批次名称，并至少导入 1 个文件与保留 1 条规则。</p>
-          </div>
         </section>
-      </section>
-    </div>
+
+        <section className="desktop-surface stack">
+          <div>
+            <p className="section-eyebrow">Launch Guidance</p>
+            <h3 className="subsection-title">发起提示</h3>
+          </div>
+          <p className="muted">
+            右侧侧栏只负责显示准备状态与提交概览，真正的发起动作已经放回主工作区，方便连续完成规则、文件检查与提交。
+          </p>
+        </section>
+      </aside>
+    </section>
   );
 }
