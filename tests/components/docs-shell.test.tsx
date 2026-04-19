@@ -19,13 +19,13 @@ const documents: DocsDocument[] = [
       {
         id: "review-results",
         title: "查看结果",
-        body: "任务完成后回到结果页核对命中项和原文证据。",
+        body: "任务完成后回到结果详情页核对命中项和原文证据。",
       },
     ],
   },
   {
     id: "rules",
-    title: "规则管理",
+    title: "规则库",
     description: "把检查口径写清楚，减少误判。",
     intro: "规则页负责启停规则、整理分类，并控制每次批量评审的检查范围。",
     sections: [
@@ -67,9 +67,9 @@ describe("DocsShell", () => {
 
     render(<DocsShell documents={documents} />);
 
-    await user.click(screen.getByRole("button", { name: "打开文档 规则管理" }));
+    await user.click(screen.getByRole("button", { name: "打开文档 规则库" }));
 
-    expect(screen.getByRole("heading", { level: 1, name: "规则管理" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "规则库" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "编写规则" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "发起评审" })).not.toBeInTheDocument();
   });

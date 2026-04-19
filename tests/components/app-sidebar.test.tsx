@@ -21,8 +21,8 @@ describe("AppSidebar", () => {
     render(<AppSidebar />);
 
     expect(screen.getByRole("complementary", { name: "应用侧边栏" })).toBeInTheDocument();
-    expect(screen.getByText("策划案评审系统")).toBeInTheDocument();
-    expect(screen.getByText("Planning Review Workspace")).toBeInTheDocument();
+    expect(screen.getByText("PL Review")).toBeInTheDocument();
+    expect(screen.getByText("Desktop Workspace")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "工作台" })).toHaveAttribute("aria-current", "page");
   });

@@ -43,13 +43,13 @@ export default async function HomePage() {
             actions={
               <>
                 <Link className="button" href="/reviews/new">
-                  开始新评审
+                  开始新批次
                 </Link>
                 <Link className="button-ghost" href="/reviews">
-                  打开任务中心
+                  打开评审任务
                 </Link>
                 <Link className="button-ghost" href="/docs">
-                  查看文档
+                  查看帮助文档
                 </Link>
               </>
             }
@@ -154,14 +154,14 @@ export default async function HomePage() {
             <Link className="list-item" href="/reviews">
               <div>
                 <h3>查看评审任务列表与进度</h3>
-                <p className="muted">打开任务中心，继续跟踪当前状态。</p>
+                <p className="muted">打开评审任务页，继续跟踪当前状态。</p>
               </div>
-              <span className="pill pill-brand">任务中心</span>
+              <span className="pill pill-brand">评审任务</span>
             </Link>
 
             <Link className="list-item" href="/reviews/new">
               <div>
-                <h3>创建新的策划案评审</h3>
+                <h3>创建新的策划案批次</h3>
                 <p className="muted">上传文件、选择规则和模型后开始执行。</p>
               </div>
               <span className="pill pill-brand">主操作</span>
@@ -169,7 +169,7 @@ export default async function HomePage() {
 
             <Link className="list-item" href="/rules">
               <div>
-                <h3>维护评审规则与提示词模板</h3>
+                <h3>维护规则库与提示词模板</h3>
                 <p className="muted">更新评审口径并保留历史版本可追踪。</p>
               </div>
               <span className="pill pill-accent">配置台</span>
@@ -198,7 +198,7 @@ export default async function HomePage() {
               <span className="feature-kicker">模型</span>
               <div>
                 <strong>{llmProfiles.length} 个启用中的模型配置</strong>
-                <p className="muted">到模型设置页切换可用配置后再发起评审。</p>
+                <p className="muted">到模型配置页切换可用配置后再发起批次。</p>
               </div>
             </div>
             <div className="feature-row">
@@ -224,7 +224,7 @@ export default async function HomePage() {
                 <span className="feature-kicker">模型</span>
                 <div>
                   <strong>当前没有启用模型配置</strong>
-                  <p className="muted">先去模型设置页启用一个配置后再开始评审。</p>
+                  <p className="muted">先去模型配置页启用一个配置后再开始批次。</p>
                 </div>
               </div>
             ) : (

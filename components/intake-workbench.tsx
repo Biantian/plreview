@@ -299,9 +299,9 @@ export function IntakeWorkbench({
         <section className="desktop-surface stack-lg" aria-labelledby="launch-flow-heading">
           <div className="launch-section-header">
             <div>
-              <p className="section-eyebrow">Launch Workspace</p>
+              <p className="section-eyebrow">File Workbench</p>
               <h2 className="subsection-title" id="launch-flow-heading">
-                规则与文件工作区
+                文件工作台
               </h2>
             </div>
             <div className="launch-pill-row">
@@ -335,7 +335,7 @@ export function IntakeWorkbench({
                     <div>
                       <strong>还没有启用规则</strong>
                       <p className="muted">
-                        先去 <Link href="/rules">规则管理</Link> 页面创建至少一条启用规则。
+                        先去 <Link href="/rules">规则库</Link> 页面创建至少一条启用规则。
                       </p>
                     </div>
                   </div>
@@ -631,13 +631,13 @@ export function IntakeWorkbench({
         </section>
       </div>
 
-      <aside aria-label="启动准备概览" className="desktop-info-rail launch-readiness-rail">
+      <aside aria-label="启动摘要" className="desktop-info-rail launch-readiness-rail">
         <section className="desktop-surface stack" aria-labelledby="launch-readiness-heading">
           <div className="launch-section-header">
             <div>
-              <p className="section-eyebrow">Launch Readiness</p>
+              <p className="section-eyebrow">Launch Summary</p>
               <h2 className="subsection-title" id="launch-readiness-heading">
-                启动检查
+                启动摘要
               </h2>
             </div>
             <span className={`pill ${isLaunchReady ? "pill-brand" : ""}`}>
@@ -645,7 +645,7 @@ export function IntakeWorkbench({
             </span>
           </div>
 
-          <div className="launch-checklist" role="list" aria-label="启动检查项">
+          <div className="launch-checklist" role="list" aria-label="启动摘要检查项">
             {launchChecklist.map((item) => (
               <div className="launch-check-row" key={item.id} role="listitem">
                 <div>

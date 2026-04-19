@@ -502,7 +502,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
       <div className="desktop-table-header">
         <div className="desktop-table-heading">
           <p className="section-eyebrow">任务队列</p>
-          <h2 className="subsection-title">评审列表</h2>
+          <h2 className="subsection-title">任务列表</h2>
         </div>
         <p className="desktop-table-summary">共 {reviews.length} 条任务 · 当前显示 {filteredItems.length} 条</p>
       </div>
@@ -582,10 +582,10 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
         <div className="queue-empty">
           <div>
             <h3>还没有评审任务</h3>
-            <p className="muted">从新建评审页发起第一份文档后，这里会成为你的任务中心。</p>
+            <p className="muted">从新建批次页发起第一份文档后，这里会成为你的评审任务工作区。</p>
           </div>
           <Link className="button" href="/reviews/new">
-            去新建评审
+            去新建批次
           </Link>
         </div>
       ) : (

@@ -163,10 +163,10 @@ export function ReviewQueue({ initialReviews }: { initialReviews: ReviewListItem
       <div className="queue-empty">
         <div>
           <h3>还没有评审任务</h3>
-          <p className="muted">从新建评审页发起第一份文档后，这里会成为你的任务中心。</p>
+          <p className="muted">从新建批次页发起第一份文档后，这里会成为你的评审任务工作区。</p>
         </div>
         <Link className="button" href="/reviews/new">
-          去新建评审
+          去新建批次
         </Link>
       </div>
     );
@@ -180,7 +180,7 @@ export function ReviewQueue({ initialReviews }: { initialReviews: ReviewListItem
           <p className="muted">
             {hasActiveReviews
               ? "列表会在页面可见时自动刷新，但不会打断你当前的浏览位置。"
-              : "你仍然可以手动刷新一次，或继续创建新的评审任务。"}
+              : "你仍然可以手动刷新一次，或继续创建新的评审批次。"}
           </p>
         </div>
 

@@ -23,16 +23,16 @@ export default async function NewReviewPage() {
           actions={
             <>
               <Link className="button" href="/reviews">
-                返回任务中心
+                返回评审任务
               </Link>
               <Link className="button-ghost" href="/rules">
-                管理规则
+                打开规则库
               </Link>
             </>
           }
           description="在桌面工作区里完成批次配置、规则勾选与本地文件导入，然后直接发起新的评审批次。"
           eyebrow="Review Launch"
-          title="新建评审"
+          title="新建批次"
         />
 
         <IntakeWorkbench llmProfiles={llmProfiles} rules={rules} />

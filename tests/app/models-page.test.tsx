@@ -39,7 +39,7 @@ describe("ModelsPage", () => {
 
     const pageHeading = screen.getByRole("heading", {
       level: 1,
-      name: "模型设置",
+      name: "模型配置",
     });
     const pagePanel = pageHeading.closest(".panel");
 

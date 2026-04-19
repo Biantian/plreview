@@ -17,10 +17,10 @@ export default async function ReviewsPage() {
           actions={
             <>
               <Link className="button" href="/reviews/new">
-                新建评审
+                新建批次
               </Link>
               <Link className="button-ghost" href="/docs">
-                使用说明
+                帮助文档
               </Link>
               <Link className="button-ghost" href="/">
                 返回工作台
@@ -29,7 +29,7 @@ export default async function ReviewsPage() {
           }
           description="集中查看后台评审状态，按标题、文件、批次和模型筛选队列，并继续处理失败项、导出结果或打开报告。"
           eyebrow="Review Operations"
-          title="评审任务中心"
+          title="评审任务"
         />
 
         <div className="desktop-kpi-grid">

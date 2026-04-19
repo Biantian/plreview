@@ -15,7 +15,7 @@ export default async function RulesPage() {
           actions={
             <>
               <Link className="button" href="/reviews/new">
-                去新建评审
+                去新建批次
               </Link>
               <Link className="button-ghost" href="/models">
                 查看模型配置
@@ -24,7 +24,7 @@ export default async function RulesPage() {
           }
           description="按规则名称、分类与严重级别维护规则目录，先浏览筛选，再通过抽屉更新内容和启用状态。"
           eyebrow="Rule Library"
-          title="规则管理"
+          title="规则库"
         />
 
         <div className="desktop-kpi-grid">

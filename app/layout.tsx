@@ -5,8 +5,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PL Review | 策划案评审工作台",
-  description: "支持文件上传、规则管理、百炼兼容接口评审与段落标注展示的策划案评审工作台。",
+  title: "PL Review | 策划案评审桌面工作台",
+  description: "支持文件上传、规则库维护、OpenAI 兼容接口评审与段落标注展示的策划案评审桌面工作台。",
 };
 
 export default function RootLayout({

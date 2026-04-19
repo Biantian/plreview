@@ -102,8 +102,8 @@ describe("IntakeWorkbench", () => {
     render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
 
     expect(screen.getByRole("region", { name: "评审启动工作区" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "启动准备概览" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "文件工作台" })).not.toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "启动摘要" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "查看帮助" })).not.toBeInTheDocument();
   });
 
@@ -111,18 +111,16 @@ describe("IntakeWorkbench", () => {
     render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
 
     const workspace = screen.getByRole("region", { name: "评审启动工作区" });
-    const readinessRail = screen.getByRole("complementary", { name: "启动准备概览" });
+    const readinessRail = screen.getByRole("complementary", { name: "启动摘要" });
 
     expect(within(workspace).getByRole("heading", { level: 2, name: "批次配置" })).toBeInTheDocument();
-    expect(
-      within(workspace).getByRole("heading", { level: 2, name: "规则与文件工作区" }),
-    ).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 3, name: "规则选择" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 3, name: "文件导入" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 3, name: "导入文件清单" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 3, name: "启动批次" })).toBeInTheDocument();
     expect(within(workspace).getByRole("button", { name: "开始评审" })).toBeInTheDocument();
-    expect(within(readinessRail).getByRole("heading", { name: "启动检查" })).toBeInTheDocument();
+    expect(within(readinessRail).getByRole("heading", { name: "启动摘要" })).toBeInTheDocument();
     expect(within(readinessRail).queryByRole("button", { name: "开始评审" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "批量配置" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "提交" })).not.toBeInTheDocument();
@@ -148,7 +146,7 @@ describe("IntakeWorkbench", () => {
     );
 
     const workspace = screen.getByRole("region", { name: "评审启动工作区" });
-    const readinessRail = screen.getByRole("complementary", { name: "启动准备概览" });
+    const readinessRail = screen.getByRole("complementary", { name: "启动摘要" });
     const submitButton = within(workspace).getByRole("button", { name: "开始评审" });
 
     expect(submitButton).toBeDisabled();

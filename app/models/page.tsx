@@ -14,7 +14,7 @@ export default async function ModelsPage() {
           actions={
             <>
               <Link className="button" href="/reviews/new">
-                去新建评审
+                去新建批次
               </Link>
               <Link className="button-ghost" href="/rules">
                 查看规则库
@@ -23,7 +23,7 @@ export default async function ModelsPage() {
           }
           description="统一查看供应商连接、默认模型和启用状态，在桌面管理界面里完成搜索、启停、新增和维护。"
           eyebrow="Model Settings"
-          title="模型设置"
+          title="模型配置"
         />
 
         <div className="desktop-kpi-grid">

@@ -9,12 +9,12 @@ export function AppSidebar() {
         <Link className="sidebar-brand-link" href="/">
           <span className="sidebar-brand-mark">PL</span>
           <span className="sidebar-brand-copy">
-            <span className="sidebar-brand-eyebrow">Planning Review Workspace</span>
-            <span className="sidebar-brand-title">策划案评审系统</span>
+            <span className="sidebar-brand-title">PL Review</span>
+            <span className="sidebar-brand-eyebrow">Desktop Workspace</span>
           </span>
         </Link>
         <p className="sidebar-brand-description">
-          把规则、模型、报告和段落定位放进同一张工作台里。
+          规则、批次、结果和文档都固定停靠在这条桌面导航轨道里。
         </p>
       </div>
 
