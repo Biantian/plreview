@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { SiteNav } from "@/components/site-nav";
+import { AppSidebar } from "@/components/app-sidebar";
 
 import "./globals.css";
 
@@ -18,25 +17,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <div className="app-shell">
-          <header className="topbar">
-            <div className="topbar-brand">
-              <Link className="brand-lockup" href="/">
-                <span className="brand-mark">PL</span>
-                <span className="brand-copy">
-                  <span className="eyebrow">Planning Review Workspace</span>
-                  <span className="brand">策划案评审系统</span>
-                </span>
-              </Link>
-              <p className="topbar-copy">
-                把规则、模型、报告和段落定位放进同一张工作台里，让每次评审都能快速启动、快速回看。
-              </p>
-            </div>
-
-            <SiteNav />
-          </header>
-
-          <main className="page">{children}</main>
+        <div className="desktop-shell">
+          <AppSidebar />
+          <main className="workspace page">{children}</main>
         </div>
       </body>
     </html>

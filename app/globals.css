@@ -35,6 +35,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   color: var(--ink);
   background:
     radial-gradient(circle at 12% 12%, rgba(15, 118, 110, 0.15), transparent 24%),
@@ -100,45 +101,45 @@ svg {
   display: block;
 }
 
-.app-shell {
-  position: relative;
-  width: min(1280px, calc(100vw - 64px));
+.desktop-shell {
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  gap: 24px;
+  width: min(1440px, calc(100vw - 32px));
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 20px 0 52px;
+  padding: 24px 0;
 }
 
-.topbar {
+.app-sidebar {
   position: sticky;
-  top: 18px;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) auto;
-  gap: 20px;
-  align-items: center;
-  padding: 18px 22px;
-  margin-bottom: 24px;
+  top: 24px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 28px;
+  border-radius: 30px;
   background: rgba(255, 252, 248, 0.82);
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(18px);
 }
 
-.topbar-brand {
-  min-width: 0;
+.sidebar-brand {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-.brand-lockup {
+.sidebar-brand-link {
   display: inline-flex;
   align-items: center;
   gap: 14px;
   width: fit-content;
 }
 
-.brand-mark {
+.sidebar-brand-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -155,16 +156,14 @@ svg {
   letter-spacing: 0.08em;
 }
 
-.brand-copy {
+.sidebar-brand-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 4px;
 }
 
-.eyebrow,
-.section-eyebrow {
-  margin: 0;
+.sidebar-brand-eyebrow {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
@@ -172,40 +171,38 @@ svg {
   letter-spacing: 0.16em;
 }
 
-.brand {
-  font-size: clamp(24px, 3vw, 38px);
+.sidebar-brand-title {
+  font-size: clamp(22px, 2.4vw, 30px);
   font-weight: 800;
   letter-spacing: -0.05em;
 }
 
-.topbar-copy {
+.sidebar-brand-description {
   margin: 0;
-  max-width: 620px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.nav {
+.site-nav {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.nav a {
+.site-nav-link {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 44px;
   align-items: center;
-  justify-content: center;
-  padding: 10px 16px;
-  border-radius: 999px;
+  justify-content: flex-start;
+  padding: 10px 14px;
+  border-radius: 16px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ink-soft);
 }
 
-.nav a.active,
-.nav a[aria-current="page"] {
+.site-nav-link.active,
+.site-nav-link[aria-current="page"] {
   border-color: rgba(15, 118, 110, 0.24);
   background: rgba(15, 118, 110, 0.12);
   color: var(--brand-strong);
@@ -213,12 +210,35 @@ svg {
   font-weight: 700;
 }
 
-.nav a:hover,
-.nav a:focus-visible {
+.site-nav-link:hover,
+.site-nav-link:focus-visible {
   border-color: rgba(15, 118, 110, 0.2);
   background: rgba(255, 255, 255, 0.96);
   color: var(--brand-strong);
   outline: none;
+}
+
+.workspace {
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .desktop-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    position: static;
+  }
+}
+
+.section-eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
 }
 
 .page {
@@ -833,7 +853,6 @@ svg {
 .button:focus-visible,
 .button-secondary:focus-visible,
 .button-ghost:focus-visible,
-.nav a:focus-visible,
 .field input:focus-visible,
 .field textarea:focus-visible,
 .field select:focus-visible,
@@ -1648,20 +1667,6 @@ svg {
 }
 
 @media (max-width: 980px) {
-  .app-shell {
-    width: min(100vw - 24px, 100%);
-    padding-top: 14px;
-  }
-
-  .topbar {
-    position: static;
-    grid-template-columns: 1fr;
-  }
-
-  .nav {
-    justify-content: flex-start;
-  }
-
   .grid-2,
   .grid-main,
   .metric-grid,
@@ -1703,15 +1708,6 @@ svg {
   .card {
     padding: 18px;
     border-radius: 26px;
-  }
-
-  .topbar {
-    padding: 16px;
-  }
-
-  .brand-mark {
-    width: 42px;
-    height: 42px;
   }
 
   .button,
