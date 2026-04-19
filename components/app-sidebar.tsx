@@ -20,14 +20,14 @@ export function AppSidebar() {
 
       <SiteNav />
 
-      <div aria-label="侧边栏快捷操作" className="stack-sm">
+      <footer aria-label="侧边栏页脚操作" className="app-sidebar-footer stack-sm">
         <Link className="button" href="/reviews/new">
           新建批次
         </Link>
         <Link className="button-ghost" href="/reviews">
           返回评审任务
         </Link>
-      </div>
+      </footer>
     </aside>
   );
 }

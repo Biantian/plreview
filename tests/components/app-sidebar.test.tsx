@@ -32,7 +32,7 @@ describe("AppSidebar", () => {
 
     render(<AppSidebar />);
 
-    const quickActions = screen.getByLabelText("侧边栏快捷操作");
+    const quickActions = screen.getByRole("contentinfo", { name: "侧边栏页脚操作" });
 
     expect(within(quickActions).getByRole("link", { name: "新建批次" })).toHaveAttribute("href", "/reviews/new");
     expect(within(quickActions).getByRole("link", { name: "返回评审任务" })).toHaveAttribute("href", "/reviews");

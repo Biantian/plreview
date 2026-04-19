@@ -102,9 +102,7 @@ const documents: DocsDocument[] = [
 export default function DocsPage() {
   return (
     <div className="desktop-management-page stack-lg">
-      <section className="panel">
-        <DocsShell documents={documents} />
-      </section>
+      <DocsShell documents={documents} />
     </div>
   );
 }
