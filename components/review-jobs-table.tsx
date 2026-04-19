@@ -498,10 +498,18 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     : `确认删除这 ${deleteTargetCount} 条评审任务吗？删除后无法恢复。`;
 
   return (
-    <section className="card stack">
-      <div className="table-toolbar">
+    <section className="desktop-table-card stack">
+      <div className="desktop-table-header">
+        <div className="desktop-table-heading">
+          <p className="section-eyebrow">任务队列</p>
+          <h2 className="subsection-title">评审列表</h2>
+        </div>
+        <p className="desktop-table-summary">共 {reviews.length} 条任务 · 当前显示 {filteredItems.length} 条</p>
+      </div>
+
+      <div className="desktop-table-toolbar">
         <TableSearchInput label="搜索评审任务" onChange={setQuery} value={query} />
-        <div className="actions">
+        <div className="desktop-table-toolbar-actions">
           <p className="muted">支持按标题、文件名、批次名、模型名和状态快速筛选。</p>
           <button
             className="button-ghost button-inline"

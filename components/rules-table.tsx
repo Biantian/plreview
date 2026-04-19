@@ -43,10 +43,18 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     null;
 
   return (
-    <section className="panel stack">
-      <div className="table-toolbar">
+    <section className="desktop-table-card stack">
+      <div className="desktop-table-header">
+        <div className="desktop-table-heading">
+          <p className="section-eyebrow">规则库</p>
+          <h2 className="subsection-title">规则目录</h2>
+        </div>
+        <p className="desktop-table-summary">共 {items.length} 条规则 · 当前显示 {filteredItems.length} 条</p>
+      </div>
+
+      <div className="desktop-table-toolbar">
         <TableSearchInput label="搜索规则" onChange={setQuery} value={query} />
-        <div className="actions">
+        <div className="desktop-table-toolbar-actions">
           <p className="muted">支持按规则名称、分类、说明和严重级别筛选。</p>
           <button
             className="button"

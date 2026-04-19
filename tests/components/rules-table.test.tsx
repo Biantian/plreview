@@ -5,6 +5,39 @@ import { describe, expect, it } from "vitest";
 import { RulesTable } from "@/components/rules-table";
 
 describe("RulesTable", () => {
+  it("renders the desktop rules shell with toolbar summary", () => {
+    render(
+      <RulesTable
+        items={[
+          {
+            category: "基础质量",
+            description: "检查目标表达是否清楚",
+            enabled: true,
+            id: "1",
+            name: "目标清晰度",
+            promptTemplate: "模板 A",
+            severity: "medium",
+            updatedAtLabel: "2026-04-13 10:00",
+          },
+          {
+            category: "商业化",
+            description: "检查付费路径",
+            enabled: false,
+            id: "2",
+            name: "商业闭环",
+            promptTemplate: "模板 B",
+            severity: "high",
+            updatedAtLabel: "2026-04-13 11:00",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("规则库")).toBeInTheDocument();
+    expect(screen.getByText("共 2 条规则 · 当前显示 2 条")).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "规则表格" }).closest(".desktop-table-card")).toBeTruthy();
+  });
+
   it("filters rows locally and opens the editor drawer from the row action", async () => {
     const user = userEvent.setup();
 

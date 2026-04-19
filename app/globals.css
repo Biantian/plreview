@@ -231,6 +231,12 @@ svg {
   .app-sidebar {
     position: static;
   }
+
+  .desktop-heading-grid,
+  .desktop-dashboard-grid,
+  .desktop-kpi-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .section-eyebrow {
@@ -344,7 +350,10 @@ svg {
 .form-grid.two,
 .metric-grid,
 .hero-strip,
-.stats {
+.stats,
+.desktop-kpi-grid,
+.desktop-heading-grid,
+.desktop-dashboard-grid {
   display: grid;
   gap: 16px;
 }
@@ -377,6 +386,17 @@ svg {
   align-items: start;
 }
 
+.desktop-heading-grid {
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.95fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.desktop-dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
 .review-layout {
   grid-template-columns: minmax(0, 1.72fr) minmax(280px, 360px);
   gap: 24px;
@@ -391,6 +411,10 @@ svg {
 .form-grid.two,
 .metric-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.desktop-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .stack {
@@ -432,6 +456,83 @@ svg {
   flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
+}
+
+.desktop-management-page,
+.desktop-dashboard {
+  width: 100%;
+}
+
+.desktop-surface,
+.desktop-table-card,
+.desktop-mini-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 18px 44px rgba(38, 32, 24, 0.08);
+}
+
+.desktop-surface,
+.desktop-table-card {
+  padding: 22px;
+}
+
+.desktop-mini-card {
+  padding: 18px;
+}
+
+.desktop-info-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.desktop-table-header,
+.desktop-table-heading,
+.desktop-table-toolbar-actions {
+  display: flex;
+}
+
+.desktop-table-header {
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.desktop-table-heading {
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.desktop-table-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.desktop-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(255, 255, 255, 0.86)),
+    rgba(255, 255, 255, 0.76);
+}
+
+.desktop-table-toolbar-actions {
+  flex: 1 1 280px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .review-bulk-toolbar {
@@ -1715,6 +1816,8 @@ svg {
   .form-grid.two,
   .hero-strip,
   .stats,
+  .desktop-kpi-grid,
+  .desktop-dashboard-grid,
   .launch-submit-grid,
   .review-layout {
     grid-template-columns: 1fr;
@@ -1729,6 +1832,8 @@ svg {
   .queue-toolbar,
   .queue-item-main,
   .table-toolbar,
+  .desktop-table-toolbar,
+  .desktop-table-toolbar-actions,
   .launch-section-header,
   .docs-toolbar {
     flex-direction: column;
