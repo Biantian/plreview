@@ -119,6 +119,20 @@ svg {
   box-shadow: none;
 }
 
+.app-sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.app-sidebar-footer .button,
+.app-sidebar-footer .button-ghost {
+  width: 100%;
+}
+
 .sidebar-brand {
   display: flex;
   flex-direction: column;
@@ -442,9 +456,13 @@ svg {
 
 .docs-shell {
   display: grid;
-  grid-template-columns: var(--docs-left-column, 248px) minmax(0, 1fr) var(--docs-right-column, 220px);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: 240px minmax(0, 1fr) 200px;
+  gap: 0;
+  align-items: stretch;
+  width: 100%;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .grid-2 {
@@ -666,6 +684,8 @@ svg {
 .docs-directory-list,
 .docs-toc-list {
   flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
 .table-actions {
@@ -750,23 +770,89 @@ svg {
   box-shadow: 0 12px 24px rgba(30, 41, 59, 0.08);
 }
 
+.docs-pane {
+  align-self: stretch;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border-bottom: 0;
+  background: #ffffff;
+}
+
+.docs-pane-directory {
+  border-right: 1px solid var(--line);
+}
+
+.docs-pane-toc {
+  border-left: 1px solid var(--line);
+}
+
+.docs-pane-content {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 0 12px 16px;
+}
+
+.docs-pane-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.docs-pane-header .section-copy {
+  max-width: 30ch;
+}
+
+.docs-pane-article {
+  overflow-y: auto;
+  padding: 28px 48px 40px;
+}
+
+.docs-pane-article > * {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+
+.docs-pane-article .docs-pane-header {
+  margin-bottom: 0;
+  padding: 0 0 20px;
+}
+
+.docs-pane-article .section-copy {
+  max-width: 54ch;
+}
+
+.docs-pane-article .inline-actions {
+  padding: 16px 0 4px;
+}
+
 .docs-directory-button,
 .docs-toc-link {
   display: flex;
+  width: 100%;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px 18px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.62);
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
   color: inherit;
   text-align: left;
   text-decoration: none;
   transition:
-    transform var(--ease),
-    border-color var(--ease),
-    box-shadow var(--ease),
-    background-color var(--ease);
+    background-color var(--ease),
+    color var(--ease);
 }
 
 .docs-directory-button {
@@ -786,14 +872,29 @@ svg {
 
 .docs-directory-button:hover,
 .docs-directory-button.active,
-.docs-toc-link:hover {
-  transform: translateY(-1px);
-  border-color: rgba(233, 138, 71, 0.22);
-  box-shadow: 0 14px 34px rgba(30, 41, 59, 0.06);
+.docs-directory-button:focus-visible,
+.docs-toc-link:hover,
+.docs-toc-link:focus-visible {
+  background: #f3f4f6;
+  box-shadow: none;
+  outline: none;
 }
 
 .docs-directory-button.active {
-  background: linear-gradient(135deg, rgba(233, 138, 71, 0.12), rgba(255, 255, 255, 0.92));
+  background: #f3f4f6;
+}
+
+.docs-toc-link {
+  gap: 10px;
+  flex-direction: row;
+}
+
+.docs-toc-link span {
+  flex: 0 0 24px;
+}
+
+.docs-toc-link strong {
+  line-height: 1.5;
 }
 
 .data-table {
@@ -1621,6 +1722,18 @@ svg {
   margin-top: -2px;
 }
 
+.document-stream {
+  gap: 28px;
+}
+
+.document-block {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .issue-item {
   display: block;
   width: 100%;
@@ -1899,10 +2012,27 @@ svg {
 
   .docs-shell {
     gap: 16px;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
   }
 
   .docs-sidebar {
     min-height: 0;
+  }
+
+  .docs-pane {
+    height: auto;
+  }
+
+  .docs-pane-directory,
+  .docs-pane-toc {
+    border: 0;
+  }
+
+  .docs-pane-content,
+  .docs-pane-article {
+    overflow: visible;
   }
 
   .hero-title {

@@ -28,4 +28,16 @@ describe("globals theme tokens", () => {
     expect(globalsCss).toContain(".metric-card,");
     expect(globalsCss).toContain("border-right: 1px solid var(--line);");
   });
+
+  it("keeps docs navigation rows neutral and text-first", () => {
+    expect(globalsCss).toContain(".app-sidebar-footer {");
+    expect(globalsCss).toContain("margin-top: auto;");
+    expect(globalsCss).toContain("border-top: 1px solid var(--line);");
+    expect(globalsCss).toContain(".docs-directory-button,");
+    expect(globalsCss).toContain(".docs-toc-link {");
+    expect(globalsCss).toContain("padding: 10px 12px;");
+    expect(globalsCss).toContain("border: 0;");
+    expect(globalsCss).toContain("background: transparent;");
+    expect(globalsCss).toContain("background: #f3f4f6;");
+  });
 });

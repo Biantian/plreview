@@ -32,8 +32,10 @@ describe("AppSidebar", () => {
 
     render(<AppSidebar />);
 
+    const primaryNav = screen.getByRole("navigation", { name: "主导航" });
     const quickActions = screen.getByRole("contentinfo", { name: "侧边栏页脚操作" });
 
+    expect(primaryNav).not.toContainElement(within(quickActions).getByRole("link", { name: "新建批次" }));
     expect(within(quickActions).getByRole("link", { name: "新建批次" })).toHaveAttribute("href", "/reviews/new");
     expect(within(quickActions).getByRole("link", { name: "返回评审任务" })).toHaveAttribute("href", "/reviews");
     expect(screen.getByRole("link", { name: "评审任务" })).toHaveAttribute("href", "/reviews");

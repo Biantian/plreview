@@ -17,4 +17,20 @@ describe("globals shell styles", () => {
     expect(globalsCss).toContain("background: transparent;");
     expect(globalsCss).toContain("box-shadow: none;");
   });
+
+  it("defines the docs workspace as fixed master-detail panes with dedicated scrolling", () => {
+    expect(globalsCss).toContain(".docs-shell {");
+    expect(globalsCss).toContain("grid-template-columns: 240px minmax(0, 1fr) 200px;");
+    expect(globalsCss).toContain("height: 100vh;");
+    expect(globalsCss).toContain(".docs-pane {");
+    expect(globalsCss).toContain("align-self: stretch;");
+    expect(globalsCss).toContain(".docs-pane-directory {");
+    expect(globalsCss).toContain("border-right: 1px solid var(--line);");
+    expect(globalsCss).toContain(".docs-pane-toc {");
+    expect(globalsCss).toContain("border-left: 1px solid var(--line);");
+    expect(globalsCss).toContain(".docs-pane-content {");
+    expect(globalsCss).toContain("overflow-y: auto;");
+    expect(globalsCss).toContain(".docs-pane-article {");
+    expect(globalsCss).toContain("padding: 28px 48px 40px;");
+  });
 });
