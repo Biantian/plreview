@@ -78,14 +78,16 @@ describe("DocsShell", () => {
   it("renders a fixed three-pane docs workspace with pane headers", () => {
     render(<DocsShell documents={documents} />);
 
+    const article = screen.getByRole("article", { name: "文档正文" });
+
     expect(screen.getByText("DIRECTORY")).toBeInTheDocument();
     expect(screen.getByText("DOCS")).toBeInTheDocument();
     expect(screen.getByText("ARTICLE TOC")).toBeInTheDocument();
     expect(screen.getByLabelText("文档目录")).toContainElement(screen.getByText("DIRECTORY"));
     expect(screen.getByLabelText("文章目录")).toContainElement(screen.getByText("ARTICLE TOC"));
-    expect(screen.getByRole("article", { name: "文档正文" })).toContainElement(
-      screen.getByText("DOCS"),
-    );
+    expect(article).toContainElement(screen.getByText("DOCS"));
+    expect(article.querySelector(".docs-document-stream")).not.toBeNull();
+    expect(article.querySelectorAll(".docs-document-block")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "打开文档 开始使用" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "查看结果" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "展开文档目录" })).not.toBeInTheDocument();

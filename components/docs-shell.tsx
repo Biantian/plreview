@@ -90,9 +90,9 @@ export function DocsShell({ documents }: DocsShellProps) {
             <span className="pill">{activeDocument.sections.length} 个章节</span>
           </div>
 
-          <div className="document-stream">
+          <div className="docs-document-stream">
             {activeDocument.sections.map((section, index) => (
-              <section className="document-block" id={section.id} key={section.id}>
+              <section className="docs-document-block" id={section.id} key={section.id}>
                 <div className="feature-row">
                   <span className="feature-kicker">{String(index + 1).padStart(2, "0")}</span>
                   <div>
