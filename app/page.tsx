@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PageIntro } from "@/components/page-intro";
 import { StatusBadge } from "@/components/status-badge";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
@@ -45,22 +46,24 @@ export default async function HomePage() {
               <span className="pill">OpenAI 兼容接口</span>
             </div>
 
-            <div className="hero-copy stack">
-              <h1 className="hero-title">上传文档，选择规则和模型，直接开始评审。</h1>
-              <p className="hero-lead">从这里进入新评审、查看任务进度，或回到规则与模型设置完成准备工作。</p>
-            </div>
-
-            <div className="actions">
-              <Link className="button" href="/reviews/new">
-                开始新评审
-              </Link>
-              <Link className="button-ghost" href="/reviews">
-                打开评审列表
-              </Link>
-              <Link className="button-ghost" href="/docs">
-                查看文档
-              </Link>
-            </div>
+            <PageIntro
+              actions={
+                <>
+                  <Link className="button" href="/reviews/new">
+                    开始新评审
+                  </Link>
+                  <Link className="button-ghost" href="/reviews">
+                    打开评审列表
+                  </Link>
+                  <Link className="button-ghost" href="/docs">
+                    查看文档
+                  </Link>
+                </>
+              }
+              description="从这里进入新评审、查看任务进度，或回到规则与模型设置完成准备工作。"
+              eyebrow="精品评审工作台"
+              title="上传文档，选择规则和模型，直接开始评审。"
+            />
           </div>
 
           <div className="hero-strip">

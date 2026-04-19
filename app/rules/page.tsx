@@ -1,3 +1,4 @@
+import { PageIntro } from "@/components/page-intro";
 import { RulesTable } from "@/components/rules-table";
 import { getRuleDashboardData } from "@/lib/rules";
 
@@ -7,11 +8,11 @@ export default async function RulesPage() {
 
   return (
     <section className="panel stack-lg">
-      <div>
-        <p className="section-eyebrow">Rule Library</p>
-        <h1 className="section-title">规则管理</h1>
-        <p className="section-copy">规则页保持紧凑浏览，先检索和筛选，再通过行末操作管理规则。</p>
-      </div>
+      <PageIntro
+        description="规则页保持紧凑浏览，先检索和筛选，再通过行末操作管理规则。"
+        eyebrow="Rule Library"
+        title="规则管理"
+      />
 
       <div className="metric-grid">
         <div className="metric-card">
