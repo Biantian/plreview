@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -32,7 +32,10 @@ describe("AppSidebar", () => {
 
     render(<AppSidebar />);
 
-    expect(screen.getByRole("link", { name: "新建批次" })).toHaveAttribute("href", "/reviews/new");
-    expect(screen.getByRole("link", { name: "返回评审任务" })).toHaveAttribute("href", "/reviews");
+    const quickActions = screen.getByLabelText("侧边栏快捷操作");
+
+    expect(within(quickActions).getByRole("link", { name: "新建批次" })).toHaveAttribute("href", "/reviews/new");
+    expect(within(quickActions).getByRole("link", { name: "返回评审任务" })).toHaveAttribute("href", "/reviews");
+    expect(screen.getByRole("link", { name: "评审任务" })).toHaveAttribute("href", "/reviews");
   });
 });
