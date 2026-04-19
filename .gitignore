@@ -22,6 +22,7 @@ pnpm-debug.log*
 # coverage and temp output
 /coverage
 /dist
+/.desktop-runtime
 /.turbo
 
 # sqlite files

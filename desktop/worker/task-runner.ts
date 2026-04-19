@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { utilityProcess } from "electron";
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const bootstrapPath = path.join(currentDir, "./task-entry.cjs");
-const workerPath = path.join(currentDir, "./task-entry.ts");
+import { resolveForkTarget } from "@/desktop/runtime-targets";
+
+const taskProcessTarget = resolveForkTarget(
+  __filename,
+  "./task-entry.ts",
+  "./task-entry.cjs",
+  "./task-entry.cjs",
+);
 
 type TaskName = "parse-document" | "execute-review-job";
 
@@ -20,9 +23,15 @@ export function createTaskRunner() {
   return {
     run<T>(task: TaskName, payload: unknown): Promise<T> {
       return new Promise<T>((resolve, reject) => {
-        const child = utilityProcess.fork(workerPath, [], {
-          execArgv: ["-r", bootstrapPath],
-        });
+        const child = utilityProcess.fork(
+          taskProcessTarget.entryPath,
+          [],
+          taskProcessTarget.execArgv.length > 0
+            ? {
+                execArgv: taskProcessTarget.execArgv,
+              }
+            : {},
+        );
         const id = randomUUID();
         let settled = false;
 

@@ -19,6 +19,7 @@ describe("desktop packaging scripts", () => {
   it("declares build scripts for both desktop development and production packaging", () => {
     expect(packageJson.scripts["desktop:dev"]).toBeTruthy();
     expect(packageJson.scripts["desktop:build"]).toBeTruthy();
+    expect(packageJson.scripts["desktop:build:runtime"]).toBeTruthy();
     expect(packageJson.scripts["desktop:dist"]).toBeTruthy();
   });
 
@@ -39,16 +40,24 @@ describe("desktop packaging scripts", () => {
     expect(preloadBootstrap).not.toContain("tsx/cjs");
   });
 
-  it("packages the worker bootstrap and worker source files", () => {
+  it("packages the compiled desktop runtime instead of tsx-driven source entries", () => {
     const builderConfig = fs.readFileSync(path.resolve("electron-builder.yml"), "utf8");
-    const workerBootstrap = fs.readFileSync(path.resolve("desktop/worker/background-entry.cjs"), "utf8");
 
-    expect(builderConfig).toContain("desktop/worker/**/*.{ts,cjs}");
-    expect(builderConfig).toContain(".next/standalone/**");
-    expect(builderConfig).toContain(".next/static/**");
+    expect(builderConfig).toContain(".desktop-runtime/**/*");
+    expect(builderConfig).toContain("from: .next/standalone");
+    expect(builderConfig).toContain("to: .next/standalone");
+    expect(builderConfig).toContain("from: .next/standalone/node_modules");
+    expect(builderConfig).toContain("to: .next/standalone/node_modules");
+    expect(builderConfig).toContain("from: .next/static");
+    expect(builderConfig).toContain("to: .next/standalone/.next/static");
+    expect(builderConfig).toContain("from: node_modules/.prisma/client");
+    expect(builderConfig).toContain("to: node_modules/.prisma/client");
     expect(builderConfig).not.toContain(".next/**");
-    expect(workerBootstrap).toContain('require("tsx/cjs")');
-    expect(workerBootstrap).not.toContain('require("./background-entry.ts")');
+    expect(builderConfig).toContain("asarUnpack:");
+    expect(builderConfig).toContain(".next/standalone/**/*");
+    expect(builderConfig).toContain(".next/static/**/*");
+    expect(builderConfig).not.toContain("electron/**/*.{ts,cjs}");
+    expect(builderConfig).not.toContain("desktop/worker/**/*.{ts,cjs}");
   });
 
   it("forwards desktop dist args to electron-builder before running the size report", () => {

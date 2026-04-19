@@ -12,19 +12,19 @@ const ARTIFACT_TARGETS = [
   },
   {
     id: "electronMainBootstrap",
-    path: "electron/main.cjs",
+    path: ".desktop-runtime/electron/main.cjs",
   },
   {
     id: "electronPreloadBootstrap",
-    path: "electron/preload.cjs",
+    path: ".desktop-runtime/electron/preload.cjs",
   },
   {
     id: "workerBootstrap",
-    path: "desktop/worker/background-entry.cjs",
+    path: ".desktop-runtime/desktop/worker/background-entry.cjs",
   },
   {
     id: "taskBootstrap",
-    path: "desktop/worker/task-entry.cjs",
+    path: ".desktop-runtime/desktop/worker/task-entry.cjs",
   },
   {
     id: "release",

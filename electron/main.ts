@@ -1,16 +1,18 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { OpenDialogOptions } from "electron";
 import { BrowserWindow, app, dialog, ipcMain } from "electron";
 
 import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
 import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
+import { applyDesktopRuntimeEnv } from "@/electron/runtime-env";
+import { resolveRendererLoadTarget } from "@/electron/renderer-runtime";
 import { CHANNELS, registerDesktopHandlers } from "./channels";
 import { createWorkerManager } from "./worker-manager";
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const currentDir = __dirname;
 let mainWindow: BrowserWindow | null = null;
 const runtimeMetrics = createRuntimeMetricsService();
+let stopPackagedRenderer: (() => void) | null = null;
 
 function publishRuntimeStatus() {
   const runtimeStatus = runtimeMetrics.getRuntimeStatus();
@@ -95,13 +97,16 @@ async function createWindow() {
     },
   });
 
-  const rendererUrl = process.env.ELECTRON_RENDERER_URL;
-  const rendererHtmlPath = process.env.ELECTRON_RENDERER_HTML;
+  const rendererTarget = await resolveRendererLoadTarget({
+    currentDir,
+    env: process.env,
+  });
 
-  if (rendererUrl) {
-    await mainWindow.loadURL(rendererUrl);
-  } else if (rendererHtmlPath) {
-    await mainWindow.loadFile(rendererHtmlPath);
+  if (rendererTarget.kind === "url") {
+    stopPackagedRenderer = rendererTarget.stop ?? null;
+    await mainWindow.loadURL(rendererTarget.url);
+  } else if (rendererTarget.kind === "file") {
+    await mainWindow.loadFile(rendererTarget.filePath);
   } else {
     await mainWindow.loadURL(getFallbackHtml());
   }
@@ -112,6 +117,11 @@ async function createWindow() {
 }
 
 void app.whenReady().then(async () => {
+  applyDesktopRuntimeEnv({
+    currentDir,
+    env: process.env,
+  });
+
   registerDesktopHandlers(
     (channel, handler) => {
       ipcMain.handle(channel, handler);
@@ -172,6 +182,8 @@ void app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
+  stopPackagedRenderer?.();
+  stopPackagedRenderer = null;
   if (process.platform !== "darwin") {
     app.quit();
   }

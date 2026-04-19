@@ -1,13 +1,19 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { utilityProcess } from "electron";
 
+import { resolveForkTarget } from "@/desktop/runtime-targets";
 import {
   createWorkerEnvelope,
   type DesktopRequestChannel,
 } from "@/desktop/worker/protocol";
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const currentDir = __dirname;
+const backgroundWorkerTarget = resolveForkTarget(
+  __filename,
+  "../desktop/worker/background-entry.ts",
+  "../desktop/worker/background-entry.cjs",
+  "../desktop/worker/background-entry.cjs",
+);
 
 type WorkerManagerOptions = {
   onWorkerStarting?: () => void;
@@ -34,9 +40,6 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
       reject: (error: Error) => void;
     }
   >();
-  const bootstrapPath = path.join(currentDir, "../desktop/worker/background-entry.cjs");
-  const workerPath = path.join(currentDir, "../desktop/worker/background-entry.ts");
-
   function clearCachedChild(worker: ReturnType<typeof utilityProcess.fork>) {
     if (child === worker) {
       child = null;
@@ -83,9 +86,15 @@ export function createWorkerManager(options: WorkerManagerOptions = {}) {
       activeWorkerGeneration = generation;
       requestedStopGeneration = null;
       options.onWorkerStarting?.();
-      const worker = utilityProcess.fork(workerPath, [], {
-        execArgv: ["-r", bootstrapPath],
-      });
+      const worker = utilityProcess.fork(
+        backgroundWorkerTarget.entryPath,
+        [],
+        backgroundWorkerTarget.execArgv.length > 0
+          ? {
+              execArgv: backgroundWorkerTarget.execArgv,
+            }
+          : {},
+      );
       child = worker;
 
       pendingStart = new Promise((resolve, reject) => {

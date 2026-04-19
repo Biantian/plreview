@@ -223,6 +223,13 @@ describe("electron main runtime publication", () => {
       })),
     }));
 
+    vi.doMock("@/electron/renderer-runtime", () => ({
+      resolveRendererLoadTarget: vi.fn(async () => ({
+        kind: "url",
+        url: "http://127.0.0.1:3000",
+      })),
+    }));
+
     await import("@/electron/main");
 
     await vi.waitFor(() => expect(markWorkerStarting).toHaveBeenCalledTimes(1));

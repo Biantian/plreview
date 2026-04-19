@@ -32,8 +32,10 @@ describe("desktop bundle reporting", () => {
 
     writeFile(tempDir, ".next/standalone/server.js", "standalone");
     writeFile(tempDir, ".next/static/chunk.js", "chunk");
-    writeFile(tempDir, "electron/main.cjs", "main");
-    writeFile(tempDir, "desktop/worker/background-entry.cjs", "worker");
+    writeFile(tempDir, ".desktop-runtime/electron/main.cjs", "main");
+    writeFile(tempDir, ".desktop-runtime/electron/preload.cjs", "preload");
+    writeFile(tempDir, ".desktop-runtime/desktop/worker/background-entry.cjs", "worker");
+    writeFile(tempDir, ".desktop-runtime/desktop/worker/task-entry.cjs", "task");
     writeFile(tempDir, "release/builder-debug.yml", "release");
 
     const report = JSON.parse(
@@ -76,18 +78,34 @@ describe("desktop bundle reporting", () => {
         }),
         expect.objectContaining({
           id: "electronMainBootstrap",
-          path: "electron/main.cjs",
+          path: ".desktop-runtime/electron/main.cjs",
           exists: true,
           type: "file",
           bytes: 4,
           fileCount: 1,
         }),
         expect.objectContaining({
+          id: "electronPreloadBootstrap",
+          path: ".desktop-runtime/electron/preload.cjs",
+          exists: true,
+          type: "file",
+          bytes: 7,
+          fileCount: 1,
+        }),
+        expect.objectContaining({
           id: "workerBootstrap",
-          path: "desktop/worker/background-entry.cjs",
+          path: ".desktop-runtime/desktop/worker/background-entry.cjs",
           exists: true,
           type: "file",
           bytes: 6,
+          fileCount: 1,
+        }),
+        expect.objectContaining({
+          id: "taskBootstrap",
+          path: ".desktop-runtime/desktop/worker/task-entry.cjs",
+          exists: true,
+          type: "file",
+          bytes: 4,
           fileCount: 1,
         }),
         expect.objectContaining({
@@ -102,9 +120,9 @@ describe("desktop bundle reporting", () => {
     );
     expect(report.totals).toEqual(
       expect.objectContaining({
-        existingArtifacts: 5,
-        bytes: 32,
-        fileCount: 5,
+        existingArtifacts: 7,
+        bytes: 43,
+        fileCount: 7,
       }),
     );
   });
