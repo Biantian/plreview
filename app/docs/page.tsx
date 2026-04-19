@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { DocsShell, type DocsDocument } from "@/components/docs-shell";
+import { PageIntro } from "@/components/page-intro";
 
 const documents: DocsDocument[] = [
   {
@@ -100,5 +103,27 @@ const documents: DocsDocument[] = [
 ];
 
 export default function DocsPage() {
-  return <DocsShell documents={documents} />;
+  return (
+    <div className="desktop-management-page stack-lg">
+      <section className="panel stack-lg">
+        <PageIntro
+          actions={
+            <>
+              <Link className="button" href="/reviews/new">
+                去新建评审
+              </Link>
+              <Link className="button-ghost" href="/reviews">
+                返回任务中心
+              </Link>
+            </>
+          }
+          description="把上手、模型、规则和结果阅读说明放进同一套桌面阅读工作区，方便边操作边回查。"
+          eyebrow="Help Center"
+          title="帮助文档"
+        />
+
+        <DocsShell documents={documents} />
+      </section>
+    </div>
+  );
 }

@@ -69,12 +69,16 @@ export function ReviewDetailViewer({
   let orderedListIndex = 0;
 
   return (
-    <section className="review-layout">
-      <div className="panel review-document-pane">
+    <section aria-label="评审调查工作区" className="review-layout review-workspace">
+      <section
+        aria-label="原文定位区"
+        className="desktop-surface review-document-pane"
+        role="region"
+      >
         <div className="stack">
           <div>
             <p className="section-eyebrow">Annotated Source</p>
-            <h2 className="section-title">原文命中</h2>
+            <h2 className="subsection-title">原文定位</h2>
             <p className="section-copy">正文与问题联动阅读，详细使用说明可在文档页查看。</p>
           </div>
 
@@ -134,17 +138,21 @@ export function ReviewDetailViewer({
             })}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="review-sidebar review-issue-pane stack">
-        <section className="card stack">
+      <aside
+        aria-label="问题检查器"
+        className="review-sidebar review-inspector-rail review-issue-pane stack"
+        role="complementary"
+      >
+        <section className="desktop-surface stack">
           <div>
             <p className="section-eyebrow">Issue Navigator</p>
-            <h2 className="section-title">问题清单</h2>
+            <h2 className="subsection-title">问题导航</h2>
             <p className="section-copy">点击问题项或正文中的提示标签，右侧详情和原文位置会同步聚焦。</p>
           </div>
 
-          <div className="issue-list">
+          <nav aria-label="问题导航列表" className="issue-list">
             {annotations.length === 0 ? (
               <div className="list-item">
                 <div>
@@ -172,13 +180,13 @@ export function ReviewDetailViewer({
                 </button>
               ))
             )}
-          </div>
+          </nav>
         </section>
 
-        <section className="card stack">
+        <section aria-label="当前问题详情" className="desktop-surface stack">
           <div>
             <p className="section-eyebrow">Issue Detail</p>
-            <h2 className="section-title">当前问题</h2>
+            <h2 className="subsection-title">问题详情</h2>
           </div>
 
           {activeAnnotation ? (
@@ -200,7 +208,7 @@ export function ReviewDetailViewer({
             <p className="section-copy">{getEmptyState(status)}</p>
           )}
         </section>
-      </div>
+      </aside>
     </section>
   );
 }

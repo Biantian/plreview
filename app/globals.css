@@ -472,6 +472,10 @@ svg {
   align-items: start;
 }
 
+.review-workspace {
+  width: 100%;
+}
+
 .form-grid {
   display: grid;
   gap: 18px;
@@ -1344,6 +1348,13 @@ svg {
 .review-document-pane,
 .review-issue-pane {
   min-width: 0;
+}
+
+.review-inspector-rail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .queue-toolbar,

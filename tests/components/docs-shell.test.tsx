@@ -47,9 +47,16 @@ describe("DocsShell", () => {
   it("renders the classic directory, article, and toc layout", () => {
     render(<DocsShell documents={documents} />);
 
-    expect(screen.getByRole("complementary", { name: "文档目录" })).toBeInTheDocument();
-    expect(screen.getByRole("article", { name: "文档正文" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "文章目录" })).toBeInTheDocument();
+    const directoryRail = screen.getByRole("complementary", { name: "文档目录" });
+    const article = screen.getByRole("article", { name: "文档正文" });
+    const tocRail = screen.getByRole("complementary", { name: "文章目录" });
+
+    expect(directoryRail).toBeInTheDocument();
+    expect(article).toBeInTheDocument();
+    expect(tocRail).toBeInTheDocument();
+    expect(directoryRail).toHaveClass("desktop-surface", "docs-rail");
+    expect(article).toHaveClass("desktop-surface");
+    expect(tocRail).toHaveClass("desktop-surface", "docs-rail");
     expect(screen.getByRole("heading", { level: 1, name: "开始使用" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "发起评审" })).toBeInTheDocument();
     expect(screen.queryByText("经典三栏阅读模式")).not.toBeInTheDocument();

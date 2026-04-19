@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ReviewStatus } from "@prisma/client";
 
+import { PageIntro } from "@/components/page-intro";
 import { ReportMarkdown } from "@/components/report-markdown";
 import { ReviewDetailViewer } from "@/components/review-detail-viewer";
 import { StatusBadge } from "@/components/status-badge";
@@ -80,27 +81,25 @@ export default async function ReviewDetailPage({
   const isFailed = review.status === ReviewStatus.failed;
 
   return (
-    <>
+    <div className="desktop-management-page stack-lg">
       <section className="panel stack-lg">
         <div className="inline-actions">
-          <StatusBadge status={review.status} />
           <span className="pill pill-brand">{review.providerSnapshot}</span>
           <span className="pill">{review.modelNameSnapshot}</span>
           <span className="pill">{formatDate(review.createdAt)}</span>
         </div>
 
-        <div>
-          <p className="section-eyebrow">Review Snapshot</p>
-          <h1 className="section-title">{review.document.title}</h1>
-          <p className="section-copy">
-            文件：{review.document.filename} · 文档块：{review.document.blockCount || blocks.length}
-          </p>
-        </div>
+        <PageIntro
+          actions={<StatusBadge status={review.status} />}
+          description={`文件：${review.document.filename} · 文档块：${review.document.blockCount || blocks.length}`}
+          eyebrow="Review Snapshot"
+          title={review.document.title}
+        />
 
         {review.summary ? <p className="hero-lead">{review.summary}</p> : null}
         {review.errorMessage ? <p className="section-copy">错误信息：{review.errorMessage}</p> : null}
 
-        <div className="metric-grid">
+        <div className="desktop-kpi-grid">
           <div className="metric-card">
             <p className="metric-label">问题总数</p>
             <strong className="metric-value">{annotations.length}</strong>
@@ -122,10 +121,10 @@ export default async function ReviewDetailPage({
 
       <ReviewDetailViewer annotations={annotations} blocks={blocks} status={review.status} />
 
-      <section className="card stack">
+      <section className="desktop-surface stack">
         <div>
           <p className="section-eyebrow">Report Body</p>
-          <h2 className="section-title">报告正文</h2>
+          <h2 className="subsection-title">报告正文</h2>
           <p className="section-copy">正文已按 Markdown 文档阅读方式渲染，便于直接浏览结论、规则明细和结构化内容。</p>
         </div>
 
@@ -143,6 +142,6 @@ export default async function ReviewDetailPage({
           </div>
         )}
       </section>
-    </>
+    </div>
   );
 }
