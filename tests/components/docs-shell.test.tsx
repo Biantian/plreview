@@ -50,13 +50,15 @@ describe("DocsShell", () => {
     const directoryRail = screen.getByRole("complementary", { name: "文档目录" });
     const article = screen.getByRole("article", { name: "文档正文" });
     const tocRail = screen.getByRole("complementary", { name: "文章目录" });
+    const shell = screen.getByTestId("docs-shell");
 
     expect(directoryRail).toBeInTheDocument();
     expect(article).toBeInTheDocument();
     expect(tocRail).toBeInTheDocument();
-    expect(directoryRail).toHaveClass("desktop-surface", "docs-rail");
-    expect(article).toHaveClass("desktop-surface");
-    expect(tocRail).toHaveClass("desktop-surface", "docs-rail");
+    expect(shell).toHaveClass("docs-shell", "docs-workspace");
+    expect(directoryRail).toHaveClass("desktop-surface", "docs-pane", "docs-pane-directory");
+    expect(article).toHaveClass("desktop-surface", "docs-pane", "docs-pane-article");
+    expect(tocRail).toHaveClass("desktop-surface", "docs-pane", "docs-pane-toc");
     expect(screen.getByRole("heading", { level: 1, name: "开始使用" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "发起评审" })).toBeInTheDocument();
     expect(screen.queryByText("经典三栏阅读模式")).not.toBeInTheDocument();
@@ -80,7 +82,9 @@ describe("DocsShell", () => {
     expect(screen.getByText("DIRECTORY")).toBeInTheDocument();
     expect(screen.getByText("DOCS")).toBeInTheDocument();
     expect(screen.getByText("ARTICLE TOC")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "展开文档目录" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "折叠文档目录" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "展开文章目录" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "折叠文章目录" })).not.toBeInTheDocument();
   });
 });

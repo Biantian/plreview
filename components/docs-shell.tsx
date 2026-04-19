@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useState } from "react";
+import { useState } from "react";
 
 export type DocsDocumentSection = {
   id: string;
@@ -22,8 +22,6 @@ type DocsShellProps = {
 
 export function DocsShell({ documents }: DocsShellProps) {
   const [activeDocumentId, setActiveDocumentId] = useState(documents[0]?.id ?? "");
-  const [isDirectoryCollapsed, setIsDirectoryCollapsed] = useState(false);
-  const [isTocCollapsed, setIsTocCollapsed] = useState(false);
 
   const activeDocument =
     documents.find((document) => document.id === activeDocumentId) ?? documents[0] ?? null;
@@ -39,70 +37,50 @@ export function DocsShell({ documents }: DocsShellProps) {
     );
   }
 
-  const shellStyle = {
-    "--docs-left-column": isDirectoryCollapsed ? "32px" : "248px",
-    "--docs-right-column": isTocCollapsed ? "32px" : "220px",
-  } as CSSProperties;
-
   return (
     <div className="page-stack">
-      <div
-        className="docs-shell docs-workspace"
-        data-left-collapsed={isDirectoryCollapsed}
-        data-right-collapsed={isTocCollapsed}
-        data-testid="docs-shell"
-        style={shellStyle}
-      >
+      <div className="docs-shell docs-workspace" data-testid="docs-shell">
         <aside
           aria-label="文档目录"
-          className="desktop-surface docs-sidebar docs-rail docs-sidebar-left"
-          data-collapsed={isDirectoryCollapsed}
-          data-testid="docs-directory-rail"
+          className="desktop-surface docs-pane docs-pane-directory"
           role="complementary"
         >
-          <button
-            aria-label={isDirectoryCollapsed ? "展开文档目录" : "折叠文档目录"}
-            className="docs-rail-toggle"
-            onClick={() => setIsDirectoryCollapsed((current) => !current)}
-            type="button"
-          >
-            {isDirectoryCollapsed ? "▶" : "◀"}
-          </button>
-
-          {!isDirectoryCollapsed ? (
-            <div className="stack docs-sidebar-content">
-              <div className="page-header">
-                <p className="section-eyebrow">Directory</p>
-                <h2 className="subsection-title">文档目录</h2>
-                <p className="section-copy">左侧聚合各类操作文档，先选主题，再在正文中连续阅读。</p>
-              </div>
-
-              <div className="docs-directory-list">
-                {documents.map((document) => {
-                  const isActive = document.id === activeDocument.id;
-
-                  return (
-                    <button
-                      aria-current={isActive ? "true" : undefined}
-                      aria-label={`打开文档 ${document.title}`}
-                      className={`docs-directory-button ${isActive ? "active" : ""}`}
-                      key={document.id}
-                      onClick={() => setActiveDocumentId(document.id)}
-                      type="button"
-                    >
-                      <strong>{document.title}</strong>
-                      <span>{document.description}</span>
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="stack docs-sidebar-content">
+            <div className="page-header docs-pane-header">
+              <p className="section-eyebrow">DIRECTORY</p>
+              <h2 className="subsection-title">文档目录</h2>
+              <p className="section-copy">左侧聚合各类操作文档，先选主题，再在正文中连续阅读。</p>
             </div>
-          ) : null}
+
+            <div className="docs-directory-list">
+              {documents.map((document) => {
+                const isActive = document.id === activeDocument.id;
+
+                return (
+                  <button
+                    aria-current={isActive ? "true" : undefined}
+                    aria-label={`打开文档 ${document.title}`}
+                    className={`docs-directory-button ${isActive ? "active" : ""}`}
+                    key={document.id}
+                    onClick={() => setActiveDocumentId(document.id)}
+                    type="button"
+                  >
+                    <strong>{document.title}</strong>
+                    <span>{document.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </aside>
 
-        <article aria-label="文档正文" className="desktop-surface stack-lg docs-main" role="article">
-          <div className="page-header">
-            <p className="section-eyebrow">Docs</p>
+        <article
+          aria-label="文档正文"
+          className="desktop-surface docs-pane docs-pane-article stack-lg"
+          role="article"
+        >
+          <div className="page-header docs-pane-header">
+            <p className="section-eyebrow">DOCS</p>
             <h1 className="section-title">{activeDocument.title}</h1>
             <p className="section-copy">{activeDocument.intro}</p>
           </div>
@@ -129,38 +107,25 @@ export function DocsShell({ documents }: DocsShellProps) {
 
         <aside
           aria-label="文章目录"
-          className="desktop-surface docs-sidebar docs-rail docs-sidebar-right"
-          data-collapsed={isTocCollapsed}
-          data-testid="docs-toc-rail"
+          className="desktop-surface docs-pane docs-pane-toc"
           role="complementary"
         >
-          <button
-            aria-label={isTocCollapsed ? "展开文章目录" : "折叠文章目录"}
-            className="docs-rail-toggle"
-            onClick={() => setIsTocCollapsed((current) => !current)}
-            type="button"
-          >
-            {isTocCollapsed ? "◀" : "▶"}
-          </button>
-
-          {!isTocCollapsed ? (
-            <div className="stack docs-sidebar-content">
-              <div className="page-header">
-                <p className="section-eyebrow">Article Toc</p>
-                <h2 className="subsection-title">文章目录</h2>
-                <p className="section-copy">右侧只显示当前文档的章节锚点，方便在长文里快速跳转。</p>
-              </div>
-
-              <div className="docs-toc-list">
-                {activeDocument.sections.map((section, index) => (
-                  <a className="docs-toc-link" href={`#${section.id}`} key={section.id}>
-                    <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                    <strong>{section.title}</strong>
-                  </a>
-                ))}
-              </div>
+          <div className="stack docs-sidebar-content">
+            <div className="page-header docs-pane-header">
+              <p className="section-eyebrow">ARTICLE TOC</p>
+              <h2 className="subsection-title">文章目录</h2>
+              <p className="section-copy">右侧只显示当前文档的章节锚点，方便在长文里快速跳转。</p>
             </div>
-          ) : null}
+
+            <div className="docs-toc-list">
+              {activeDocument.sections.map((section, index) => (
+                <a className="docs-toc-link" href={`#${section.id}`} key={section.id}>
+                  <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{section.title}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
         </aside>
       </div>
     </div>
