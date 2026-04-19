@@ -74,34 +74,13 @@ describe("DocsShell", () => {
     expect(screen.queryByRole("link", { name: "发起评审" })).not.toBeInTheDocument();
   });
 
-  it("keeps both rails mounted and only collapses them to the edges", async () => {
-    const user = userEvent.setup();
-
+  it("renders a fixed three-pane docs workspace with pane headers", () => {
     render(<DocsShell documents={documents} />);
 
-    const shell = screen.getByTestId("docs-shell");
-    const directoryRail = screen.getByTestId("docs-directory-rail");
-    const tocRail = screen.getByTestId("docs-toc-rail");
-
-    await user.click(screen.getByRole("button", { name: "折叠文档目录" }));
-    await user.click(screen.getByRole("button", { name: "折叠文章目录" }));
-
-    expect(shell).toHaveAttribute("data-left-collapsed", "true");
-    expect(shell).toHaveAttribute("data-right-collapsed", "true");
-    expect(directoryRail).toHaveAttribute("data-collapsed", "true");
-    expect(tocRail).toHaveAttribute("data-collapsed", "true");
-    expect(screen.getByRole("article", { name: "文档正文" })).toBeInTheDocument();
-    expect(screen.queryByText("左侧聚合各类操作文档，先选主题，再在正文中连续阅读。")).not.toBeInTheDocument();
-    expect(screen.queryByText("右侧只显示当前文档的章节锚点，方便在长文里快速跳转。")).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "展开文档目录" }));
-    await user.click(screen.getByRole("button", { name: "展开文章目录" }));
-
-    expect(shell).toHaveAttribute("data-left-collapsed", "false");
-    expect(shell).toHaveAttribute("data-right-collapsed", "false");
-    expect(directoryRail).toHaveAttribute("data-collapsed", "false");
-    expect(tocRail).toHaveAttribute("data-collapsed", "false");
-    expect(screen.getByText("左侧聚合各类操作文档，先选主题，再在正文中连续阅读。")).toBeInTheDocument();
-    expect(screen.getByText("右侧只显示当前文档的章节锚点，方便在长文里快速跳转。")).toBeInTheDocument();
+    expect(screen.getByText("DIRECTORY")).toBeInTheDocument();
+    expect(screen.getByText("DOCS")).toBeInTheDocument();
+    expect(screen.getByText("ARTICLE TOC")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "折叠文档目录" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "折叠文章目录" })).not.toBeInTheDocument();
   });
 });

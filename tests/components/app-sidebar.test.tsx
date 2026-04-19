@@ -26,4 +26,13 @@ describe("AppSidebar", () => {
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "工作台" })).toHaveAttribute("aria-current", "page");
   });
+
+  it("renders sidebar quick actions for docs exit paths", () => {
+    mockedUsePathname.mockReturnValue("/docs");
+
+    render(<AppSidebar />);
+
+    expect(screen.getByRole("link", { name: "新建批次" })).toHaveAttribute("href", "/reviews/new");
+    expect(screen.getByRole("link", { name: "返回评审任务" })).toHaveAttribute("href", "/reviews");
+  });
 });
