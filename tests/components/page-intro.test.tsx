@@ -21,4 +21,19 @@ describe("PageIntro", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "开始新评审" })).toBeInTheDocument();
   });
+
+  it("supports reuse without actions and preserves custom class names", () => {
+    const { container } = render(
+      <PageIntro
+        className="hero-intro"
+        description="这里统一查看、搜索和维护模型配置。"
+        eyebrow="Model Settings"
+        title="模型设置"
+      />,
+    );
+
+    expect(container.firstElementChild).toHaveClass("page-intro", "hero-intro");
+    expect(screen.getByRole("heading", { level: 1, name: "模型设置" })).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
 });
