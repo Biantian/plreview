@@ -28,12 +28,46 @@ describe("globals shell styles", () => {
     expect(globalsCss).not.toContain("backdrop-filter: blur(18px);");
     expect(globalsCss).toContain(".desktop-shell {");
     expect(globalsCss).toContain("grid-template-columns: 248px minmax(0, 1fr);");
+    expect(globalsCss).toContain("--titlebar-height: 40px;");
     expect(globalsCss).toContain(".app-sidebar {");
     expect(globalsCss).toContain("border-right: 1px solid var(--line);");
     expect(globalsCss).toContain("background: var(--shell);");
     expect(globalsCss).toContain(".desktop-surface,");
     expect(globalsCss).toContain("background: transparent;");
     expect(globalsCss).toContain("box-shadow: none;");
+  });
+
+  it("pushes content down with container padding while letting the shell itself reach the very top", () => {
+    hasRule("html", ["height: 100%;", "padding: 0;"]);
+    hasRule("body", ["height: 100%;", "padding: 0;"]);
+    hasRule(".desktop-shell", ["min-height: 100vh;"]);
+    hasRule(".app-sidebar", [
+      "top: 0;",
+      "height: 100vh;",
+      "padding: calc(var(--titlebar-height) + 18px) 16px 18px;",
+      "-webkit-app-region: drag;",
+    ]);
+    hasRule(".workspace", [
+      "min-height: 100vh;",
+      "padding-top: var(--titlebar-height);",
+      "-webkit-app-region: drag;",
+    ]);
+    hasRule(".app-sidebar > *", ["-webkit-app-region: no-drag;"]);
+    hasRule(".workspace > *", ["-webkit-app-region: no-drag;"]);
+  });
+
+  it("does not keep a standalone fake titlebar strip in the CSS", () => {
+    expect(globalsCss).not.toContain(".app-titlebar {");
+    expect(globalsCss).not.toContain(".app-shell-body {");
+    expect(globalsCss).not.toContain(".app-drag-region {");
+    expect(globalsCss).not.toContain("calc(100vh - var(--titlebar-height))");
+    expect(getRuleBody(".app-sidebar")).not.toContain("top: var(--titlebar-height);");
+  });
+
+  it("keeps interactive controls out of drag mode", () => {
+    hasRule(".app-sidebar a,\n.app-sidebar button,\n.app-sidebar input,\n.app-sidebar select,\n.app-sidebar textarea,\n.workspace a,\n.workspace button,\n.workspace input,\n.workspace select,\n.workspace textarea", [
+      "-webkit-app-region: no-drag;",
+    ]);
   });
 
   it("defines the docs workspace as fixed master-detail panes with dedicated scrolling", () => {

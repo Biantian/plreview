@@ -25,6 +25,7 @@
   --radius-lg: 12px;
   --radius-md: 10px;
   --ease: 220ms ease;
+  --titlebar-height: 40px;
 }
 
 * {
@@ -32,12 +33,17 @@
 }
 
 html {
+  height: 100%;
   min-height: 100%;
+  margin: 0;
+  padding: 0;
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
+  padding: 0;
+  height: 100%;
   min-height: 100vh;
   overflow-x: hidden;
   color: var(--ink);
@@ -110,13 +116,19 @@ svg {
   gap: 20px;
   min-height: 100vh;
   height: 100vh;
-  padding: 18px 16px;
+  padding: calc(var(--titlebar-height) + 18px) 16px 18px;
   overflow-y: auto;
   border: 0;
   border-right: 1px solid var(--line);
   border-radius: 0;
   background: var(--shell);
   box-shadow: none;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.app-sidebar > * {
+  -webkit-app-region: no-drag;
 }
 
 .app-sidebar-footer {
@@ -231,7 +243,26 @@ svg {
 .workspace {
   min-width: 0;
   min-height: 100vh;
+  padding-top: var(--titlebar-height);
   background: #ffffff;
+  -webkit-app-region: drag;
+}
+
+.workspace > * {
+  -webkit-app-region: no-drag;
+}
+
+.app-sidebar a,
+.app-sidebar button,
+.app-sidebar input,
+.app-sidebar select,
+.app-sidebar textarea,
+.workspace a,
+.workspace button,
+.workspace input,
+.workspace select,
+.workspace textarea {
+  -webkit-app-region: no-drag;
 }
 
 @media (max-width: 960px) {

@@ -6,6 +6,7 @@ import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
 import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
 import { applyDesktopRuntimeEnv } from "@/electron/runtime-env";
 import { resolveRendererLoadTarget } from "@/electron/renderer-runtime";
+import { getWindowChromeOptions } from "@/electron/window-chrome";
 import { CHANNELS, registerDesktopHandlers } from "./channels";
 import { createWorkerManager } from "./worker-manager";
 
@@ -90,6 +91,7 @@ async function createWindow() {
     height: 960,
     minWidth: 1200,
     minHeight: 800,
+    ...getWindowChromeOptions(),
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,

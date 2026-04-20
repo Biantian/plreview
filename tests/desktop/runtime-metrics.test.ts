@@ -234,6 +234,22 @@ describe("electron main runtime publication", () => {
 
     await vi.waitFor(() => expect(markWorkerStarting).toHaveBeenCalledTimes(1));
     await vi.waitFor(() => expect(markWorkerReady).toHaveBeenCalledTimes(1));
+    expect(BrowserWindowMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
+      }),
+    );
+    if (process.platform !== "darwin") {
+      expect(BrowserWindowMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          titleBarOverlay: {
+            color: "#ffffff",
+            symbolColor: "#333333",
+            height: 40,
+          },
+        }),
+      );
+    }
     await vi.waitFor(() =>
       expect(send).toHaveBeenCalledWith(DESKTOP_EVENTS.runtimeUpdated, {
         shellReady: true,
