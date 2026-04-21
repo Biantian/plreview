@@ -25,11 +25,26 @@ describe("IntakeWorkbench", () => {
     push.mockReset();
     window.plreview = {
       pickFiles: vi.fn().mockResolvedValue([]),
+      getHomeDashboard: vi.fn(),
+      getModelDashboard: vi.fn(),
+      getRuleDashboard: vi.fn(),
+      getReviewDetail: vi.fn(),
       listReviewJobs: vi.fn(),
       searchReviewJobs: vi.fn(),
       listRules: vi.fn(),
       searchRules: vi.fn(),
       createReviewBatch: vi.fn().mockResolvedValue({ id: "batch_1" }),
+      deleteReviewJobs: vi.fn(),
+      retryReviewJob: vi.fn(),
+      exportReviewList: vi.fn(),
+      exportReviewReport: vi.fn(),
+      saveRule: vi.fn(),
+      toggleRuleEnabled: vi.fn(),
+      saveModelProfile: vi.fn(),
+      toggleModelProfileEnabled: vi.fn(),
+      deleteModelProfile: vi.fn(),
+      getRuntimeStatus: vi.fn(),
+      subscribeRuntimeStatus: vi.fn(),
     };
   });
 
@@ -156,6 +171,52 @@ describe("IntakeWorkbench", () => {
 
     expect(submitButton).toBeEnabled();
     expect(within(readinessRail).getByText("可创建批次")).toBeInTheDocument();
+  });
+
+  it("hydrates late-loaded model and rule defaults so batch launch can unlock", async () => {
+    const user = userEvent.setup();
+
+    const { rerender } = render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+          },
+        ]}
+        llmProfiles={[]}
+        rules={[]}
+      />,
+    );
+
+    rerender(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+          },
+        ]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
+
+    const submitButton = screen.getByRole("button", { name: "开始评审" });
+
+    expect(screen.getByLabelText("模型配置")).toHaveValue("profile-1");
+    expect(screen.getByRole("checkbox", { name: /Tone/ })).toBeChecked();
+    expect(submitButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText("批次名称"), "异步加载回归");
+
+    expect(submitButton).toBeEnabled();
   });
 
   it("shows desktop-oriented import counts instead of retry workflow counts", () => {

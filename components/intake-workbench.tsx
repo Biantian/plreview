@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -101,6 +101,7 @@ export function IntakeWorkbench({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
+  const hasInitializedRuleSelection = useRef(false);
   const readyDocuments = workbenchFiles.filter(
     (file): file is ImportedFile & { documentId: string } => isReadyDocument(file),
   );
@@ -140,6 +141,42 @@ export function IntakeWorkbench({
       value: readyDocuments.length > 0 ? `${readyDocuments.length} 条待评审` : "待导入",
     },
   ];
+
+  useEffect(() => {
+    if (llmProfiles.length === 0) {
+      setSelectedProfileId("");
+      return;
+    }
+
+    setSelectedProfileId((current) => {
+      if (current && llmProfiles.some((profile) => profile.id === current)) {
+        return current;
+      }
+
+      return llmProfiles[0]?.id ?? "";
+    });
+  }, [llmProfiles]);
+
+  useEffect(() => {
+    const nextRuleIds = rules.map((rule) => rule.id);
+
+    if (nextRuleIds.length === 0) {
+      hasInitializedRuleSelection.current = false;
+      setSelectedRuleIds([]);
+      return;
+    }
+
+    setSelectedRuleIds((current) => {
+      const filtered = current.filter((ruleId) => nextRuleIds.includes(ruleId));
+
+      if (!hasInitializedRuleSelection.current) {
+        hasInitializedRuleSelection.current = true;
+        return filtered.length > 0 ? filtered : nextRuleIds;
+      }
+
+      return filtered;
+    });
+  }, [rules]);
 
   useEffect(() => {
     setWorkbenchFiles((current) => mergeImportedFiles(current, incomingImportedFiles));

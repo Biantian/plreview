@@ -1,19 +1,69 @@
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { OpenDialogOptions } from "electron";
-import { BrowserWindow, app, dialog, ipcMain } from "electron";
+import { BrowserWindow, app, dialog, ipcMain, net, protocol } from "electron";
 
 import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
 import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
 import { applyDesktopRuntimeEnv } from "@/electron/runtime-env";
-import { resolveRendererLoadTarget } from "@/electron/renderer-runtime";
+import {
+  PACKAGED_RENDERER_SCHEME,
+  resolvePackagedRendererAssetPath,
+  resolveRendererLoadTarget,
+} from "@/electron/renderer-runtime";
+import { resolveSmokeImportFilePaths } from "@/electron/smoke-import";
 import { getWindowChromeOptions } from "@/electron/window-chrome";
 import { CHANNELS, registerDesktopHandlers } from "./channels";
 import { createWorkerManager } from "./worker-manager";
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: PACKAGED_RENDERER_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+]);
+
 const currentDir = __dirname;
 let mainWindow: BrowserWindow | null = null;
+let registeredRendererRoot: string | null = null;
 const runtimeMetrics = createRuntimeMetricsService();
-let stopPackagedRenderer: (() => void) | null = null;
+
+async function loadDesktopDataModules() {
+  const [
+    homeDashboardModule,
+    llmProfilesModule,
+    reviewDetailModule,
+    reviewIpcModule,
+    rulesModule,
+  ] = await Promise.all([
+    import("@/lib/home-dashboard"),
+    import("@/lib/llm-profiles"),
+    import("@/lib/review-detail"),
+    import("@/lib/review-ipc"),
+    import("@/lib/rules"),
+  ]);
+
+  return {
+    getHomeDashboardData: homeDashboardModule.getHomeDashboardData,
+    deleteLlmProfile: llmProfilesModule.deleteLlmProfile,
+    getModelDashboardData: llmProfilesModule.getModelDashboardData,
+    saveLlmProfile: llmProfilesModule.saveLlmProfile,
+    toggleLlmProfileEnabled: llmProfilesModule.toggleLlmProfileEnabled,
+    getReviewDetailData: reviewDetailModule.getReviewDetailData,
+    deleteSelectedReviewJobs: reviewIpcModule.deleteSelectedReviewJobs,
+    exportReviewListFile: reviewIpcModule.exportReviewListFile,
+    exportReviewReportArchive: reviewIpcModule.exportReviewReportArchive,
+    retryReviewJobById: reviewIpcModule.retryReviewJobById,
+    getRuleDashboardData: rulesModule.getRuleDashboardData,
+    saveRule: rulesModule.saveRule,
+    toggleRuleEnabled: rulesModule.toggleRuleEnabled,
+  };
+}
 
 function publishRuntimeStatus() {
   const runtimeStatus = runtimeMetrics.getRuntimeStatus();
@@ -105,10 +155,12 @@ async function createWindow() {
   });
 
   if (rendererTarget.kind === "url") {
-    stopPackagedRenderer = rendererTarget.stop ?? null;
     await mainWindow.loadURL(rendererTarget.url);
   } else if (rendererTarget.kind === "file") {
-    await mainWindow.loadFile(rendererTarget.filePath);
+    registerPackagedRendererProtocol(rendererTarget.filePath);
+    await mainWindow.loadURL(
+      `${PACKAGED_RENDERER_SCHEME}://app/${path.basename(rendererTarget.filePath)}`,
+    );
   } else {
     await mainWindow.loadURL(getFallbackHtml());
   }
@@ -118,18 +170,58 @@ async function createWindow() {
   });
 }
 
+function registerPackagedRendererProtocol(entryFilePath: string) {
+  const rendererRoot = path.resolve(path.dirname(entryFilePath));
+
+  if (
+    registeredRendererRoot === rendererRoot &&
+    protocol.isProtocolHandled(PACKAGED_RENDERER_SCHEME)
+  ) {
+    return;
+  }
+
+  if (protocol.isProtocolHandled(PACKAGED_RENDERER_SCHEME)) {
+    protocol.unhandle(PACKAGED_RENDERER_SCHEME);
+  }
+
+  protocol.handle(PACKAGED_RENDERER_SCHEME, (request) => {
+    const requestUrl = new URL(request.url);
+    const resolvedFilePath =
+      resolvePackagedRendererAssetPath(rendererRoot, requestUrl.pathname) ??
+      path.join(rendererRoot, "404.html");
+
+    return net.fetch(pathToFileURL(resolvedFilePath).toString());
+  });
+
+  registeredRendererRoot = rendererRoot;
+}
+
 void app.whenReady().then(async () => {
   applyDesktopRuntimeEnv({
     currentDir,
     env: process.env,
   });
+  const desktopData = await loadDesktopDataModules();
 
   registerDesktopHandlers(
     (channel, handler) => {
       ipcMain.handle(channel, handler);
     },
     {
+      [CHANNELS.homeDashboard]: async () => desktopData.getHomeDashboardData(),
+      [CHANNELS.modelsDashboard]: async () => desktopData.getModelDashboardData(),
+      [CHANNELS.rulesDashboard]: async () => desktopData.getRuleDashboardData(),
+      [CHANNELS.reviewDetail]: async (_event, payload) =>
+        desktopData.getReviewDetailData(
+          String((payload as { reviewId?: unknown })?.reviewId ?? ""),
+        ),
       [CHANNELS.filesPick]: async () => {
+        const smokeImportFilePaths = resolveSmokeImportFilePaths(process.env);
+
+        if (smokeImportFilePaths && smokeImportFilePaths.length > 0) {
+          return workerManager.invoke(CHANNELS.filesPick, smokeImportFilePaths);
+        }
+
         const dialogOptions: OpenDialogOptions = {
           filters: [
             {
@@ -154,9 +246,66 @@ void app.whenReady().then(async () => {
       [CHANNELS.reviewJobsList]: async () => workerManager.invoke(CHANNELS.reviewJobsList),
       [CHANNELS.reviewJobsSearch]: async (_event, payload) =>
         workerManager.invoke(CHANNELS.reviewJobsSearch, payload),
+      [CHANNELS.reviewJobsDelete]: async (_event, payload) =>
+        desktopData.deleteSelectedReviewJobs(payload as {
+          selectedIds?: string[];
+          query?: string;
+          allMatching: boolean;
+        }),
+      [CHANNELS.reviewJobsRetry]: async (_event, payload) =>
+        desktopData.retryReviewJobById(
+          String((payload as { reviewJobId?: unknown })?.reviewJobId ?? ""),
+        ),
+      [CHANNELS.reviewJobsExportList]: async (_event, payload) =>
+        desktopData.exportReviewListFile(payload as {
+          selectedIds?: string[];
+          query?: string;
+          allMatching: boolean;
+        }),
+      [CHANNELS.reviewJobsExportReport]: async (_event, payload) =>
+        desktopData.exportReviewReportArchive(payload as {
+          selectedIds?: string[];
+          query?: string;
+          allMatching: boolean;
+        }),
       [CHANNELS.rulesList]: async () => workerManager.invoke(CHANNELS.rulesList),
       [CHANNELS.rulesSearch]: async (_event, payload) =>
         workerManager.invoke(CHANNELS.rulesSearch, payload),
+      [CHANNELS.rulesSave]: async (_event, payload) =>
+        desktopData.saveRule(payload as {
+          id?: string;
+          name: string;
+          category: string;
+          description: string;
+          promptTemplate: string;
+          severity: "low" | "medium" | "high" | "critical";
+          enabled: boolean;
+        }),
+      [CHANNELS.rulesToggleEnabled]: async (_event, payload) =>
+        desktopData.toggleRuleEnabled(
+          String((payload as { id?: unknown })?.id ?? ""),
+          Boolean((payload as { enabled?: unknown })?.enabled),
+        ),
+      [CHANNELS.modelsSave]: async (_event, payload) =>
+        desktopData.saveLlmProfile(payload as {
+          id?: string;
+          name: string;
+          provider: string;
+          vendorKey: string;
+          mode: "live" | "demo";
+          baseUrl: string;
+          defaultModel: string;
+          modelOptionsText: string;
+          apiKey: string;
+          enabled: boolean;
+        }),
+      [CHANNELS.modelsToggleEnabled]: async (_event, payload) =>
+        desktopData.toggleLlmProfileEnabled(
+          String((payload as { id?: unknown })?.id ?? ""),
+          Boolean((payload as { enabled?: unknown })?.enabled),
+        ),
+      [CHANNELS.modelsDelete]: async (_event, payload) =>
+        desktopData.deleteLlmProfile(String((payload as { id?: unknown })?.id ?? "")),
       [CHANNELS.runtimeStatus]: async () => runtimeMetrics.getRuntimeStatus(),
     },
   );
@@ -184,8 +333,6 @@ void app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  stopPackagedRenderer?.();
-  stopPackagedRenderer = null;
   if (process.platform !== "darwin") {
     app.quit();
   }

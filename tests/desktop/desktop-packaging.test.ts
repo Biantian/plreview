@@ -21,6 +21,7 @@ describe("desktop packaging scripts", () => {
     expect(packageJson.scripts["desktop:build"]).toBeTruthy();
     expect(packageJson.scripts["desktop:build:runtime"]).toBeTruthy();
     expect(packageJson.scripts["desktop:dist"]).toBeTruthy();
+    expect(packageJson.scripts["test:desktop:smoke"]).toBeTruthy();
   });
 
   it("starts desktop main process from the cjs bootstrap entry", () => {
@@ -34,6 +35,12 @@ describe("desktop packaging scripts", () => {
     );
   });
 
+  it("keeps desktop smoke validation wired through an explicit script", () => {
+    expect(packageJson.scripts["test:desktop:smoke"]).toBe(
+      "node ./scripts/run-desktop-smoke.mjs",
+    );
+  });
+
   it("keeps the preload bootstrap free of tsx runtime hooks", () => {
     const preloadBootstrap = fs.readFileSync(path.resolve("electron/preload.cjs"), "utf8");
 
@@ -44,18 +51,15 @@ describe("desktop packaging scripts", () => {
     const builderConfig = fs.readFileSync(path.resolve("electron-builder.yml"), "utf8");
 
     expect(builderConfig).toContain(".desktop-runtime/**/*");
-    expect(builderConfig).toContain("from: .next/standalone");
-    expect(builderConfig).toContain("to: .next/standalone");
-    expect(builderConfig).toContain("from: .next/standalone/node_modules");
-    expect(builderConfig).toContain("to: .next/standalone/node_modules");
-    expect(builderConfig).toContain("from: .next/static");
-    expect(builderConfig).toContain("to: .next/standalone/.next/static");
+    expect(builderConfig).toContain("out/**/*");
+    expect(builderConfig).toContain("from: node_modules/@prisma/client");
+    expect(builderConfig).toContain("to: node_modules/@prisma/client");
     expect(builderConfig).toContain("from: node_modules/.prisma/client");
     expect(builderConfig).toContain("to: node_modules/.prisma/client");
-    expect(builderConfig).not.toContain(".next/**");
+    expect(builderConfig).toContain("!node_modules/**/*");
     expect(builderConfig).toContain("asarUnpack:");
-    expect(builderConfig).toContain(".next/standalone/**/*");
-    expect(builderConfig).toContain(".next/static/**/*");
+    expect(builderConfig).not.toContain(".next/standalone");
+    expect(builderConfig).not.toContain(".next/static");
     expect(builderConfig).not.toContain("electron/**/*.{ts,cjs}");
     expect(builderConfig).not.toContain("desktop/worker/**/*.{ts,cjs}");
   });
