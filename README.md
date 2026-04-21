@@ -59,7 +59,8 @@ npm run db:push
 npm run desktop:dev
 ```
 
-桌面模式会启动 `Next.js` 渲染层和 `Electron` 壳层。默认仍使用本地 SQLite，只有大模型调用会走网络。
+桌面开发模式会启动 `Electron` 壳层，并继续连接本地 `http://localhost:3000` 的 Next.js 开发服务。
+默认仍使用本地 SQLite，只有大模型调用会走网络。
 
 ## 桌面应用打包
 
@@ -69,6 +70,7 @@ npm run desktop:dist
 ```
 
 打包配置位于 [electron-builder.yml](./electron-builder.yml)。产物默认输出到 `release/`。
+生产环境不再在 Electron 内部启动独立的 Next.js Node 服务器，而是直接加载静态导出的 `out/` 目录。
 `npm run desktop:dist` 现在会在打包完成后自动输出一份机器可读的桌面产物体积报告。
 通过 `npm run desktop:dist -- ...` 追加的参数会继续原样转发给 `electron-builder`，例如 `--win --x64 --dir`。
 
@@ -80,8 +82,7 @@ npm run desktop:report-size
 
 该命令会输出 JSON，汇总当前工作区内与桌面打包直接相关的本地产物，例如：
 
-- `.next/standalone`
-- `.next/static`
+- `out/`
 - `electron/main.cjs`
 - `electron/preload.cjs`
 - `desktop/worker/background-entry.cjs`
@@ -94,6 +95,21 @@ npm run desktop:report-size
 npm test -- --run tests/desktop/desktop-packaging.test.ts tests/desktop/desktop-size-report.test.ts
 npm run desktop:report-size
 ```
+
+当前桌面架构的打包链路是：
+
+- `next.config.ts` 使用 `output: "export"` 生成静态 `out/`
+- 开发环境由 Electron 加载 `http://localhost:3000`
+- 生产环境由 Electron 直接加载 `out/index.html`
+- 页面数据通过 `electron/preload` 暴露的桌面 bridge 进入渲染层，而不是依赖 Next.js API Routes
+
+需要回归桌面核心发起链路时，建议补跑：
+
+```bash
+npm run test:desktop:smoke
+```
+
+说明见 [2026-04-21-desktop-smoke-regression.md](./docs/qa/2026-04-21-desktop-smoke-regression.md)。
 
 ### Win11 打包（当前环境推荐）
 
@@ -120,9 +136,9 @@ Win11 手工烟测步骤见 [2026-04-14-win11-smoke-test-checklist.md](./docs/qa
 
 ## 使用流程
 
-1. 在“模型设置”中通过列表查看现有配置，按需打开抽屉新增或编辑模型
-2. 在“规则管理”中确认本次评审真正需要启用的规则
-3. 在“新建评审”中按单列流程依次填写批次信息、勾选规则并导入本地文件
-4. 确认至少有 1 个可提交文件后，点击“开始批量评审”创建任务
-5. 在“评审列表”中等待后台任务完成，并进入结果页做核对
-6. 需要查操作说明时，打开“文档”页，按左侧目录和右侧文章目录快速跳转
+1. 先在“模型配置”里确认可用模型与密钥状态
+2. 再到“规则库”里只保留本次批次真正需要的规则
+3. 进入“新建批次”填写批次名称、勾选规则并导入本地文件
+4. 确认至少有 1 个文件可提交后，点击“开始评审”创建批次
+5. 在“评审任务”中查看后台执行状态，并进入详情页核对结果
+6. 需要查操作说明时，打开“帮助文档”查看流程和结果阅读指引

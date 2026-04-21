@@ -41,10 +41,11 @@ describe("desktop packaging scripts", () => {
     );
   });
 
-  it("keeps the preload bootstrap free of tsx runtime hooks", () => {
+  it("keeps the source preload bootstrap delegated to the typed ts entry", () => {
     const preloadBootstrap = fs.readFileSync(path.resolve("electron/preload.cjs"), "utf8");
 
-    expect(preloadBootstrap).not.toContain("tsx/cjs");
+    expect(preloadBootstrap).toContain('require("tsx/cjs")');
+    expect(preloadBootstrap).toContain('require("./preload.ts")');
   });
 
   it("packages the compiled desktop runtime instead of tsx-driven source entries", () => {

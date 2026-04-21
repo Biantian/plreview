@@ -8,7 +8,8 @@ It is intended for any change that touches:
 
 - Electron packaging
 - desktop runtime bootstrapping
-- Next standalone renderer startup
+- static renderer export and asset loading
+- Electron preload / IPC bridge wiring
 - Prisma/database runtime wiring
 - packaged process model on macOS or Windows
 
@@ -23,56 +24,49 @@ The common reasons are:
 - `.env` is no longer implicitly available
 - relative SQLite paths resolve from a different working directory
 - `tsx` / `esbuild` runtime hooks behave differently or break entirely inside `asar`
-- Next standalone assets may exist but still be placed in the wrong runtime-relative location
+- exported renderer assets may exist but still be placed in the wrong packaged location
 
 Rule:
 
 - never assume a development-only default will still work in the packaged app
 
-### 2. `process.execPath` in a packaged app is the app executable
+### 2. Production renderer loading must not depend on a packaged Next.js server
 
-In packaged Electron builds, `process.execPath` points to the application binary itself, not a neutral Node runtime.
-
-That means code like this is dangerous:
-
-```ts
-spawn(process.execPath, [serverPath], ...)
-```
-
-This can cause macOS to treat a background server as a second app instance, which may surface as an extra Dock icon or a bouncing `exec`-style entry.
+This desktop architecture no longer ships a standalone Next.js renderer server.
+Development still points Electron at `http://localhost:3000`, but packaged builds must load static HTML from `out/`.
 
 Rule:
 
-- do not use `process.execPath` to launch packaged background Node-style services
-- prefer Electron-managed process types such as `utilityProcess`
+- do not reintroduce standalone server boot code into the packaged renderer path
+- packaged runtime should resolve to `out/index.html` or the equivalent local protocol target
 
-### 3. Next standalone server and static assets must match runtime layout
+### 3. Exported HTML and assets must match runtime layout
 
-It is not enough to package `.next/standalone` and `.next/static`.
-The files must land where the standalone server actually looks for them at runtime.
+It is not enough to generate `out/`.
+The exported files must land where Electron can actually resolve them at runtime.
 
 Symptoms of mismatch:
 
 - app opens but styles are missing
-- HTML returns `200` while CSS or chunk requests return `404`
-- the shell page loads but route styling or hydration is broken
+- entry HTML loads but CSS or chunk files fail to resolve
+- the shell page loads but route transitions or hydration are broken
 
 Rule:
 
-- verify packaged output against the standalone server's real runtime-relative lookup paths
+- verify packaged output against the real file/protocol lookup paths used by Electron
 
-### 4. Static home page success does not prove runtime health
+### 4. Static home page success does not prove desktop bridge health
 
-The home page may work even when dynamic pages are broken, because static routes and dynamic routes exercise different runtime paths.
+The home page may work even when operational pages are broken, because landing pages, bridge-backed pages, and detail pages exercise different runtime paths.
 
 In this debugging cycle:
 
 - `/` rendered successfully
-- `/reviews` failed at runtime due to database resolution issues
+- `/reviews` or `/reviews/new` could still fail due to bridge, database, or packaged asset issues
 
 Rule:
 
-- always test at least one dynamic route and one API route in packaged mode
+- always test at least one bridge-backed list page and one bridge-backed launch flow in packaged mode
 
 ### 5. Database and encryption runtime config must be explicitly normalized
 
@@ -87,6 +81,21 @@ For local SQLite and encrypted settings:
 Rule:
 
 - normalize runtime env once in the main process and propagate it consistently
+
+### 6. Preload bridge drift can silently break packaged pages
+
+This desktop architecture depends on `electron/preload` exposing the renderer bridge consistently in development and production.
+
+Symptoms of mismatch:
+
+- packaged pages show "桌面桥接不可用，请从 Electron 桌面壳启动。"
+- list/detail pages render shell UI but never load data
+- launch flow stays disabled because rules, models, or file import state never arrive
+
+Rule:
+
+- keep source preload bootstrap and typed preload implementation aligned
+- verify bridge-backed pages after any preload, channel, or page migration change
 
 ## Required Regression Checks
 
@@ -107,7 +116,19 @@ Pass criteria:
 - all tests pass
 - no new packaging/runtime regressions are introduced
 
-### 2. Produce a fresh packaged app
+### 2. Packaged smoke regression
+
+```bash
+npm run test:desktop:smoke
+```
+
+Pass criteria:
+
+- the packaged app launches successfully
+- the smoke script can fill the batch name, import a file, and enable `开始评审`
+- batch creation completes and the new row appears under `评审任务`
+
+### 3. Produce a fresh packaged app
 
 ```bash
 npm run desktop:dist -- --mac dir
@@ -124,22 +145,22 @@ Pass criteria:
 - packaging completes successfully
 - expected output folder is regenerated
 
-### 3. Verify packaged renderer asset availability
+### 4. Verify packaged renderer asset availability
 
-Confirm that a packaged app can serve:
+Confirm that a packaged app can resolve:
 
-- main HTML
-- CSS under `/_next/static/css/...`
-- JS chunks under `/_next/static/chunks/...`
+- `out/index.html`
+- exported route HTML such as `out/reviews/index.html`
+- CSS and JS assets emitted under `out/_next/`
 
 Pass criteria:
 
-- HTML returns `200`
-- first-load CSS returns `200 text/css`
-- first-load JS chunks return `200`
-- no `404` on first-load assets
+- entry HTML exists and loads
+- first-load CSS resolves successfully
+- first-load JS chunks resolve successfully
+- no missing exported assets on first load or first route transition
 
-### 4. Verify critical packaged routes
+### 5. Verify critical packaged routes
 
 At minimum, validate:
 
@@ -147,73 +168,90 @@ At minimum, validate:
 - `/reviews`
 - `/reviews/new`
 - `/rules`
-- `/api/reviews`
+- `/models`
+- `/docs`
 
 Pass criteria:
 
-- all routes return `200`
+- all pages render without fallback error UI
 - no `Application error`
 - no `__next_error__`
-- no server-side Prisma or path-resolution exceptions
+- bridge-backed pages successfully load their local data
 
-### 5. Verify packaged process model
+### 6. Verify packaged process model
 
 Inspect the app after launch and confirm:
 
 - the app is started once
-- no second process is launched using the app executable as a fake Node runtime
-- background renderer server is hosted as a helper/utility process, not as a second visible app
+- no standalone Next.js renderer server is launched in packaged mode
+- background work stays within the expected Electron helper / worker process model
 
 Recommended checks:
 
 ```bash
 pgrep -af "PLReview.app/Contents/MacOS/PLReview"
-lsappinfo list | rg "PLReview|next-server"
+lsappinfo list | rg "PLReview|node|next-server"
 ```
 
 Pass criteria:
 
 - only one `PLReview.app/Contents/MacOS/PLReview` app process
-- any `next-server` process is parented by the app helper/runtime process, not re-launching the app binary
+- no `next-server`-style packaged renderer process is running
+- no second visible app instance is spawned to host renderer logic
 
-### 6. Verify packaged database resolution
+### 7. Verify packaged database resolution
 
-Confirm packaged dynamic routes read the intended database and do not silently create or bind to an empty SQLite file.
+Confirm packaged bridge-backed pages and workers read the intended database and do not silently create or bind to an empty SQLite file.
 
 Pass criteria:
 
-- dynamic routes see expected records
+- review lists, rules, and models show expected records
 - Prisma does not throw `P2021` or related missing-table errors
 - runtime env resolves to the intended database path
+
+### 8. Verify desktop bridge coverage
+
+Confirm the preload bridge remains available to the packaged renderer.
+
+At minimum, validate:
+
+- `window.plreview` exists in the renderer
+- review list loading works
+- rule dashboard loading works
+- model dashboard loading works
+- file import and batch creation still complete
+
+Pass criteria:
+
+- packaged operational pages do not show bridge-unavailable messaging
+- no IPC channel mismatches or missing preload exports surface during the run
 
 ## Release Gate
 
 Do not consider a packaged desktop runtime change complete unless all of the following are true:
 
 - desktop runtime regression tests are green
+- packaged smoke regression is green
 - a fresh packaged build succeeds
-- critical routes are healthy in packaged mode
-- first-load CSS and JS assets are reachable
-- packaged process model does not create an extra visible app instance
-- database-backed pages work in packaged mode
+- critical pages are healthy in packaged mode
+- exported CSS and JS assets are reachable
+- packaged process model does not create an extra visible app instance or a hidden Next server
+- database-backed pages and bridge-backed flows work in packaged mode
 
 ## Anti-Patterns To Avoid
 
-- using `spawn(process.execPath, ...)` for packaged background services
 - relying on implicit `.env` loading inside packaged runtime
 - keeping `tsx` or `esbuild` as a packaged runtime dependency
-- assuming standalone asset placement is correct without HTTP verification
-- validating only `/` and skipping dynamic pages
+- reintroducing `.next/standalone` as a packaged runtime dependency
+- assuming exported asset placement is correct without packaged verification
+- validating only `/` and skipping bridge-backed operational pages
 - assuming "the app opened" means "the packaged runtime is healthy"
 
 ## Suggested Follow-up
 
-If future desktop release work continues, consider adding a dedicated packaged smoke script that automates:
+The dedicated packaged smoke script now exists at `npm run test:desktop:smoke`.
+Future follow-up can extend it with:
 
-- app launch
-- local port discovery
-- route probing
-- first-load asset probing
-- basic process-shape checks
-
-That would turn the current manual/semi-automated packaged validation into a standard pre-release gate.
+- Windows packaged executable discovery
+- additional detail-page verification
+- automated process-shape assertions
