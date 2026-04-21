@@ -1,25 +1,8 @@
-import fs from "node:fs";
-import net from "node:net";
-import { createRequire } from "node:module";
 import path from "node:path";
-import type { ForkOptions, UtilityProcess } from "electron";
+import fs from "node:fs";
 
-type LaunchResult = {
-  url: string;
-  stop: () => void;
-};
-
-type UtilityProcessLike = Pick<UtilityProcess, "kill" | "stdout" | "stderr">;
-
-type LaunchPackagedRendererDependencies = {
-  forkProcess?: (
-    modulePath: string,
-    args: string[],
-    options: ForkOptions,
-  ) => UtilityProcessLike;
-  resolveServerPath?: (currentDir: string) => string | null;
-  waitForServer?: (url: string) => Promise<void>;
-};
+export const PACKAGED_RENDERER_SCHEME = "plreview";
+export type RendererRuntimeMode = "development" | "packaged";
 
 export type RendererLoadTarget =
   | {
@@ -38,19 +21,21 @@ export type RendererLoadTarget =
 type ResolveRendererLoadTargetOptions = {
   currentDir: string;
   env: NodeJS.ProcessEnv;
-  launchPackagedRenderer?: (
-    currentDir: string,
-    env: NodeJS.ProcessEnv,
-  ) => Promise<LaunchResult | null>;
+  mode: RendererRuntimeMode;
+  resourcesPath?: string;
+  resolvePackagedHtmlPath?: (options: {
+    currentDir: string;
+    resourcesPath?: string;
+  }) => string | null;
 };
 
 export async function resolveRendererLoadTarget(
   options: ResolveRendererLoadTargetOptions,
 ): Promise<RendererLoadTarget> {
-  if (options.env.ELECTRON_RENDERER_URL) {
+  if (options.mode === "development") {
     return {
       kind: "url",
-      url: options.env.ELECTRON_RENDERER_URL,
+      url: options.env.ELECTRON_RENDERER_URL || "http://localhost:3000",
     };
   }
 
@@ -61,17 +46,17 @@ export async function resolveRendererLoadTarget(
     };
   }
 
-  const packagedRenderer =
-    await (options.launchPackagedRenderer ?? launchPackagedRenderer)(
-      options.currentDir,
-      options.env,
-    );
+  const packagedHtmlPath = (options.resolvePackagedHtmlPath ?? resolvePackagedHtmlPath)(
+    {
+      currentDir: options.currentDir,
+      resourcesPath: options.resourcesPath,
+    },
+  );
 
-  if (packagedRenderer) {
+  if (packagedHtmlPath) {
     return {
-      kind: "url",
-      url: packagedRenderer.url,
-      stop: packagedRenderer.stop,
+      kind: "file",
+      filePath: packagedHtmlPath,
     };
   }
 
@@ -80,120 +65,79 @@ export async function resolveRendererLoadTarget(
   };
 }
 
-export async function launchPackagedRenderer(
-  currentDir: string,
-  env: NodeJS.ProcessEnv,
-  dependencies: LaunchPackagedRendererDependencies = {},
-): Promise<LaunchResult | null> {
-  const serverPath = (dependencies.resolveServerPath ?? resolvePackagedServerPath)(
-    currentDir,
-  );
+function resolvePackagedHtmlPath(options: {
+  currentDir: string;
+  resourcesPath?: string;
+}) {
+  const unpackedHtmlPath = path.join(options.currentDir, "../../out/index.html");
+  const packagedResourcesPath =
+    options.resourcesPath ??
+    (typeof process.resourcesPath === "string" && process.resourcesPath.length > 0
+      ? process.resourcesPath
+      : undefined);
+  const packagedHtmlPath = packagedResourcesPath
+    ? path.join(packagedResourcesPath, "out/index.html")
+    : null;
 
-  if (!serverPath || !fs.existsSync(serverPath)) {
-    return null;
+  if (packagedHtmlPath && fs.existsSync(packagedHtmlPath)) {
+    return packagedHtmlPath;
   }
 
-  const port = await findAvailablePort();
-  const child = (dependencies.forkProcess ?? forkRendererProcess)(serverPath, [], {
-    env: {
-      ...env,
-      HOSTNAME: "127.0.0.1",
-      PORT: String(port),
-    },
-    serviceName: "PLReview Renderer Server",
-    stdio: "ignore",
-  });
-
-  await (dependencies.waitForServer ?? waitForServer)(`http://127.0.0.1:${port}`);
-
-  return {
-    url: `http://127.0.0.1:${port}`,
-    stop: () => stopChild(child),
-  };
-}
-
-function resolvePackagedServerPath(currentDir: string) {
-  const unpackedResourcesPath = path.join(
-    currentDir,
-    "../../.next/standalone/server.js",
-  );
-  const packagedResourcesPath = path.join(
-    process.resourcesPath,
-    "app.asar.unpacked/.next/standalone/server.js",
-  );
-
-  if (fs.existsSync(packagedResourcesPath)) {
-    return packagedResourcesPath;
-  }
-
-  if (fs.existsSync(unpackedResourcesPath)) {
-    return unpackedResourcesPath;
+  if (fs.existsSync(unpackedHtmlPath)) {
+    return unpackedHtmlPath;
   }
 
   return null;
 }
 
-function forkRendererProcess(
-  modulePath: string,
-  args: string[],
-  options: ForkOptions,
+export function resolvePackagedRendererAssetPath(
+  rendererRoot: string,
+  requestPathname: string,
 ) {
-  const electron = getElectronModule();
+  const normalizedRoot = path.resolve(rendererRoot);
+  const normalizedPathname = normalizeRequestPathname(requestPathname);
 
-  return electron.utilityProcess.fork(modulePath, args, options);
-}
+  for (const candidatePath of getRendererAssetCandidates(normalizedPathname)) {
+    const resolvedPath = path.resolve(normalizedRoot, `.${candidatePath}`);
 
-function getElectronModule(): {
-  utilityProcess: {
-    fork: (
-      modulePath: string,
-      args?: string[],
-      options?: ForkOptions,
-    ) => UtilityProcessLike;
-  };
-} {
-  return createRequire(__filename)("electron");
-}
-
-async function findAvailablePort() {
-  return new Promise<number>((resolve, reject) => {
-    const server = net.createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-
-      server.close(() => {
-        if (!address || typeof address === "string") {
-          reject(new Error("Failed to resolve an available renderer port."));
-          return;
-        }
-
-        resolve(address.port);
-      });
-    });
-  });
-}
-
-async function waitForServer(url: string) {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < 15_000) {
-    try {
-      const response = await fetch(url);
-
-      if (response.ok || response.status === 404) {
-        return;
-      }
-    } catch {
-      // Retry until timeout.
+    if (!isWithinRendererRoot(normalizedRoot, resolvedPath)) {
+      continue;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()) {
+      return resolvedPath;
+    }
   }
 
-  throw new Error(`Packaged renderer did not become ready: ${url}`);
+  return null;
 }
 
-function stopChild(child: UtilityProcessLike) {
-  child.kill();
+function normalizeRequestPathname(requestPathname: string) {
+  if (!requestPathname || requestPathname === "/") {
+    return "/";
+  }
+
+  const withLeadingSlash = requestPathname.startsWith("/")
+    ? requestPathname
+    : `/${requestPathname}`;
+
+  return withLeadingSlash.replace(/\/+$/, "") || "/";
+}
+
+function getRendererAssetCandidates(requestPathname: string) {
+  if (requestPathname === "/") {
+    return ["/index.html"];
+  }
+
+  if (path.extname(requestPathname)) {
+    return [requestPathname];
+  }
+
+  return [`${requestPathname}.html`, `${requestPathname}/index.html`];
+}
+
+function isWithinRendererRoot(rendererRoot: string, resolvedPath: string) {
+  const relativePath = path.relative(rendererRoot, resolvedPath);
+
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
 }

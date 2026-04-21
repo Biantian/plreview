@@ -30,8 +30,8 @@ describe("desktop bundle reporting", () => {
     );
     tempDirs.push(tempDir);
 
-    writeFile(tempDir, ".next/standalone/server.js", "standalone");
-    writeFile(tempDir, ".next/static/chunk.js", "chunk");
+    writeFile(tempDir, "out/index.html", "standalone");
+    writeFile(tempDir, "out/assets/chunk.js", "chunk");
     writeFile(tempDir, ".desktop-runtime/electron/main.cjs", "main");
     writeFile(tempDir, ".desktop-runtime/electron/preload.cjs", "preload");
     writeFile(tempDir, ".desktop-runtime/desktop/worker/background-entry.cjs", "worker");
@@ -61,52 +61,20 @@ describe("desktop bundle reporting", () => {
     expect(report.artifacts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: "nextStandalone",
-          path: ".next/standalone",
+          id: "rendererOut",
+          path: "out",
           exists: true,
           type: "directory",
-          bytes: 10,
-          fileCount: 1,
+          bytes: 15,
+          fileCount: 2,
         }),
         expect.objectContaining({
-          id: "nextStatic",
-          path: ".next/static",
+          id: "desktopRuntime",
+          path: ".desktop-runtime",
           exists: true,
           type: "directory",
-          bytes: 5,
-          fileCount: 1,
-        }),
-        expect.objectContaining({
-          id: "electronMainBootstrap",
-          path: ".desktop-runtime/electron/main.cjs",
-          exists: true,
-          type: "file",
-          bytes: 4,
-          fileCount: 1,
-        }),
-        expect.objectContaining({
-          id: "electronPreloadBootstrap",
-          path: ".desktop-runtime/electron/preload.cjs",
-          exists: true,
-          type: "file",
-          bytes: 7,
-          fileCount: 1,
-        }),
-        expect.objectContaining({
-          id: "workerBootstrap",
-          path: ".desktop-runtime/desktop/worker/background-entry.cjs",
-          exists: true,
-          type: "file",
-          bytes: 6,
-          fileCount: 1,
-        }),
-        expect.objectContaining({
-          id: "taskBootstrap",
-          path: ".desktop-runtime/desktop/worker/task-entry.cjs",
-          exists: true,
-          type: "file",
-          bytes: 4,
-          fileCount: 1,
+          bytes: 21,
+          fileCount: 4,
         }),
         expect.objectContaining({
           id: "release",
@@ -120,7 +88,7 @@ describe("desktop bundle reporting", () => {
     );
     expect(report.totals).toEqual(
       expect.objectContaining({
-        existingArtifacts: 7,
+        existingArtifacts: 3,
         bytes: 43,
         fileCount: 7,
       }),

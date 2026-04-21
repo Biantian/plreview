@@ -1,9 +1,15 @@
+import fs from "node:fs";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const forwardedArgs = process.argv.slice(2);
 
 if (process.env.PLREVIEW_DESKTOP_DIST_SKIP_BUILD !== "1") {
   runCommand(getNpmCommand(), ["run", "desktop:build"]);
+}
+
+if (process.env.PLREVIEW_DESKTOP_DIST_CLEAN_OUTPUT !== "0") {
+  cleanDistOutput();
 }
 
 runCommand(getBuilderCommand(), forwardedArgs);
@@ -64,4 +70,10 @@ function runCommand(commandConfig, extraArgs) {
   if (result.error) {
     throw result.error;
   }
+}
+
+function cleanDistOutput() {
+  const outputDir = path.resolve(process.env.PLREVIEW_DESKTOP_DIST_OUTPUT_DIR ?? "release");
+
+  fs.rmSync(outputDir, { recursive: true, force: true });
 }

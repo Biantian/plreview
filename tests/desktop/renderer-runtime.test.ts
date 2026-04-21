@@ -1,89 +1,22 @@
-import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  launchPackagedRenderer,
+  resolvePackagedRendererAssetPath,
   resolveRendererLoadTarget,
 } from "@/electron/renderer-runtime";
 
+function createEnv(overrides: Record<string, string> = {}): NodeJS.ProcessEnv {
+  return {
+    NODE_ENV: "test",
+    ...overrides,
+  };
+}
+
 describe("resolveRendererLoadTarget", () => {
-  it("prefers the explicit renderer dev server URL when provided", async () => {
-    const launchPackagedRenderer = vi.fn();
-
-    await expect(
-      resolveRendererLoadTarget({
-        currentDir: "/tmp/plreview/electron",
-        env: {
-          ELECTRON_RENDERER_URL: "http://127.0.0.1:3000",
-        },
-        launchPackagedRenderer,
-      }),
-    ).resolves.toEqual({
-      kind: "url",
-      url: "http://127.0.0.1:3000",
-    });
-
-    expect(launchPackagedRenderer).not.toHaveBeenCalled();
-  });
-
-  it("loads an explicit packaged html file when configured", async () => {
-    const launchPackagedRenderer = vi.fn();
-
-    await expect(
-      resolveRendererLoadTarget({
-        currentDir: "/tmp/plreview/electron",
-        env: {
-          ELECTRON_RENDERER_HTML: "dist/index.html",
-        },
-        launchPackagedRenderer,
-      }),
-    ).resolves.toEqual({
-      kind: "file",
-      filePath: path.resolve("dist/index.html"),
-    });
-
-    expect(launchPackagedRenderer).not.toHaveBeenCalled();
-  });
-
-  it("starts the packaged standalone renderer when no explicit renderer target is configured", async () => {
-    const stop = vi.fn();
-    const launchPackagedRenderer = vi.fn().mockResolvedValue({
-      url: "http://127.0.0.1:43123",
-      stop,
-    });
-
-    await expect(
-      resolveRendererLoadTarget({
-        currentDir: "/tmp/plreview/.desktop-runtime/electron",
-        env: {},
-        launchPackagedRenderer,
-      }),
-    ).resolves.toEqual({
-      kind: "url",
-      url: "http://127.0.0.1:43123",
-      stop,
-    });
-  });
-
-  it("falls back to the shell page when no renderer target is available", async () => {
-    const launchPackagedRenderer = vi.fn().mockResolvedValue(null);
-
-    await expect(
-      resolveRendererLoadTarget({
-        currentDir: "/tmp/plreview/electron",
-        env: {},
-        launchPackagedRenderer,
-      }),
-    ).resolves.toEqual({
-      kind: "fallback",
-    });
-  });
-});
-
-describe("launchPackagedRenderer", () => {
   const tempDirs: string[] = [];
 
   afterEach(() => {
@@ -92,54 +25,146 @@ describe("launchPackagedRenderer", () => {
     }
   });
 
-  it("starts the packaged renderer with an Electron utility process instead of respawning the app executable", async () => {
-    const tempDir = fs.mkdtempSync(
-      path.join(os.tmpdir(), "plreview-renderer-runtime-"),
-    );
-    tempDirs.push(tempDir);
-
-    const serverPath = path.join(tempDir, "server.js");
-    fs.writeFileSync(serverPath, "console.log('server');\n");
-
-    const kill = vi.fn();
-    const forkProcess = vi.fn().mockReturnValue({
-      kill,
-      stdout: null,
-      stderr: null,
-    });
-    const waitForServer = vi.fn().mockResolvedValue(undefined);
-
-    const launched = await launchPackagedRenderer(
-      "/tmp/plreview/.desktop-runtime/electron",
-      {
-        NODE_ENV: "production",
-      },
-      {
-        resolveServerPath: () => serverPath,
-        forkProcess,
-        waitForServer,
-      },
-    );
-
-    expect(forkProcess).toHaveBeenCalledTimes(1);
-    expect(forkProcess).toHaveBeenCalledWith(
-      serverPath,
-      [],
-      expect.objectContaining({
-        env: expect.objectContaining({
-          HOSTNAME: "127.0.0.1",
-          NODE_ENV: "production",
-        }),
-        serviceName: "PLReview Renderer Server",
-        stdio: "ignore",
+  it("loads localhost:3000 by default in development mode", async () => {
+    await expect(
+      resolveRendererLoadTarget({
+        currentDir: "/tmp/plreview/electron",
+        env: createEnv(),
+        mode: "development",
       }),
-    );
-    expect(waitForServer).toHaveBeenCalledWith(
-      expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/u),
-    );
-    expect(launched?.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/u);
+    ).resolves.toEqual({
+      kind: "url",
+      url: "http://localhost:3000",
+    });
+  });
 
-    launched?.stop();
-    expect(kill).toHaveBeenCalledTimes(1);
+  it("honors ELECTRON_RENDERER_URL override in development mode", async () => {
+    await expect(
+      resolveRendererLoadTarget({
+        currentDir: "/tmp/plreview/electron",
+        env: createEnv({
+          ELECTRON_RENDERER_URL: "http://127.0.0.1:4123",
+        }),
+        mode: "development",
+      }),
+    ).resolves.toEqual({
+      kind: "url",
+      url: "http://127.0.0.1:4123",
+    });
+  });
+
+  it("resolves packaged html from process resources in packaged mode", async () => {
+    const resourcesRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plreview-renderer-resources-"));
+    tempDirs.push(resourcesRoot);
+    fs.mkdirSync(path.join(resourcesRoot, "out"), { recursive: true });
+    fs.writeFileSync(path.join(resourcesRoot, "out/index.html"), "packaged");
+
+    await expect(
+      resolveRendererLoadTarget({
+        currentDir: "/tmp/plreview/.desktop-runtime/electron",
+        env: createEnv(),
+        mode: "packaged",
+        resourcesPath: resourcesRoot,
+      }),
+    ).resolves.toEqual({
+      kind: "file",
+      filePath: path.join(resourcesRoot, "out/index.html"),
+    });
+  });
+
+  it("resolves unpacked out/index.html in packaged mode when resources html is missing", async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plreview-renderer-project-"));
+    tempDirs.push(projectRoot);
+    const currentDir = path.join(projectRoot, ".desktop-runtime/electron");
+    fs.mkdirSync(currentDir, { recursive: true });
+    fs.mkdirSync(path.join(projectRoot, "out"), { recursive: true });
+    fs.writeFileSync(path.join(projectRoot, "out/index.html"), "unpacked");
+
+    await expect(
+      resolveRendererLoadTarget({
+        currentDir,
+        env: createEnv(),
+        mode: "packaged",
+        resourcesPath: path.join(projectRoot, "missing-resources"),
+      }),
+    ).resolves.toEqual({
+      kind: "file",
+      filePath: path.join(projectRoot, "out/index.html"),
+    });
+  });
+
+  it("ignores renderer url overrides and can honor html override in packaged mode", async () => {
+    const htmlPath = path.resolve("out/index.html");
+
+    await expect(
+      resolveRendererLoadTarget({
+        currentDir: "/tmp/plreview/.desktop-runtime/electron",
+        env: createEnv({
+          ELECTRON_RENDERER_URL: "http://localhost:3100",
+          ELECTRON_RENDERER_HTML: "out/index.html",
+        }),
+        mode: "packaged",
+      }),
+    ).resolves.toEqual({
+      kind: "file",
+      filePath: htmlPath,
+    });
+  });
+
+  it("falls back to the shell page when packaged html is unavailable", async () => {
+    await expect(
+      resolveRendererLoadTarget({
+        currentDir: "/tmp/plreview/.desktop-runtime/electron",
+        env: createEnv(),
+        mode: "packaged",
+        resourcesPath: "/tmp/plreview/missing-resources",
+      }),
+    ).resolves.toEqual({
+      kind: "fallback",
+    });
+  });
+});
+
+describe("resolvePackagedRendererAssetPath", () => {
+  const tempDirs: string[] = [];
+
+  afterEach(() => {
+    for (const tempDir of tempDirs) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("maps app routes and static assets into the exported out directory", () => {
+    const rendererRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plreview-renderer-root-"));
+    tempDirs.push(rendererRoot);
+
+    fs.mkdirSync(path.join(rendererRoot, "_next/static/css"), { recursive: true });
+    fs.writeFileSync(path.join(rendererRoot, "index.html"), "root");
+    fs.writeFileSync(path.join(rendererRoot, "reviews.html"), "reviews");
+    fs.mkdirSync(path.join(rendererRoot, "reviews"), { recursive: true });
+    fs.writeFileSync(path.join(rendererRoot, "reviews/detail.html"), "detail");
+    fs.writeFileSync(path.join(rendererRoot, "_next/static/css/app.css"), "css");
+
+    expect(resolvePackagedRendererAssetPath(rendererRoot, "/")).toBe(
+      path.join(rendererRoot, "index.html"),
+    );
+    expect(resolvePackagedRendererAssetPath(rendererRoot, "/reviews")).toBe(
+      path.join(rendererRoot, "reviews.html"),
+    );
+    expect(resolvePackagedRendererAssetPath(rendererRoot, "/reviews/detail")).toBe(
+      path.join(rendererRoot, "reviews/detail.html"),
+    );
+    expect(resolvePackagedRendererAssetPath(rendererRoot, "/_next/static/css/app.css")).toBe(
+      path.join(rendererRoot, "_next/static/css/app.css"),
+    );
+  });
+
+  it("rejects traversal outside the exported renderer root", () => {
+    const rendererRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plreview-renderer-root-"));
+    tempDirs.push(rendererRoot);
+
+    fs.writeFileSync(path.join(rendererRoot, "index.html"), "root");
+
+    expect(resolvePackagedRendererAssetPath(rendererRoot, "/../../etc/passwd")).toBeNull();
   });
 });

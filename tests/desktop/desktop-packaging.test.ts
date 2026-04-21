@@ -5,6 +5,7 @@ import os from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import nextConfig from "@/next.config";
 import packageJson from "@/package.json";
 
 describe("desktop packaging scripts", () => {
@@ -50,19 +51,51 @@ describe("desktop packaging scripts", () => {
 
   it("packages the compiled desktop runtime instead of tsx-driven source entries", () => {
     const builderConfig = fs.readFileSync(path.resolve("electron-builder.yml"), "utf8");
+    const filesEntries = readTopLevelYamlList(builderConfig, "files");
 
-    expect(builderConfig).toContain(".desktop-runtime/**/*");
-    expect(builderConfig).toContain("out/**/*");
-    expect(builderConfig).toContain("from: node_modules/@prisma/client");
-    expect(builderConfig).toContain("to: node_modules/@prisma/client");
-    expect(builderConfig).toContain("from: node_modules/.prisma/client");
-    expect(builderConfig).toContain("to: node_modules/.prisma/client");
-    expect(builderConfig).toContain("!node_modules/**/*");
-    expect(builderConfig).toContain("asarUnpack:");
-    expect(builderConfig).not.toContain(".next/standalone");
-    expect(builderConfig).not.toContain(".next/static");
-    expect(builderConfig).not.toContain("electron/**/*.{ts,cjs}");
-    expect(builderConfig).not.toContain("desktop/worker/**/*.{ts,cjs}");
+    expect(filesEntries).toEqual(
+      expect.arrayContaining([
+        ".desktop-runtime/**/*",
+        "out/**/*",
+        "package.json",
+        "from: node_modules/@prisma/client",
+        "from: node_modules/.prisma/client",
+        "!node_modules/**/*",
+      ]),
+    );
+    expect(filesEntries).toHaveLength(6);
+    expect(builderConfig).toMatch(
+      /- from: node_modules\/@prisma\/client[\s\S]*?to: node_modules\/@prisma\/client/u,
+    );
+    expect(builderConfig).toMatch(
+      /- from: node_modules\/\.prisma\/client[\s\S]*?to: node_modules\/\.prisma\/client/u,
+    );
+    expect(builderConfig).toMatch(/asarUnpack:[\s\S]*node_modules\/\.prisma\/client/u);
+    expect(filesEntries.join("\n")).not.toMatch(/\.next/u);
+  });
+
+  it("keeps next configured for static export only", () => {
+    expect(nextConfig.output).toBe("export");
+    expect(nextConfig).not.toHaveProperty("outputFileTracingRoot");
+  });
+
+  it("builds desktop runtime directly from electron and worker entrypoints", () => {
+    const buildRuntimeScript = fs.readFileSync(
+      path.resolve("scripts/build-desktop-runtime.mjs"),
+      "utf8",
+    );
+    const entryPoints = readQuotedArray(buildRuntimeScript, "entryPoints");
+
+    expect(entryPoints).toEqual(
+      expect.arrayContaining([
+        "electron/main.ts",
+        "electron/preload.ts",
+        "desktop/worker/background-entry.ts",
+        "desktop/worker/task-entry.ts",
+      ]),
+    );
+    expect(entryPoints.every((entryPoint) => !entryPoint.includes(".next"))).toBe(true);
+    expect(entryPoints.every((entryPoint) => !entryPoint.includes("standalone"))).toBe(true);
   });
 
   it("forwards desktop dist args to electron-builder before running the size report", () => {
@@ -106,6 +139,7 @@ describe("desktop packaging scripts", () => {
         env: {
           ...process.env,
           PLREVIEW_DESKTOP_DIST_SKIP_BUILD: "1",
+          PLREVIEW_DESKTOP_DIST_OUTPUT_DIR: path.join(tempDir, "release"),
           PLREVIEW_DESKTOP_DIST_BUILDER_NODE_SCRIPT: fakeBuilderPath,
           PLREVIEW_DESKTOP_DIST_REPORT_NODE_SCRIPT: fakeReportPath,
           LOG_PATH: logPath,
@@ -133,4 +167,110 @@ describe("desktop packaging scripts", () => {
       },
     ]);
   });
+
+  it("cleans stale release output before builder execution", () => {
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "plreview-desktop-dist-clean-"),
+    );
+    tempDirs.push(tempDir);
+
+    const releaseOutputDir = path.join(tempDir, "release");
+    const staleMarker = path.join(releaseOutputDir, "stale.txt");
+    const logPath = path.join(tempDir, "commands.log");
+    const fakeBuilderPath = path.join(tempDir, "fake-builder.mjs");
+    const fakeReportPath = path.join(tempDir, "fake-report.mjs");
+    const runnerPath = path.resolve("scripts/run-desktop-dist.mjs");
+
+    fs.mkdirSync(releaseOutputDir, { recursive: true });
+    fs.writeFileSync(staleMarker, "stale");
+
+    fs.writeFileSync(
+      fakeBuilderPath,
+      [
+        'import fs from "node:fs";',
+        'fs.appendFileSync(process.env.LOG_PATH, JSON.stringify({',
+        '  kind: "builder",',
+        '  staleExists: fs.existsSync(process.env.STALE_MARKER),',
+        '}) + "\\n");',
+      ].join("\n"),
+    );
+    fs.writeFileSync(
+      fakeReportPath,
+      [
+        'import fs from "node:fs";',
+        'fs.appendFileSync(process.env.LOG_PATH, JSON.stringify({',
+        '  kind: "report",',
+        '}) + "\\n");',
+      ].join("\n"),
+    );
+
+    execFileSync("node", [runnerPath], {
+      cwd: path.resolve("."),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PLREVIEW_DESKTOP_DIST_SKIP_BUILD: "1",
+        PLREVIEW_DESKTOP_DIST_OUTPUT_DIR: releaseOutputDir,
+        PLREVIEW_DESKTOP_DIST_BUILDER_NODE_SCRIPT: fakeBuilderPath,
+        PLREVIEW_DESKTOP_DIST_REPORT_NODE_SCRIPT: fakeReportPath,
+        LOG_PATH: logPath,
+        STALE_MARKER: staleMarker,
+      },
+    });
+
+    const commands = fs
+      .readFileSync(logPath, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line)) as Array<{
+      kind: "builder" | "report";
+      staleExists?: boolean;
+    }>;
+
+    expect(commands).toEqual([
+      {
+        kind: "builder",
+        staleExists: false,
+      },
+      {
+        kind: "report",
+      },
+    ]);
+    expect(fs.existsSync(staleMarker)).toBe(false);
+  });
 });
+
+function readTopLevelYamlList(source: string, key: string) {
+  const lines = source.split(/\r?\n/u);
+  const sectionStart = lines.findIndex((line) => line.trim() === `${key}:`);
+
+  if (sectionStart < 0) {
+    return [];
+  }
+
+  const sectionLines: string[] = [];
+
+  for (const line of lines.slice(sectionStart + 1)) {
+    if (/^[A-Za-z][\w-]*:/u.test(line)) {
+      break;
+    }
+
+    sectionLines.push(line);
+  }
+
+  return sectionLines
+    .filter((line) => /^  - /u.test(line))
+    .map((line) => line.replace(/^  - /u, "").trim().replace(/^"(.+)"$/u, "$1"));
+}
+
+function readQuotedArray(source: string, key: string) {
+  const sectionMatch = source.match(
+    new RegExp(`${key}:\\s*\\[([\\s\\S]*?)\\]`, "u"),
+  );
+
+  if (!sectionMatch) {
+    return [];
+  }
+
+  return Array.from(sectionMatch[1].matchAll(/"([^"]+)"/gu)).map((match) => match[1]);
+}

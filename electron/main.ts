@@ -152,6 +152,8 @@ async function createWindow() {
   const rendererTarget = await resolveRendererLoadTarget({
     currentDir,
     env: process.env,
+    mode: app.isPackaged ? "packaged" : "development",
+    resourcesPath: process.resourcesPath,
   });
 
   if (rendererTarget.kind === "url") {

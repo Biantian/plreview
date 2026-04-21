@@ -20,7 +20,10 @@ await build({
   format: "cjs",
   target: "node20",
   bundle: true,
-  packages: "external",
+  external: [
+    "electron",
+    "@prisma/client",
+  ],
   sourcemap: false,
   logLevel: "info",
   tsconfig: path.resolve("tsconfig.json"),

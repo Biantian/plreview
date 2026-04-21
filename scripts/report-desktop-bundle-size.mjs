@@ -3,28 +3,12 @@ import path from "node:path";
 
 const ARTIFACT_TARGETS = [
   {
-    id: "nextStandalone",
-    path: ".next/standalone",
+    id: "rendererOut",
+    path: "out",
   },
   {
-    id: "nextStatic",
-    path: ".next/static",
-  },
-  {
-    id: "electronMainBootstrap",
-    path: ".desktop-runtime/electron/main.cjs",
-  },
-  {
-    id: "electronPreloadBootstrap",
-    path: ".desktop-runtime/electron/preload.cjs",
-  },
-  {
-    id: "workerBootstrap",
-    path: ".desktop-runtime/desktop/worker/background-entry.cjs",
-  },
-  {
-    id: "taskBootstrap",
-    path: ".desktop-runtime/desktop/worker/task-entry.cjs",
+    id: "desktopRuntime",
+    path: ".desktop-runtime",
   },
   {
     id: "release",
