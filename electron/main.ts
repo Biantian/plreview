@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { OpenDialogOptions } from "electron";
@@ -33,6 +34,8 @@ let mainWindow: BrowserWindow | null = null;
 let registeredRendererRoot: string | null = null;
 const runtimeMetrics = createRuntimeMetricsService();
 
+configureUserDataPath();
+
 async function loadDesktopDataModules() {
   const [
     homeDashboardModule,
@@ -63,6 +66,19 @@ async function loadDesktopDataModules() {
     saveRule: rulesModule.saveRule,
     toggleRuleEnabled: rulesModule.toggleRuleEnabled,
   };
+}
+
+function configureUserDataPath() {
+  const overridePath = process.env.PLREVIEW_DESKTOP_USER_DATA_PATH?.trim();
+
+  if (!overridePath) {
+    return;
+  }
+
+  const resolvedOverridePath = path.resolve(overridePath);
+
+  fs.mkdirSync(resolvedOverridePath, { recursive: true });
+  app.setPath("userData", resolvedOverridePath);
 }
 
 function publishRuntimeStatus() {
@@ -202,6 +218,9 @@ void app.whenReady().then(async () => {
   applyDesktopRuntimeEnv({
     currentDir,
     env: process.env,
+    mode: app.isPackaged ? "packaged" : "development",
+    userDataPath: app.getPath("userData"),
+    resourcesPath: process.resourcesPath,
   });
   const desktopData = await loadDesktopDataModules();
 

@@ -71,6 +71,7 @@ npm run desktop:dist
 
 打包配置位于 [electron-builder.yml](./electron-builder.yml)。产物默认输出到 `release/`。
 生产环境不再在 Electron 内部启动独立的 Next.js Node 服务器，而是直接加载静态导出的 `out/` 目录。
+打包产物会额外内置一份预置好的 SQLite 模板库；首次启动时，桌面应用会把它复制到 Electron `userData` 目录，并在同目录生成持久化的 `APP_ENCRYPTION_KEY`，不再依赖源码树里的 `.env` / `prisma/dev.db`。
 `npm run desktop:dist` 现在会在打包完成后自动输出一份机器可读的桌面产物体积报告。
 通过 `npm run desktop:dist -- ...` 追加的参数会继续原样转发给 `electron-builder`，例如 `--win --x64 --dir`。
 

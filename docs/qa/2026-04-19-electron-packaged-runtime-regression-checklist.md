@@ -75,7 +75,7 @@ The packaged app must not rely on relative runtime config accidentally resolving
 For local SQLite and encrypted settings:
 
 - `DATABASE_URL` must be resolved to the intended packaged runtime location
-- `APP_ENCRYPTION_KEY` must be present in the packaged process environment
+- `APP_ENCRYPTION_KEY` must resolve to a stable packaged runtime value, whether injected externally or provisioned from local app data
 - renderer and worker processes must inherit the same normalized runtime env
 
 Rule:

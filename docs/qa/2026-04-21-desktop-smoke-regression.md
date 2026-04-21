@@ -23,9 +23,9 @@ npm run test:desktop:smoke
 It performs these steps:
 
 1. builds a fresh packaged desktop app unless `PLREVIEW_DESKTOP_SMOKE_SKIP_DIST=1`
-2. creates a temporary SQLite database just for the smoke run
-3. runs `prisma db push` and `prisma/seed.mjs` against that temporary database
-4. launches the packaged Electron app with a DevTools remote debugging port
+2. creates a temporary Electron `userData` directory just for the smoke run
+3. launches the packaged Electron app with a DevTools remote debugging port
+4. lets the packaged app self-bootstrap its local SQLite copy and encryption key inside that temporary `userData`
 5. injects a smoke-only import list through `PLREVIEW_SMOKE_IMPORT_PATHS`
 6. navigates to `plreview://app/reviews/new`
 7. fills the batch name
@@ -43,6 +43,9 @@ On failure, the script preserves its temp directory and writes a failure screens
 The smoke flow no longer depends on automating the native file picker.
 
 Instead, the packaged app still uses the normal `files:pick` entry point, but when `PLREVIEW_SMOKE_IMPORT_PATHS` is present, the Electron main process bypasses the OS dialog and imports the provided file paths directly. That keeps the test on the real packaged shell, worker pipeline, and review launch flow without relying on fragile Accessibility keystrokes.
+
+The smoke flow also no longer injects `DATABASE_URL` or `APP_ENCRYPTION_KEY`.
+That means the packaged regression path now exercises the real first-launch runtime bootstrap instead of accidentally reusing source-root development defaults.
 
 ## Environment Overrides
 

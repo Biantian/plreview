@@ -7,10 +7,8 @@ import { spawn, spawnSync } from "node:child_process";
 const currentFilePath = fileURLToPath(import.meta.url);
 const scriptsDir = path.dirname(currentFilePath);
 const projectRoot = path.resolve(scriptsDir, "..");
-const prismaDir = path.join(projectRoot, "prisma");
 const smokeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plreview-desktop-smoke-"));
-const smokeDatabaseFilename = `.desktop-smoke-${process.pid}-${Date.now()}.db`;
-const smokeDatabasePath = path.join(prismaDir, smokeDatabaseFilename);
+const smokeUserDataPath = path.join(smokeRoot, "user-data");
 const smokeFixturePath = path.join(smokeRoot, "smoke-import.md");
 const failureScreenshotPath = path.join(smokeRoot, "failure.png");
 
@@ -38,10 +36,6 @@ function assert(condition, message) {
 
 function getNpmCommand() {
   return process.platform === "win32" ? "npm.cmd" : "npm";
-}
-
-function getNpxCommand() {
-  return process.platform === "win32" ? "npx.cmd" : "npx";
 }
 
 function runCommand(command, args, options = {}) {
@@ -74,24 +68,16 @@ function writeSmokeFixture() {
 }
 
 function createSmokeEnv() {
-  return {
+  const env = {
     ...process.env,
-    DATABASE_URL: `file:./${smokeDatabaseFilename}`,
-    APP_ENCRYPTION_KEY:
-      process.env.APP_ENCRYPTION_KEY ?? "desktop-smoke-encryption-key-32c",
+    PLREVIEW_DESKTOP_USER_DATA_PATH: smokeUserDataPath,
     PLREVIEW_SMOKE_IMPORT_PATHS: JSON.stringify([smokeFixturePath]),
   };
-}
 
-function prepareSmokeDatabase(env) {
-  fs.mkdirSync(prismaDir, { recursive: true });
-  fs.writeFileSync(smokeDatabasePath, "");
-  runCommand(getNpxCommand(), ["prisma", "db", "push", "--skip-generate"], {
-    env,
-  });
-  runCommand("node", ["prisma/seed.mjs"], {
-    env,
-  });
+  delete env.DATABASE_URL;
+  delete env.APP_ENCRYPTION_KEY;
+
+  return env;
 }
 
 async function sleep(ms) {
@@ -256,7 +242,6 @@ async function main() {
   writeSmokeFixture();
 
   const smokeEnv = createSmokeEnv();
-  prepareSmokeDatabase(smokeEnv);
   await stopExistingAppBinary();
 
   const appProcess = spawn(appBinaryPath, [`--remote-debugging-port=${debugPort}`], {
@@ -358,7 +343,7 @@ async function main() {
     };
 
     if (!shouldCleanup) {
-      summary.database = smokeDatabasePath;
+      summary.userData = smokeUserDataPath;
       summary.fixture = smokeFixturePath;
     }
 
@@ -382,7 +367,6 @@ async function main() {
     await stopProcess(appProcess);
 
     if (shouldCleanup) {
-      fs.rmSync(smokeDatabasePath, { force: true });
       fs.rmSync(smokeRoot, { recursive: true, force: true });
     }
   }

@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { resolveDesktopRuntimeEnv } from "@/electron/runtime-env";
+import { DEFAULT_APP_ENCRYPTION_KEY } from "@/lib/dev-env";
 
 describe("resolveDesktopRuntimeEnv", () => {
   const tempDirs: string[] = [];
@@ -65,5 +66,38 @@ describe("resolveDesktopRuntimeEnv", () => {
 
     expect(resolved.DATABASE_URL).toBe("file:/tmp/custom.db");
     expect(resolved.APP_ENCRYPTION_KEY).toBe("custom-key");
+  });
+
+  it("provisions packaged runtime env from app data instead of falling back to local dev defaults", () => {
+    const packagedRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), "plreview-desktop-packaged-runtime-env-"),
+    );
+    tempDirs.push(packagedRoot);
+
+    const userDataPath = path.join(packagedRoot, "user-data");
+    const bootstrapDatabasePath = path.join(packagedRoot, "bootstrap", "plreview.db");
+
+    fs.mkdirSync(path.dirname(bootstrapDatabasePath), { recursive: true });
+    fs.writeFileSync(bootstrapDatabasePath, "bootstrap-db");
+
+    const resolved = resolveDesktopRuntimeEnv({
+      currentDir: path.join(packagedRoot, ".desktop-runtime", "electron"),
+      env: {
+        NODE_ENV: "production",
+      },
+      mode: "packaged",
+      userDataPath,
+      bootstrapDatabasePath,
+    } as Parameters<typeof resolveDesktopRuntimeEnv>[0]);
+
+    expect(resolved.DATABASE_URL).toBe(`file:${path.join(userDataPath, "plreview.db")}`);
+    expect(resolved.APP_ENCRYPTION_KEY).toBeTruthy();
+    expect(resolved.APP_ENCRYPTION_KEY).not.toBe(DEFAULT_APP_ENCRYPTION_KEY);
+    expect(fs.readFileSync(path.join(userDataPath, "plreview.db"), "utf8")).toBe(
+      "bootstrap-db",
+    );
+    expect(
+      fs.readFileSync(path.join(userDataPath, "app-encryption.key"), "utf8").trim(),
+    ).toBe(resolved.APP_ENCRYPTION_KEY);
   });
 });

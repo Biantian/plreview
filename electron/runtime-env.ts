@@ -1,12 +1,19 @@
 import fs from "node:fs";
+import { randomBytes } from "node:crypto";
 import path from "node:path";
 
 import { applyLocalDevEnvDefaults } from "@/lib/dev-env";
 
+const PACKAGED_DATABASE_FILENAME = "plreview.db";
+const PACKAGED_ENCRYPTION_KEY_FILENAME = "app-encryption.key";
+
 type ResolveDesktopRuntimeEnvOptions = {
   currentDir: string;
   env: NodeJS.ProcessEnv;
+  mode?: "development" | "packaged";
   resourcesPath?: string;
+  userDataPath?: string;
+  bootstrapDatabasePath?: string;
 };
 
 export function resolveDesktopRuntimeEnv(
@@ -19,17 +26,24 @@ export function resolveDesktopRuntimeEnv(
     ...options.env,
   });
 
-  if (!sourceRoot) {
-    return mergedEnv;
+  if (sourceRoot) {
+    return {
+      ...mergedEnv,
+      DATABASE_URL: absolutizeSqliteDatabaseUrl(
+        mergedEnv.DATABASE_URL,
+        path.join(sourceRoot, "prisma"),
+      ),
+    };
   }
 
-  return {
-    ...mergedEnv,
-    DATABASE_URL: absolutizeSqliteDatabaseUrl(
-      mergedEnv.DATABASE_URL,
-      path.join(sourceRoot, "prisma"),
-    ),
-  };
+  if (options.mode === "packaged") {
+    return resolvePackagedRuntimeEnv({
+      ...options,
+      env: options.env,
+    });
+  }
+
+  return mergedEnv;
 }
 
 export function applyDesktopRuntimeEnv(
@@ -54,6 +68,134 @@ function findSourceRoot(currentDir: string, resourcesPath = process.resourcesPat
   }
 
   return null;
+}
+
+function resolvePackagedRuntimeEnv(options: ResolveDesktopRuntimeEnvOptions) {
+  const userDataPath = resolvePackagedUserDataPath(options);
+  const bootstrapDatabasePath = resolveBootstrapDatabasePath(options);
+  const databaseUrl = resolvePackagedDatabaseUrl(
+    options.env.DATABASE_URL,
+    userDataPath,
+    bootstrapDatabasePath,
+  );
+  const encryptionKey = resolvePackagedEncryptionKey(
+    options.env.APP_ENCRYPTION_KEY,
+    userDataPath,
+  );
+
+  return {
+    ...options.env,
+    DATABASE_URL: databaseUrl,
+    APP_ENCRYPTION_KEY: encryptionKey,
+  };
+}
+
+function resolvePackagedUserDataPath(options: ResolveDesktopRuntimeEnvOptions) {
+  const explicitUserDataPath =
+    options.userDataPath ?? options.env.PLREVIEW_DESKTOP_USER_DATA_PATH;
+
+  if (typeof explicitUserDataPath === "string" && explicitUserDataPath.trim().length > 0) {
+    const resolvedPath = path.resolve(explicitUserDataPath);
+    fs.mkdirSync(resolvedPath, { recursive: true });
+    return resolvedPath;
+  }
+
+  throw new Error("Missing packaged desktop user data path.");
+}
+
+function resolveBootstrapDatabasePath(options: ResolveDesktopRuntimeEnvOptions) {
+  if (
+    typeof options.bootstrapDatabasePath === "string" &&
+    options.bootstrapDatabasePath.trim().length > 0
+  ) {
+    return path.resolve(options.bootstrapDatabasePath);
+  }
+
+  const candidates = new Set<string>();
+  const currentDirAssetPath = path.resolve(
+    options.currentDir,
+    "..",
+    "assets",
+    PACKAGED_DATABASE_FILENAME,
+  );
+
+  candidates.add(currentDirAssetPath);
+
+  for (const basePath of [options.resourcesPath].filter(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  )) {
+    candidates.add(
+      path.resolve(
+        basePath,
+        "app.asar",
+        ".desktop-runtime",
+        "assets",
+        PACKAGED_DATABASE_FILENAME,
+      ),
+    );
+    candidates.add(
+      path.resolve(basePath, ".desktop-runtime", "assets", PACKAGED_DATABASE_FILENAME),
+    );
+  }
+
+  for (const candidatePath of candidates) {
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  return null;
+}
+
+function resolvePackagedDatabaseUrl(
+  databaseUrl: string | undefined,
+  userDataPath: string,
+  bootstrapDatabasePath: string | null,
+) {
+  const normalizedDatabaseUrl = databaseUrl?.trim()
+    ? absolutizeSqliteDatabaseUrl(databaseUrl, userDataPath)
+    : `file:${path.join(userDataPath, PACKAGED_DATABASE_FILENAME)}`;
+
+  const databaseFilePath = extractSqliteDatabasePath(normalizedDatabaseUrl);
+
+  if (!databaseFilePath || fs.existsSync(databaseFilePath)) {
+    return normalizedDatabaseUrl;
+  }
+
+  fs.mkdirSync(path.dirname(databaseFilePath), { recursive: true });
+
+  if (!bootstrapDatabasePath) {
+    throw new Error("Missing packaged bootstrap database.");
+  }
+
+  fs.writeFileSync(databaseFilePath, fs.readFileSync(bootstrapDatabasePath));
+
+  return normalizedDatabaseUrl;
+}
+
+function resolvePackagedEncryptionKey(
+  encryptionKey: string | undefined,
+  userDataPath: string,
+) {
+  if (typeof encryptionKey === "string" && encryptionKey.trim().length > 0) {
+    return encryptionKey.trim();
+  }
+
+  const keyFilePath = path.join(userDataPath, PACKAGED_ENCRYPTION_KEY_FILENAME);
+
+  if (fs.existsSync(keyFilePath)) {
+    const persistedKey = fs.readFileSync(keyFilePath, "utf8").trim();
+
+    if (persistedKey) {
+      return persistedKey;
+    }
+  }
+
+  const generatedKey = randomBytes(32).toString("hex");
+
+  fs.writeFileSync(keyFilePath, `${generatedKey}\n`, { mode: 0o600 });
+
+  return generatedKey;
 }
 
 function buildSearchPaths(currentDir: string, resourcesPath?: string) {
@@ -119,4 +261,18 @@ function absolutizeSqliteDatabaseUrl(databaseUrl: string, prismaDir: string) {
   const absolutePath = path.resolve(prismaDir, filePath);
 
   return `file:${absolutePath}${search ? `?${search}` : ""}`;
+}
+
+function extractSqliteDatabasePath(databaseUrl: string) {
+  if (!databaseUrl.startsWith("file:")) {
+    return null;
+  }
+
+  const [filePath] = databaseUrl.slice("file:".length).split("?");
+
+  if (!filePath || !path.isAbsolute(filePath)) {
+    return null;
+  }
+
+  return filePath;
 }
