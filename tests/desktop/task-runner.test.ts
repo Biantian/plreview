@@ -195,6 +195,55 @@ describe("task-entry protocol", () => {
     });
   });
 
+  it("unwraps utilityProcess task messages before parsing them", async () => {
+    const postMessage = vi.fn();
+    let messageListener: ((message: unknown) => void | Promise<void>) | undefined;
+    const parseLocalDocumentInProcess = vi
+      .fn()
+      .mockResolvedValue({ title: "导入成功" });
+
+    vi.doMock("@/desktop/core/files/parse-local-document", () => ({
+      parseLocalDocumentInProcess,
+    }));
+    vi.doMock("@/lib/review-jobs", () => ({
+      executeReviewJob: vi.fn(),
+    }));
+
+    (process as typeof process & {
+      parentPort?: {
+        postMessage(message: unknown): void;
+        on(event: "message", listener: (message: unknown) => void | Promise<void>): void;
+      };
+    }).parentPort = {
+      postMessage,
+      on: vi.fn((event, listener) => {
+        if (event === "message") {
+          messageListener = listener;
+        }
+      }),
+    };
+
+    await import("@/desktop/worker/task-entry");
+
+    await messageListener?.({
+      data: {
+        id: "task_msg_1",
+        task: "parse-document",
+        payload: {
+          filePath: "/tmp/demo.md",
+        },
+      },
+      ports: [],
+    });
+
+    expect(parseLocalDocumentInProcess).toHaveBeenCalledWith("/tmp/demo.md");
+    expect(postMessage).toHaveBeenCalledWith({
+      id: "task_msg_1",
+      ok: true,
+      result: { title: "导入成功" },
+    });
+  });
+
   afterEach(() => {
     if (originalParentPort === undefined) {
       Reflect.deleteProperty(process, "parentPort");

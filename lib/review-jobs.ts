@@ -1,4 +1,12 @@
-import { Prisma, ReviewStatus, Severity, type LlmProfile, type ReviewJob, type Rule } from "@prisma/client";
+import {
+  Prisma,
+  ReviewStatus,
+  Severity,
+  type LlmProfile,
+  type PrismaClient,
+  type ReviewJob,
+  type Rule,
+} from "@prisma/client";
 
 import { reviewDocument } from "@/lib/llm-client";
 import type { ParsedDocument } from "@/lib/parse-document";
@@ -162,9 +170,9 @@ function ruleVersionMatchesRule(
   );
 }
 
-async function ensureRuleVersionSnapshot(rule: Rule) {
+async function ensureRuleVersionSnapshot(rule: Rule, prismaClient: PrismaClient) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const latest = await prisma.ruleVersion.findFirst({
+    const latest = await prismaClient.ruleVersion.findFirst({
       where: { ruleId: rule.id },
       orderBy: { version: "desc" },
     });
@@ -174,7 +182,7 @@ async function ensureRuleVersionSnapshot(rule: Rule) {
     }
 
     try {
-      return await prisma.ruleVersion.create({
+      return await prismaClient.ruleVersion.create({
         data: {
           ruleId: rule.id,
           version: (latest?.version ?? 0) + 1,
@@ -210,6 +218,7 @@ async function hydrateReviewListItems(
       };
     }
   >,
+  prismaClient: PrismaClient,
 ) {
   const batchIds = Array.from(
     new Set(
@@ -221,7 +230,7 @@ async function hydrateReviewListItems(
   const reviewBatches =
     batchIds.length === 0
       ? []
-      : await prisma.reviewBatch.findMany({
+      : await prismaClient.reviewBatch.findMany({
           where: {
             id: {
               in: batchIds,
@@ -242,8 +251,11 @@ async function hydrateReviewListItems(
   );
 }
 
-export async function getReviewListItems(limit?: number) {
-  const reviews = await prisma.reviewJob.findMany({
+export async function getReviewListItems(
+  limit?: number,
+  prismaClient: PrismaClient = prisma,
+) {
+  const reviews = await prismaClient.reviewJob.findMany({
     include: {
       document: {
         select: {
@@ -264,15 +276,18 @@ export async function getReviewListItems(limit?: number) {
     ...(typeof limit === "number" ? { take: limit } : {}),
   });
 
-  return hydrateReviewListItems(reviews);
+  return hydrateReviewListItems(reviews, prismaClient);
 }
 
-export async function getReviewListItemsByIds(reviewJobIds: string[]) {
+export async function getReviewListItemsByIds(
+  reviewJobIds: string[],
+  prismaClient: PrismaClient = prisma,
+) {
   if (reviewJobIds.length === 0) {
     return [];
   }
 
-  const reviews = await prisma.reviewJob.findMany({
+  const reviews = await prismaClient.reviewJob.findMany({
     where: {
       id: {
         in: reviewJobIds,
@@ -304,15 +319,21 @@ export async function getReviewListItemsByIds(reviewJobIds: string[]) {
     throw new Error(`未找到以下评审任务：${missingReviewIds.join("、")}。`);
   }
 
-  return hydrateReviewListItems(reviewJobIds.map((reviewJobId) => reviewById.get(reviewJobId)!));
+  return hydrateReviewListItems(
+    reviewJobIds.map((reviewJobId) => reviewById.get(reviewJobId)!),
+    prismaClient,
+  );
 }
 
-export async function getReviewReportRowsByIds(reviewJobIds: string[]) {
+export async function getReviewReportRowsByIds(
+  reviewJobIds: string[],
+  prismaClient: PrismaClient = prisma,
+) {
   if (reviewJobIds.length === 0) {
     return [];
   }
 
-  const reviews = await prisma.reviewJob.findMany({
+  const reviews = await prismaClient.reviewJob.findMany({
     where: {
       id: {
         in: reviewJobIds,
@@ -354,8 +375,11 @@ export async function getReviewReportRowsByIds(reviewJobIds: string[]) {
   });
 }
 
-export async function getReviewDashboardData(limit?: number) {
-  const items = await getReviewListItems(limit);
+export async function getReviewDashboardData(
+  limit?: number,
+  prismaClient: PrismaClient = prisma,
+) {
+  const items = await getReviewListItems(limit, prismaClient);
 
   return {
     items,
@@ -370,8 +394,11 @@ export async function getReviewDashboardData(limit?: number) {
   };
 }
 
-export async function deleteReviewJobs(reviewJobIds: string[]) {
-  const result = await prisma.reviewJob.deleteMany({
+export async function deleteReviewJobs(
+  reviewJobIds: string[],
+  prismaClient: PrismaClient = prisma,
+) {
+  const result = await prismaClient.reviewJob.deleteMany({
     where: {
       id: {
         in: reviewJobIds,
@@ -443,8 +470,11 @@ function toRetryParsedDocument(document: RetryableReviewRecord["document"]): Par
   };
 }
 
-async function prepareRetryReviewJob(reviewJobId: string) {
-  const review = await prisma.reviewJob.findUnique({
+async function prepareRetryReviewJob(
+  reviewJobId: string,
+  prismaClient: PrismaClient,
+) {
+  const review = await prismaClient.reviewJob.findUnique({
     where: {
       id: reviewJobId,
     },
@@ -513,7 +543,7 @@ async function prepareRetryReviewJob(reviewJobId: string) {
 
   const rules = getRetryableRules(review);
 
-  await prisma.$transaction(async (tx) => {
+  await prismaClient.$transaction(async (tx) => {
     await tx.annotation.deleteMany({
       where: {
         reviewJobId,
@@ -545,23 +575,32 @@ async function prepareRetryReviewJob(reviewJobId: string) {
   } satisfies ExecuteReviewJobInput;
 }
 
-export async function queueReviewJobRetry(reviewJobId: string) {
-  const input = await prepareRetryReviewJob(reviewJobId);
+export async function queueReviewJobRetry(
+  reviewJobId: string,
+  prismaClient: PrismaClient = prisma,
+) {
+  const input = await prepareRetryReviewJob(reviewJobId, prismaClient);
 
-  void executeReviewJob(input);
+  void executeReviewJob(input, prismaClient);
 }
 
-export async function retryReviewJob(reviewJobId: string) {
-  const input = await prepareRetryReviewJob(reviewJobId);
+export async function retryReviewJob(
+  reviewJobId: string,
+  prismaClient: PrismaClient = prisma,
+) {
+  const input = await prepareRetryReviewJob(reviewJobId, prismaClient);
 
-  return executeReviewJob(input);
+  return executeReviewJob(input, prismaClient);
 }
 
-export async function executeReviewJob(input: ExecuteReviewJobInput) {
+export async function executeReviewJob(
+  input: ExecuteReviewJobInput,
+  prismaClient: PrismaClient = prisma,
+) {
   const { documentTitle, llmProfile, modelName, parsedDocument, reviewJobId, rules } = input;
 
   try {
-    await prisma.reviewJob.update({
+    await prismaClient.reviewJob.update({
       where: { id: reviewJobId },
       data: {
         status: ReviewStatus.running,
@@ -570,7 +609,9 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
       },
     });
 
-    const ruleVersions = await Promise.all(rules.map((rule) => ensureRuleVersionSnapshot(rule)));
+    const ruleVersions = await Promise.all(
+      rules.map((rule) => ensureRuleVersionSnapshot(rule, prismaClient)),
+    );
 
     const runtime = resolveReviewRuntime({
       mode: llmProfile.mode,
@@ -626,7 +667,7 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
         .filter(Boolean),
     );
 
-    await prisma.$transaction(async (tx) => {
+    await prismaClient.$transaction(async (tx) => {
       if (validAnnotations.length > 0) {
         await tx.annotation.createMany({
           data: validAnnotations as Array<{
@@ -663,7 +704,7 @@ export async function executeReviewJob(input: ExecuteReviewJobInput) {
     const message = error instanceof Error ? error.message : "评审失败，请稍后重试。";
 
     try {
-      await prisma.reviewJob.update({
+      await prismaClient.reviewJob.update({
         where: { id: reviewJobId },
         data: {
           status: ReviewStatus.failed,

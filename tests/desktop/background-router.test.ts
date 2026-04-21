@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createBackgroundRouter } from "@/desktop/worker/background-router";
+import { DESKTOP_REQUESTS } from "@/desktop/worker/protocol";
 
 describe("createBackgroundRouter", () => {
   it("routes review list requests through the injected Prisma-backed services", async () => {
@@ -20,7 +21,7 @@ describe("createBackgroundRouter", () => {
 
     const result = await router.handle({
       id: "msg_1",
-      channel: "review-jobs:list",
+      channel: DESKTOP_REQUESTS.reviewJobsList,
     });
 
     expect(listReviewJobs).toHaveBeenCalledTimes(1);

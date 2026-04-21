@@ -1,5 +1,8 @@
 import type { CreateReviewBatchInput } from "@/desktop/core/reviews/create-review-batch";
-import type { WorkerEnvelope } from "@/desktop/worker/protocol";
+import {
+  DESKTOP_REQUESTS,
+  type WorkerEnvelope,
+} from "@/desktop/worker/protocol";
 
 type BackgroundServices = {
   reviews: {
@@ -20,21 +23,21 @@ export function createBackgroundRouter(services: BackgroundServices) {
   return {
     async handle(message: WorkerEnvelope) {
       switch (message.channel) {
-        case "files:pick":
+        case DESKTOP_REQUESTS.filesPick:
           return services.files.importDocumentsIntoStore(
             Array.isArray(message.payload) ? message.payload.filter(isString) : [],
           );
-        case "review-batches:create":
+        case DESKTOP_REQUESTS.reviewBatchesCreate:
           return services.reviews.createReviewBatch(
             (message.payload ?? {}) as CreateReviewBatchInput,
           );
-        case "review-jobs:list":
+        case DESKTOP_REQUESTS.reviewJobsList:
           return services.reviews.listReviewJobs();
-        case "review-jobs:search":
+        case DESKTOP_REQUESTS.reviewJobsSearch:
           return services.reviews.searchReviewJobs(readQuery(message.payload));
-        case "rules:list":
+        case DESKTOP_REQUESTS.rulesList:
           return services.rules.listRules();
-        case "rules:search":
+        case DESKTOP_REQUESTS.rulesSearch:
           return services.rules.searchRules(readQuery(message.payload));
         default:
           throw new Error(`Unsupported worker message: ${message.channel}`);

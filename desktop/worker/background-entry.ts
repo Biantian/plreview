@@ -7,6 +7,12 @@ import {
 import { createFileImportService } from "@/desktop/worker/services/file-import-service";
 import { createReviewService } from "@/desktop/worker/services/review-service";
 import { createRuleService } from "@/desktop/worker/services/rule-service";
+import {
+  deleteSelectedReviewJobs,
+  exportReviewListFile,
+  exportReviewReportArchive,
+  retryReviewJobById,
+} from "@/lib/review-ipc";
 
 type WorkerResponse =
   | {
@@ -42,21 +48,23 @@ parentPort?.postMessage({
 });
 
 parentPort?.on("message", async (message: unknown) => {
-  if (!isWorkerRequest(message)) {
+  const normalizedMessage = unwrapUtilityProcessMessage(message);
+
+  if (!isWorkerRequest(normalizedMessage)) {
     return;
   }
 
   try {
-    const payload = await router.handle(message);
+    const payload = await handleWorkerRequest(normalizedMessage);
     parentPort?.postMessage({
       type: "desktop-worker:response",
-      id: message.id,
+      id: normalizedMessage.id,
       payload,
     });
   } catch (error) {
     parentPort?.postMessage({
       type: "desktop-worker:error",
-      id: message.id,
+      id: normalizedMessage.id,
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -75,4 +83,65 @@ function isWorkerRequest(message: unknown): message is WorkerEnvelope {
     typeof (message as WorkerEnvelope).id === "string" &&
     requestChannels.has((message as WorkerEnvelope).channel)
   );
+}
+
+function unwrapUtilityProcessMessage(message: unknown) {
+  if (
+    message &&
+    typeof message === "object" &&
+    "data" in message &&
+    typeof (message as { data?: unknown }).data !== "undefined"
+  ) {
+    return (message as { data: unknown }).data;
+  }
+
+  return message;
+}
+
+async function handleWorkerRequest(message: WorkerEnvelope) {
+  switch (message.channel) {
+    case DESKTOP_REQUESTS.reviewJobsDelete:
+      return deleteSelectedReviewJobs(readReviewSelectionPayload(message.payload), prisma);
+    case DESKTOP_REQUESTS.reviewJobsRetry:
+      return retryReviewJobById(readReviewJobId(message.payload), prisma);
+    case DESKTOP_REQUESTS.reviewJobsExportList:
+      return exportReviewListFile(readReviewSelectionPayload(message.payload), prisma);
+    case DESKTOP_REQUESTS.reviewJobsExportReport:
+      return exportReviewReportArchive(readReviewSelectionPayload(message.payload), prisma);
+    default:
+      return router.handle(message);
+  }
+}
+
+function readReviewSelectionPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object") {
+    return {
+      allMatching: false,
+    };
+  }
+
+  const selection = payload as {
+    selectedIds?: unknown;
+    query?: unknown;
+    allMatching?: unknown;
+  };
+  const selectedIds = Array.isArray(selection.selectedIds)
+    ? selection.selectedIds.filter((selectedId): selectedId is string => typeof selectedId === "string")
+    : undefined;
+  const query = typeof selection.query === "string" ? selection.query : undefined;
+
+  return {
+    selectedIds,
+    query,
+    allMatching: selection.allMatching === true,
+  };
+}
+
+function readReviewJobId(payload: unknown) {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  const reviewJobId = (payload as { reviewJobId?: unknown }).reviewJobId;
+  return typeof reviewJobId === "string" ? reviewJobId : "";
 }

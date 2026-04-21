@@ -1,3 +1,4 @@
+import type { ReviewStatus, Severity } from "@prisma/client";
 import type { DesktopChannel } from "@/electron/channels";
 import {
   DESKTOP_EVENTS,
@@ -41,13 +42,177 @@ export type ReviewBatchRequest = {
   }>;
 };
 
+export type DesktopReviewJobRow = {
+  id: string;
+  status: ReviewStatus;
+  title: string;
+  filename: string;
+  fileType: string;
+  batchName: string | null;
+  modelName: string;
+  annotationsCount: number;
+  overallScore: number | null;
+  createdAt: string;
+  finishedAt: string | null;
+};
+
+export type ReviewSelectionRequest = {
+  selectedIds?: string[];
+  query?: string;
+  allMatching: boolean;
+};
+
+export type DesktopBinaryPayload = {
+  bytes: Uint8Array;
+  filename: string;
+  exportedCount?: number;
+  skippedCount?: number;
+};
+
+export type RuleDashboardItem = {
+  id: string;
+  enabled: boolean;
+  name: string;
+  category: string;
+  severity: Severity;
+  description: string;
+  promptTemplate: string;
+  updatedAtLabel: string;
+};
+
+export type RuleDashboardData = {
+  enabledCount: number;
+  categoryCount: number;
+  latestUpdatedAtLabel: string;
+  items: RuleDashboardItem[];
+  totalCount: number;
+};
+
+export type RuleSaveInput = {
+  id?: string;
+  name: string;
+  category: string;
+  description: string;
+  promptTemplate: string;
+  severity: Severity;
+  enabled: boolean;
+};
+
+export type ModelDashboardProfile = {
+  id: string;
+  name: string;
+  provider: string;
+  vendorKey: string;
+  mode: "live" | "demo";
+  baseUrl: string;
+  defaultModel: string;
+  modelOptionsText: string;
+  enabled: boolean;
+  hasApiKey: boolean;
+  apiKeyLast4: string | null;
+};
+
+export type ModelDashboardData = {
+  metrics: {
+    totalCount: number;
+    enabledCount: number;
+    liveCount: number;
+    latestUpdatedAtLabel: string;
+  };
+  profiles: ModelDashboardProfile[];
+};
+
+export type ModelSaveInput = {
+  id?: string;
+  name: string;
+  provider: string;
+  vendorKey: string;
+  mode: "live" | "demo";
+  baseUrl: string;
+  defaultModel: string;
+  modelOptionsText: string;
+  apiKey: string;
+  enabled: boolean;
+};
+
+export type HomeDashboardData = {
+  rulesCount: number;
+  enabledRulesCount: number;
+  documentsCount: number;
+  reviewJobsCount: number;
+  annotationsCount: number;
+  recentReviews: Array<{
+    id: string;
+    title: string;
+    status: ReviewStatus;
+    modelName: string;
+    createdAt: string;
+  }>;
+  llmProfiles: Array<{
+    id: string;
+    name: string;
+    provider: string;
+    defaultModel: string;
+  }>;
+};
+
+export type ReviewDetailBlock = {
+  blockIndex: number;
+  blockType: "heading" | "paragraph" | "list_item";
+  text: string;
+  level: number | null;
+  listKind: "unordered" | "ordered" | null;
+};
+
+export type ReviewDetailAnnotation = {
+  id: string;
+  blockIndex: number;
+  issue: string;
+  suggestion: string | null;
+  severity: Severity;
+  evidenceText: string | null;
+  ruleName: string;
+};
+
+export type ReviewDetailData = {
+  id: string;
+  title: string;
+  filename: string;
+  providerSnapshot: string;
+  modelNameSnapshot: string;
+  createdAt: string;
+  status: ReviewStatus;
+  summary: string | null;
+  errorMessage: string | null;
+  overallScore: number | null;
+  annotationsCount: number;
+  hitBlockCount: number;
+  highPriorityCount: number;
+  reportMarkdown: string | null;
+  blocks: ReviewDetailBlock[];
+  annotations: ReviewDetailAnnotation[];
+};
+
 export interface DesktopApi {
   pickFiles: () => Promise<ImportedDocumentRecord[]>;
-  listReviewJobs: () => Promise<unknown>;
-  searchReviewJobs: (query: string) => Promise<unknown>;
-  listRules: () => Promise<unknown>;
-  searchRules: (query: string) => Promise<unknown>;
+  getHomeDashboard: () => Promise<HomeDashboardData>;
+  getModelDashboard: () => Promise<ModelDashboardData>;
+  getRuleDashboard: () => Promise<RuleDashboardData>;
+  getReviewDetail: (reviewId: string) => Promise<ReviewDetailData>;
+  listReviewJobs: () => Promise<DesktopReviewJobRow[]>;
+  searchReviewJobs: (query: string) => Promise<DesktopReviewJobRow[]>;
+  listRules: () => Promise<RuleDashboardItem[]>;
+  searchRules: (query: string) => Promise<RuleDashboardItem[]>;
   createReviewBatch: (payload: ReviewBatchRequest) => Promise<unknown>;
+  deleteReviewJobs: (payload: ReviewSelectionRequest) => Promise<{ deletedCount: number }>;
+  retryReviewJob: (reviewJobId: string) => Promise<{ queued: true }>;
+  exportReviewList: (payload: ReviewSelectionRequest) => Promise<DesktopBinaryPayload>;
+  exportReviewReport: (payload: ReviewSelectionRequest) => Promise<DesktopBinaryPayload>;
+  saveRule: (payload: RuleSaveInput) => Promise<RuleDashboardData>;
+  toggleRuleEnabled: (id: string, enabled: boolean) => Promise<RuleDashboardData>;
+  saveModelProfile: (payload: ModelSaveInput) => Promise<ModelDashboardData>;
+  toggleModelProfileEnabled: (id: string, enabled: boolean) => Promise<ModelDashboardData>;
+  deleteModelProfile: (id: string) => Promise<ModelDashboardData>;
   getRuntimeStatus: () => Promise<RuntimeStatusPayload>;
   subscribeRuntimeStatus: (
     listener: (payload: RuntimeStatusPayload) => void,
@@ -60,12 +225,35 @@ export function createDesktopApi(
 ): DesktopApi {
   return {
     pickFiles: () => invoke<ImportedDocumentRecord[]>(DESKTOP_REQUESTS.filesPick),
-    listReviewJobs: () => invoke(DESKTOP_REQUESTS.reviewJobsList),
+    getHomeDashboard: () => invoke<HomeDashboardData>(DESKTOP_REQUESTS.homeDashboard),
+    getModelDashboard: () => invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsDashboard),
+    getRuleDashboard: () => invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesDashboard),
+    getReviewDetail: (reviewId: string) =>
+      invoke<ReviewDetailData>(DESKTOP_REQUESTS.reviewDetail, { reviewId }),
+    listReviewJobs: () => invoke<DesktopReviewJobRow[]>(DESKTOP_REQUESTS.reviewJobsList),
     searchReviewJobs: (query: string) =>
-      invoke(DESKTOP_REQUESTS.reviewJobsSearch, { query }),
-    listRules: () => invoke(DESKTOP_REQUESTS.rulesList),
-    searchRules: (query: string) => invoke(DESKTOP_REQUESTS.rulesSearch, { query }),
+      invoke<DesktopReviewJobRow[]>(DESKTOP_REQUESTS.reviewJobsSearch, { query }),
+    listRules: () => invoke<RuleDashboardItem[]>(DESKTOP_REQUESTS.rulesList),
+    searchRules: (query: string) =>
+      invoke<RuleDashboardItem[]>(DESKTOP_REQUESTS.rulesSearch, { query }),
     createReviewBatch: (payload) => invoke(DESKTOP_REQUESTS.reviewBatchesCreate, payload),
+    deleteReviewJobs: (payload) =>
+      invoke<{ deletedCount: number }>(DESKTOP_REQUESTS.reviewJobsDelete, payload),
+    retryReviewJob: (reviewJobId: string) =>
+      invoke<{ queued: true }>(DESKTOP_REQUESTS.reviewJobsRetry, { reviewJobId }),
+    exportReviewList: (payload) =>
+      invoke<DesktopBinaryPayload>(DESKTOP_REQUESTS.reviewJobsExportList, payload),
+    exportReviewReport: (payload) =>
+      invoke<DesktopBinaryPayload>(DESKTOP_REQUESTS.reviewJobsExportReport, payload),
+    saveRule: (payload) => invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesSave, payload),
+    toggleRuleEnabled: (id: string, enabled: boolean) =>
+      invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesToggleEnabled, { id, enabled }),
+    saveModelProfile: (payload) =>
+      invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsSave, payload),
+    toggleModelProfileEnabled: (id: string, enabled: boolean) =>
+      invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsToggleEnabled, { id, enabled }),
+    deleteModelProfile: (id: string) =>
+      invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsDelete, { id }),
     getRuntimeStatus: () => invoke<RuntimeStatusPayload>(DESKTOP_REQUESTS.runtimeStatus),
     subscribeRuntimeStatus: (listener) =>
       subscribe
