@@ -2,7 +2,7 @@
 
 import { Severity } from "@prisma/client";
 
-import { saveRuleAction } from "@/lib/actions";
+import type { RuleSaveInput } from "@/desktop/bridge/desktop-api";
 import { RULE_TEMPLATE } from "@/lib/defaults";
 import { severityLabel } from "@/lib/utils";
 
@@ -26,11 +26,17 @@ const severityOptions = [
 export function RuleEditorDrawer({
   open,
   rule,
+  busy,
+  errorMessage,
   onClose,
+  onSave,
 }: {
   open: boolean;
   rule: RuleEditorRecord | null;
+  busy: boolean;
+  errorMessage: string | null;
   onClose: () => void;
+  onSave: (payload: RuleSaveInput) => Promise<void>;
 }) {
   if (!open) {
     return null;
@@ -55,7 +61,24 @@ export function RuleEditorDrawer({
         </button>
       </div>
 
-      <form action={saveRuleAction} className="form-grid">
+      <form
+        className="form-grid"
+        onSubmit={(event) => {
+          event.preventDefault();
+
+          const formData = new FormData(event.currentTarget);
+
+          void onSave({
+            id: rule?.id,
+            name: String(formData.get("name") ?? ""),
+            category: String(formData.get("category") ?? ""),
+            description: String(formData.get("description") ?? ""),
+            promptTemplate: String(formData.get("promptTemplate") ?? ""),
+            severity: String(formData.get("severity") ?? Severity.medium) as Severity,
+            enabled: formData.has("enabled"),
+          });
+        }}
+      >
         {rule ? <input name="id" type="hidden" value={rule.id} /> : null}
 
         <div className="form-section compact">
@@ -122,11 +145,13 @@ export function RuleEditorDrawer({
           </div>
         </div>
 
+        {errorMessage ? <p className="section-copy">{errorMessage}</p> : null}
+
         <div className="actions">
-          <button className="button" type="submit">
-            {isCreateMode ? "保存规则" : "保存修改"}
+          <button className="button" disabled={busy} type="submit">
+            {busy ? "保存中..." : isCreateMode ? "保存规则" : "保存修改"}
           </button>
-          <button className="button-ghost" onClick={onClose} type="button">
+          <button className="button-ghost" disabled={busy} onClick={onClose} type="button">
             取消
           </button>
         </div>

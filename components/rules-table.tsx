@@ -1,11 +1,11 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { type Severity } from "@prisma/client";
 
+import type { RuleDashboardData, RuleSaveInput } from "@/desktop/bridge/desktop-api";
 import { RuleEditorDrawer } from "@/components/rule-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
-import { toggleRuleEnabledAction } from "@/lib/actions";
 import { severityLabel } from "@/lib/utils";
 
 export type RuleRow = {
@@ -31,16 +31,45 @@ function matchesQuery(item: RuleRow, query: string) {
 }
 
 export function RulesTable({ items }: { items: RuleRow[] }) {
+  const [records, setRecords] = useState(items);
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
   const keyword = deferredQuery.trim().toLowerCase();
-  const filteredItems = items.filter((item) => matchesQuery(item, keyword));
+  const filteredItems = records.filter((item) => matchesQuery(item, keyword));
   const editingRule =
     filteredItems.find((item) => item.id === editingId) ??
-    items.find((item) => item.id === editingId) ??
+    records.find((item) => item.id === editingId) ??
     null;
+
+  useEffect(() => {
+    setRecords(items);
+  }, [items]);
+
+  async function updateRules(action: () => Promise<RuleDashboardData>, successMessage: string) {
+    if (!window.plreview?.getRuleDashboard) {
+      setFeedback("桌面桥接不可用，请从 Electron 桌面壳启动。");
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback(null);
+
+    try {
+      const nextDashboard = await action();
+      setRecords(nextDashboard.items);
+      setFeedback(successMessage);
+      setEditingId(null);
+      setIsCreateOpen(false);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "规则操作失败。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <section className="desktop-table-card stack">
@@ -49,7 +78,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
           <p className="section-eyebrow">规则库</p>
           <h2 className="subsection-title">规则目录</h2>
         </div>
-        <p className="desktop-table-summary">共 {items.length} 条规则 · 当前显示 {filteredItems.length} 条</p>
+        <p className="desktop-table-summary">共 {records.length} 条规则 · 当前显示 {filteredItems.length} 条</p>
       </div>
 
       <div className="desktop-table-toolbar">
@@ -68,6 +97,8 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
           </button>
         </div>
       </div>
+
+      {feedback ? <p className="section-copy">{feedback}</p> : null}
 
       <div className="table-shell">
         <table aria-label="规则表格" className="data-table">
@@ -114,13 +145,19 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
                         编辑
                       </button>
 
-                      <form action={toggleRuleEnabledAction}>
-                        <input name="id" type="hidden" value={item.id} />
-                        <input name="enabled" type="hidden" value={String(!item.enabled)} />
-                        <button className="button-secondary button-inline" type="submit">
-                          {item.enabled ? "停用" : "启用"}
-                        </button>
-                      </form>
+                      <button
+                        className="button-secondary button-inline"
+                        disabled={isSaving}
+                        onClick={() =>
+                          void updateRules(
+                            () => window.plreview.toggleRuleEnabled(item.id, !item.enabled),
+                            item.enabled ? "规则已停用。" : "规则已启用。",
+                          )
+                        }
+                        type="button"
+                      >
+                        {item.enabled ? "停用" : "启用"}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -132,10 +169,17 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
 
       <RuleEditorDrawer
         key={isCreateOpen ? "create" : editingRule?.id ?? "closed"}
+        busy={isSaving}
+        errorMessage={feedback}
         onClose={() => {
           setEditingId(null);
           setIsCreateOpen(false);
         }}
+        onSave={(payload: RuleSaveInput) =>
+          updateRules(
+            () => window.plreview.saveRule(payload),
+            payload.id ? "规则已更新。" : "规则已创建。",
+          )}
         open={isCreateOpen || !!editingRule}
         rule={isCreateOpen ? null : editingRule}
       />

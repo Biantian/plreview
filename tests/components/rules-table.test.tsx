@@ -1,10 +1,54 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RulesTable } from "@/components/rules-table";
 
 describe("RulesTable", () => {
+  beforeEach(() => {
+    window.plreview = {
+      pickFiles: vi.fn(),
+      getHomeDashboard: vi.fn(),
+      getModelDashboard: vi.fn(),
+      getRuleDashboard: vi.fn().mockResolvedValue({
+        enabledCount: 1,
+        categoryCount: 2,
+        latestUpdatedAtLabel: "2026-04-13 11:00",
+        items: [],
+        totalCount: 2,
+      }),
+      getReviewDetail: vi.fn(),
+      listReviewJobs: vi.fn(),
+      searchReviewJobs: vi.fn(),
+      listRules: vi.fn(),
+      searchRules: vi.fn(),
+      createReviewBatch: vi.fn(),
+      deleteReviewJobs: vi.fn(),
+      retryReviewJob: vi.fn(),
+      exportReviewList: vi.fn(),
+      exportReviewReport: vi.fn(),
+      saveRule: vi.fn().mockResolvedValue({
+        enabledCount: 1,
+        categoryCount: 2,
+        latestUpdatedAtLabel: "2026-04-13 11:00",
+        items: [],
+        totalCount: 2,
+      }),
+      toggleRuleEnabled: vi.fn().mockResolvedValue({
+        enabledCount: 1,
+        categoryCount: 2,
+        latestUpdatedAtLabel: "2026-04-13 11:00",
+        items: [],
+        totalCount: 2,
+      }),
+      saveModelProfile: vi.fn(),
+      toggleModelProfileEnabled: vi.fn(),
+      deleteModelProfile: vi.fn(),
+      getRuntimeStatus: vi.fn(),
+      subscribeRuntimeStatus: vi.fn(),
+    };
+  });
+
   it("renders the desktop rules shell with toolbar summary", () => {
     render(
       <RulesTable

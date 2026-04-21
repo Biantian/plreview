@@ -1,6 +1,6 @@
 "use client";
 
-import { saveLlmProfileAction } from "@/lib/actions";
+import type { ModelSaveInput } from "@/desktop/bridge/desktop-api";
 
 type ModelEditorProfile = {
   id: string;
@@ -17,11 +17,17 @@ type ModelEditorProfile = {
 export function ModelEditorDrawer({
   open,
   profile,
+  busy,
+  errorMessage,
   onClose,
+  onSave,
 }: {
   open: boolean;
   profile: ModelEditorProfile | null;
+  busy: boolean;
+  errorMessage: string | null;
   onClose: () => void;
+  onSave: (payload: ModelSaveInput) => Promise<void>;
 }) {
   if (!open) {
     return null;
@@ -46,7 +52,27 @@ export function ModelEditorDrawer({
         </button>
       </div>
 
-      <form action={saveLlmProfileAction} className="form-grid">
+      <form
+        className="form-grid"
+        onSubmit={(event) => {
+          event.preventDefault();
+
+          const formData = new FormData(event.currentTarget);
+
+          void onSave({
+            id: profile?.id,
+            name: String(formData.get("name") ?? ""),
+            provider: String(formData.get("provider") ?? ""),
+            vendorKey: String(formData.get("vendorKey") ?? "openai_compatible"),
+            mode: String(formData.get("mode") ?? "live") as "live" | "demo",
+            baseUrl: String(formData.get("baseUrl") ?? ""),
+            defaultModel: String(formData.get("defaultModel") ?? ""),
+            modelOptionsText: String(formData.get("modelOptionsText") ?? ""),
+            apiKey: String(formData.get("apiKey") ?? ""),
+            enabled: formData.has("enabled"),
+          });
+        }}
+      >
         {profile ? <input name="id" type="hidden" value={profile.id} /> : null}
         <input
           name="vendorKey"
@@ -117,11 +143,13 @@ export function ModelEditorDrawer({
           </label>
         </div>
 
+        {errorMessage ? <p className="section-copy">{errorMessage}</p> : null}
+
         <div className="actions">
-          <button className="button" type="submit">
-            {isCreateMode ? "保存配置" : "保存修改"}
+          <button className="button" disabled={busy} type="submit">
+            {busy ? "保存中..." : isCreateMode ? "保存配置" : "保存修改"}
           </button>
-          <button className="button-ghost" onClick={onClose} type="button">
+          <button className="button-ghost" disabled={busy} onClick={onClose} type="button">
             取消
           </button>
         </div>

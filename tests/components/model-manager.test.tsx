@@ -1,14 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ModelManager } from "@/components/model-manager";
-
-vi.mock("@/lib/actions", () => ({
-  deleteLlmProfileAction: vi.fn(),
-  saveLlmProfileAction: vi.fn(),
-  toggleLlmProfileEnabledAction: vi.fn(),
-}));
 
 describe("ModelManager", () => {
   const profiles = [
@@ -39,6 +33,64 @@ describe("ModelManager", () => {
       apiKeyLast4: null,
     },
   ];
+
+  beforeEach(() => {
+    window.plreview = {
+      pickFiles: vi.fn(),
+      getHomeDashboard: vi.fn(),
+      getModelDashboard: vi.fn().mockResolvedValue({
+        metrics: {
+          totalCount: profiles.length,
+          enabledCount: 1,
+          liveCount: 1,
+          latestUpdatedAtLabel: "2026-04-15 16:00",
+        },
+        profiles,
+      }),
+      getRuleDashboard: vi.fn(),
+      getReviewDetail: vi.fn(),
+      listReviewJobs: vi.fn(),
+      searchReviewJobs: vi.fn(),
+      listRules: vi.fn(),
+      searchRules: vi.fn(),
+      createReviewBatch: vi.fn(),
+      deleteReviewJobs: vi.fn(),
+      retryReviewJob: vi.fn(),
+      exportReviewList: vi.fn(),
+      exportReviewReport: vi.fn(),
+      saveRule: vi.fn(),
+      toggleRuleEnabled: vi.fn(),
+      saveModelProfile: vi.fn().mockResolvedValue({
+        metrics: {
+          totalCount: profiles.length + 1,
+          enabledCount: 2,
+          liveCount: 2,
+          latestUpdatedAtLabel: "2026-04-15 16:00",
+        },
+        profiles,
+      }),
+      toggleModelProfileEnabled: vi.fn().mockResolvedValue({
+        metrics: {
+          totalCount: profiles.length,
+          enabledCount: 1,
+          liveCount: 1,
+          latestUpdatedAtLabel: "2026-04-15 16:00",
+        },
+        profiles,
+      }),
+      deleteModelProfile: vi.fn().mockResolvedValue({
+        metrics: {
+          totalCount: 1,
+          enabledCount: 1,
+          liveCount: 1,
+          latestUpdatedAtLabel: "2026-04-15 16:00",
+        },
+        profiles: [profiles[0]],
+      }),
+      getRuntimeStatus: vi.fn(),
+      subscribeRuntimeStatus: vi.fn(),
+    };
+  });
 
   it("renders the desktop model shell with toolbar summary", () => {
     render(<ModelManager profiles={profiles} />);

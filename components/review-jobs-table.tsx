@@ -10,6 +10,7 @@ import {
 } from "react";
 import { ReviewStatus } from "@prisma/client";
 
+import type { DesktopBinaryPayload } from "@/desktop/bridge/desktop-api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import { TableSearchInput } from "@/components/table-search-input";
@@ -70,41 +71,21 @@ function getSelectionIds(selection: SelectionState, filteredItems: ReviewJobRow[
   return selection.selectedIds;
 }
 
-async function readResponseMessage(response: Response, fallback: string) {
-  try {
-    const payload = (await response.json()) as { error?: string };
-
-    return payload.error ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function parseFilenameFromContentDisposition(contentDisposition: string | null) {
-  if (!contentDisposition) {
-    return null;
-  }
-
-  const matches = /filename="([^"]+)"/i.exec(contentDisposition);
-
-  return matches?.[1] ?? null;
-}
-
-async function triggerDownload(response: Response, fallbackFilename: string) {
+async function triggerDownload(payload: DesktopBinaryPayload, fallbackFilename: string) {
   if (typeof window === "undefined") {
     return;
   }
 
-  const blob = await response.blob();
+  const bytes = new Uint8Array(payload.bytes.byteLength);
+  bytes.set(payload.bytes);
+  const blob = new Blob([bytes.buffer]);
   if (typeof URL.createObjectURL !== "function") {
     return;
   }
 
   const downloadUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  const filename =
-    parseFilenameFromContentDisposition(response.headers.get("content-disposition")) ??
-    fallbackFilename;
+  const filename = payload.filename || fallbackFilename;
 
   link.href = downloadUrl;
   link.download = filename;
@@ -175,7 +156,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   }, [items]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.fetch !== "function") {
+    if (typeof window === "undefined" || !window.plreview?.listReviewJobs) {
       return;
     }
 
@@ -185,22 +166,14 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
       setIsRefreshing(true);
 
       try {
-        const response = await fetch("/api/reviews", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error("获取评审列表失败");
-        }
-
-        const data = (await response.json()) as { reviews: ReviewJobRow[] };
+        const data = await window.plreview.listReviewJobs();
 
         if (cancelled) {
           return;
         }
 
         startTransition(() => {
-          setReviews(data.reviews);
+          setReviews(data);
           setRefreshError(null);
         });
       } catch (error) {
@@ -213,8 +186,6 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
         }
       }
     }
-
-    void syncReviews();
 
     if (!hasActiveReviews) {
       return () => {
@@ -244,25 +215,17 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   }, [hasActiveReviews]);
 
   async function refreshReviews() {
-    if (typeof window === "undefined" || typeof window.fetch !== "function") {
+    if (typeof window === "undefined" || !window.plreview?.listReviewJobs) {
       return false;
     }
 
     setIsRefreshing(true);
 
     try {
-      const response = await fetch("/api/reviews", {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("获取评审列表失败");
-      }
-
-      const data = (await response.json()) as { reviews: ReviewJobRow[] };
+      const data = await window.plreview.listReviewJobs();
 
       startTransition(() => {
-        setReviews(data.reviews);
+        setReviews(data);
         setRefreshError(null);
       });
       return true;
@@ -339,54 +302,49 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     setBulkFeedback(null);
   }
 
-  async function runBulkExport(route: "/api/reviews/export-list" | "/api/reviews/export-report") {
-    if (typeof window === "undefined" || typeof window.fetch !== "function" || !hasSelection) {
+  async function runBulkExport(route: "export-list" | "export-report") {
+    if (
+      typeof window === "undefined" ||
+      !window.plreview?.exportReviewList ||
+      !window.plreview?.exportReviewReport ||
+      !hasSelection
+    ) {
       return;
     }
 
     setIsBulkWorking(true);
 
     try {
-      const response = await fetch(route, {
-        body: JSON.stringify(
-          allFilteredMode
-            ? {
-                allMatching: true,
-                query: deferredQuery.trim(),
-              }
-            : {
-                allMatching: false,
-                selectedIds: selectedReviews.map((item) => item.id),
-              },
-        ),
-        headers: {
-          "content-type": "application/json",
-        },
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const message = await readResponseMessage(
-          response,
-          route === "/api/reviews/export-report" ? "导出评审报告失败。" : "导出评审清单失败。",
-        );
-        setBulkFeedback(`导出失败：${message}`);
-        return;
-      }
+      const payload =
+        allFilteredMode
+          ? {
+              allMatching: true,
+              query: deferredQuery.trim(),
+            }
+          : {
+              allMatching: false,
+              selectedIds: selectedReviews.map((item) => item.id),
+            };
+      const result =
+        route === "export-report"
+          ? await window.plreview.exportReviewReport(payload)
+          : await window.plreview.exportReviewList(payload);
 
       await triggerDownload(
-        response,
-        route === "/api/reviews/export-report" ? "review-reports.zip" : "review-list.xlsx",
+        result,
+        route === "export-report" ? "review-reports.zip" : "review-list.xlsx",
       );
 
-      if (route === "/api/reviews/export-report") {
-        const exportedCount = Number.parseInt(response.headers.get("x-exported-count") ?? "", 10);
-        const skippedCount = Number.parseInt(response.headers.get("x-skipped-count") ?? "", 10);
+      if (route === "export-report") {
+        const exportedCount = result.exportedCount;
+        const skippedCount = result.skippedCount;
 
         setBulkFeedback(
-          Number.isFinite(exportedCount) && Number.isFinite(skippedCount) && skippedCount > 0
+          typeof exportedCount === "number" &&
+            typeof skippedCount === "number" &&
+            skippedCount > 0
             ? `已导出 ${exportedCount} 份报告，已跳过 ${skippedCount} 个未生成报告的任务。`
-            : Number.isFinite(exportedCount)
+            : typeof exportedCount === "number"
               ? `已导出 ${exportedCount} 份报告。`
               : "已导出评审报告。",
         );
@@ -403,7 +361,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   }
 
   async function handleDeleteSelected() {
-    if (typeof window === "undefined" || typeof window.fetch !== "function" || !deleteScope) {
+    if (typeof window === "undefined" || !window.plreview?.deleteReviewJobs || !deleteScope) {
       return;
     }
 
@@ -426,24 +384,9 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                 allMatching: false,
                 selectedIds: selectedReviews.map((item) => item.id),
               };
-      const response = await fetch("/api/reviews/delete", {
-        body: JSON.stringify(payload),
-        headers: {
-          "content-type": "application/json",
-        },
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const message = await readResponseMessage(response, "删除评审任务失败。");
-        setBulkFeedback(`删除失败：${message}`);
-        return;
-      }
-
-      const responsePayload = (await response.json()) as { deletedCount?: number };
-      const deletedCount = typeof responsePayload.deletedCount === "number"
-        ? responsePayload.deletedCount
-        : 0;
+      const responsePayload = await window.plreview.deleteReviewJobs(payload);
+      const deletedCount =
+        typeof responsePayload.deletedCount === "number" ? responsePayload.deletedCount : 0;
 
       if (deleteScope.mode === "selection") {
         clearSelection();
@@ -460,7 +403,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   }
 
   async function retrySingleReview(reviewId: string) {
-    if (typeof window === "undefined" || typeof window.fetch !== "function") {
+    if (typeof window === "undefined" || !window.plreview?.retryReviewJob) {
       return;
     }
 
@@ -468,21 +411,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     setBulkFeedback(null);
 
     try {
-      const response = await fetch("/api/reviews/retry", {
-        body: JSON.stringify({
-          reviewJobId: reviewId,
-        }),
-        headers: {
-          "content-type": "application/json",
-        },
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const message = await readResponseMessage(response, "重新发起评审失败。");
-        setBulkFeedback(`重试失败：${message}`);
-        return;
-      }
+      await window.plreview.retryReviewJob(reviewId);
 
       setBulkFeedback("已重新发起 1 条评审任务。");
       await refreshReviews();
@@ -538,7 +467,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
             <button
               className="button-ghost button-inline"
               disabled={isBulkWorking}
-              onClick={() => void runBulkExport("/api/reviews/export-list")}
+              onClick={() => void runBulkExport("export-list")}
               type="button"
             >
               导出清单
@@ -546,7 +475,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
             <button
               className="button-ghost button-inline"
               disabled={isBulkWorking}
-              onClick={() => void runBulkExport("/api/reviews/export-report")}
+              onClick={() => void runBulkExport("export-report")}
               type="button"
             >
               导出报告
@@ -670,7 +599,10 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                           </button>
                         ) : null}
                         {canOpenReview(item.status) ? (
-                          <Link className="button-ghost button-inline" href={`/reviews/${item.id}`}>
+                          <Link
+                            className="button-ghost button-inline"
+                            href={`/reviews/detail?id=${encodeURIComponent(item.id)}`}
+                          >
                             查看详情
                           </Link>
                         ) : (

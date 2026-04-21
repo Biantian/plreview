@@ -17,7 +17,7 @@ type ReviewAnnotation = {
   id: string;
   blockIndex: number;
   issue: string;
-  suggestion: string;
+  suggestion: string | null;
   severity: "low" | "medium" | "high" | "critical";
   evidenceText: string | null;
   ruleName: string;
@@ -199,7 +199,9 @@ export function ReviewDetailViewer({
                 <span className="pill">已定位到正文对应位置</span>
               </div>
               <p className="issue-item-title">{activeAnnotation.issue}</p>
-              <p className="annotation-copy">{activeAnnotation.suggestion}</p>
+              <p className="annotation-copy">
+                {activeAnnotation.suggestion ?? "当前问题未提供具体修改建议。"}
+              </p>
               {activeAnnotation.evidenceText ? (
                 <div className="issue-evidence">{activeAnnotation.evidenceText}</div>
               ) : null}

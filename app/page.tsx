@@ -1,39 +1,95 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { startTransition, useEffect, useState } from "react";
+
+import type { HomeDashboardData } from "@/desktop/bridge/desktop-api";
 import { PageIntro } from "@/components/page-intro";
 import { StatusBadge } from "@/components/status-badge";
-import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 
-export default async function HomePage() {
-  const [
-    rulesCount,
-    enabledRulesCount,
-    documentsCount,
-    reviewJobsCount,
-    annotationsCount,
-    recentReviews,
-    llmProfiles,
-  ] = await Promise.all([
-    prisma.rule.count(),
-    prisma.rule.count({ where: { enabled: true } }),
-    prisma.document.count(),
-    prisma.reviewJob.count(),
-    prisma.annotation.count(),
-    prisma.reviewJob.findMany({
-      include: {
-        document: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 5,
-    }),
-    prisma.llmProfile.findMany({
-      where: { enabled: true },
-      orderBy: { updatedAt: "desc" },
-    }),
-  ]);
+const EMPTY_HOME_DASHBOARD: HomeDashboardData = {
+  rulesCount: 0,
+  enabledRulesCount: 0,
+  documentsCount: 0,
+  reviewJobsCount: 0,
+  annotationsCount: 0,
+  recentReviews: [],
+  llmProfiles: [],
+};
+
+export default function HomePage() {
+  const [dashboard, setDashboard] = useState<HomeDashboardData>(EMPTY_HOME_DASHBOARD);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboard() {
+      if (!window.plreview?.getHomeDashboard) {
+        setErrorMessage("桌面桥接不可用，请从 Electron 桌面壳启动。");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const nextDashboard = await window.plreview.getHomeDashboard();
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setDashboard(nextDashboard);
+          setErrorMessage(null);
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(error instanceof Error ? error.message : "工作台加载失败。");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!isLoading && errorMessage) {
+    return (
+      <div className="desktop-dashboard stack-lg">
+        <section className="panel stack-lg desktop-dashboard-header">
+          <PageIntro
+            actions={
+              <>
+                <Link className="button" href="/reviews/new">
+                  开始新批次
+                </Link>
+                <Link className="button-ghost" href="/reviews">
+                  打开评审任务
+                </Link>
+                <Link className="button-ghost" href="/docs">
+                  查看帮助文档
+                </Link>
+              </>
+            }
+            description="查看任务、配置和最近结果。"
+            eyebrow="Workspace"
+            title="评审工作台"
+          />
+          <p className="section-copy">加载失败：{errorMessage}</p>
+          <p className="section-copy">请确认桌面桥接可用后重试。</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="desktop-dashboard stack-lg">
@@ -52,7 +108,7 @@ export default async function HomePage() {
                   查看帮助文档
                 </Link>
               </>
-          }
+            }
             description="查看任务、配置和最近结果。"
             eyebrow="Workspace"
             title="评审工作台"
@@ -71,7 +127,7 @@ export default async function HomePage() {
                 <div className="feature-row">
                   <span className="feature-kicker">任务</span>
                   <div>
-                    <strong>{reviewJobsCount} 条评审任务留存在队列中</strong>
+                    <strong>{dashboard.reviewJobsCount} 条评审任务留存在队列中</strong>
                     <p className="muted">可继续处理最近任务。</p>
                   </div>
                 </div>
@@ -79,7 +135,7 @@ export default async function HomePage() {
                   <span className="feature-kicker">配置</span>
                   <div>
                     <strong>
-                      {enabledRulesCount} 条启用规则，{llmProfiles.length} 个模型配置在线
+                      {dashboard.enabledRulesCount} 条启用规则，{dashboard.llmProfiles.length} 个模型配置在线
                     </strong>
                     <p className="muted">当前配置可用于新批次。</p>
                   </div>
@@ -92,19 +148,19 @@ export default async function HomePage() {
         <div className="desktop-kpi-grid">
           <div className="metric-card">
             <p className="metric-label">已导入文档</p>
-            <strong className="metric-value">{documentsCount}</strong>
+            <strong className="metric-value">{dashboard.documentsCount}</strong>
           </div>
           <div className="metric-card">
             <p className="metric-label">评审任务</p>
-            <strong className="metric-value">{reviewJobsCount}</strong>
+            <strong className="metric-value">{dashboard.reviewJobsCount}</strong>
           </div>
           <div className="metric-card">
             <p className="metric-label">启用规则</p>
-            <strong className="metric-value">{enabledRulesCount}</strong>
+            <strong className="metric-value">{dashboard.enabledRulesCount}</strong>
           </div>
           <div className="metric-card">
             <p className="metric-label">问题标注</p>
-            <strong className="metric-value">{annotationsCount}</strong>
+            <strong className="metric-value">{dashboard.annotationsCount}</strong>
           </div>
         </div>
       </section>
@@ -118,7 +174,14 @@ export default async function HomePage() {
           </div>
 
           <div className="list">
-            {recentReviews.length === 0 ? (
+            {isLoading ? (
+              <div className="list-item">
+                <div>
+                  <h3>正在读取最近评审</h3>
+                  <p className="muted">桌面工作台正在从本地数据库同步状态。</p>
+                </div>
+              </div>
+            ) : dashboard.recentReviews.length === 0 ? (
               <div className="list-item">
                 <div>
                   <h3>还没有评审记录</h3>
@@ -126,12 +189,16 @@ export default async function HomePage() {
                 </div>
               </div>
             ) : (
-              recentReviews.map((review) => (
-                <Link className="list-item" href={`/reviews/${review.id}`} key={review.id}>
+              dashboard.recentReviews.map((review) => (
+                <Link
+                  className="list-item"
+                  href={`/reviews/detail?id=${encodeURIComponent(review.id)}`}
+                  key={review.id}
+                >
                   <div>
-                    <h3>{review.document.title}</h3>
+                    <h3>{review.title}</h3>
                     <p className="muted">
-                      {review.modelNameSnapshot} · {formatDate(review.createdAt)}
+                      {review.modelName} · {formatDate(review.createdAt)}
                     </p>
                   </div>
                   <StatusBadge status={review.status} />
@@ -188,14 +255,14 @@ export default async function HomePage() {
             <div className="feature-row">
               <span className="feature-kicker">规则</span>
               <div>
-                <strong>{rulesCount} 条规则已建档</strong>
+                <strong>{dashboard.rulesCount} 条规则已建档</strong>
                 <p className="muted">当前启用规则会参与评审。</p>
               </div>
             </div>
             <div className="feature-row">
               <span className="feature-kicker">模型</span>
               <div>
-                <strong>{llmProfiles.length} 个启用中的模型配置</strong>
+                <strong>{dashboard.llmProfiles.length} 个启用中的模型配置</strong>
                 <p className="muted">启用的模型可用于新批次。</p>
               </div>
             </div>
@@ -217,7 +284,15 @@ export default async function HomePage() {
           </div>
 
           <div className="feature-list">
-            {llmProfiles.length === 0 ? (
+            {isLoading ? (
+              <div className="feature-row">
+                <span className="feature-kicker">模型</span>
+                <div>
+                  <strong>正在读取模型配置</strong>
+                  <p className="muted">完成后会显示当前启用的桌面模型。</p>
+                </div>
+              </div>
+            ) : dashboard.llmProfiles.length === 0 ? (
               <div className="feature-row">
                 <span className="feature-kicker">模型</span>
                 <div>
@@ -226,7 +301,7 @@ export default async function HomePage() {
                 </div>
               </div>
             ) : (
-              llmProfiles.map((profile) => (
+              dashboard.llmProfiles.map((profile) => (
                 <div className="feature-row" key={profile.id}>
                   <span className="feature-kicker">{profile.provider}</span>
                   <div>

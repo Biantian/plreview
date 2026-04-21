@@ -1,27 +1,16 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
+import type {
+  ModelDashboardData,
+  ModelDashboardProfile,
+  ModelSaveInput,
+} from "@/desktop/bridge/desktop-api";
 import { ModelEditorDrawer } from "@/components/model-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
-import {
-  deleteLlmProfileAction,
-  toggleLlmProfileEnabledAction,
-} from "@/lib/actions";
 
-type ModelProfileRecord = {
-  id: string;
-  name: string;
-  provider: string;
-  vendorKey: string;
-  mode: "live" | "demo";
-  baseUrl: string;
-  defaultModel: string;
-  modelOptionsText: string;
-  enabled: boolean;
-  hasApiKey: boolean;
-  apiKeyLast4: string | null;
-};
+type ModelProfileRecord = ModelDashboardProfile;
 
 function matchesQuery(profile: ModelProfileRecord, query: string) {
   if (!query) {
@@ -46,19 +35,51 @@ export function ModelManager({
 }: {
   profiles: ModelProfileRecord[];
 }) {
+  const [records, setRecords] = useState(profiles);
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
   const keyword = deferredQuery.trim().toLowerCase();
   const filteredProfiles = useMemo(
-    () => profiles.filter((profile) => matchesQuery(profile, keyword)),
-    [keyword, profiles],
+    () => records.filter((profile) => matchesQuery(profile, keyword)),
+    [keyword, records],
   );
   const editingProfile =
     filteredProfiles.find((profile) => profile.id === editingId) ??
-    profiles.find((profile) => profile.id === editingId) ??
+    records.find((profile) => profile.id === editingId) ??
     null;
+
+  useEffect(() => {
+    setRecords(profiles);
+  }, [profiles]);
+
+  async function updateProfiles(
+    action: () => Promise<ModelDashboardData>,
+    successMessage: string,
+  ) {
+    if (!window.plreview?.getModelDashboard) {
+      setFeedback("桌面桥接不可用，请从 Electron 桌面壳启动。");
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback(null);
+
+    try {
+      const nextDashboard = await action();
+      setRecords(nextDashboard.profiles);
+      setFeedback(successMessage);
+      setEditingId(null);
+      setIsCreateOpen(false);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "模型配置操作失败。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <section className="desktop-table-card stack-lg">
@@ -67,7 +88,7 @@ export function ModelManager({
           <p className="section-eyebrow">模型配置矩阵</p>
           <h2 className="subsection-title">模型目录</h2>
         </div>
-        <p className="desktop-table-summary">共 {profiles.length} 条配置 · 当前显示 {filteredProfiles.length} 条</p>
+        <p className="desktop-table-summary">共 {records.length} 条配置 · 当前显示 {filteredProfiles.length} 条</p>
       </div>
 
       <div className="desktop-table-toolbar">
@@ -87,10 +108,12 @@ export function ModelManager({
         </div>
       </div>
 
+      {feedback ? <p className="section-copy">{feedback}</p> : null}
+
       {filteredProfiles.length === 0 ? (
         <div className="card stack">
           <p className="muted">
-            {profiles.length === 0 ? "还没有模型配置，先新增第一个模型。" : "没有匹配的模型配置，换一个关键词试试。"}
+            {records.length === 0 ? "还没有模型配置，先新增第一个模型。" : "没有匹配的模型配置，换一个关键词试试。"}
           </p>
         </div>
       ) : (
@@ -134,21 +157,37 @@ export function ModelManager({
                         编辑
                       </button>
 
-                      <form action={toggleLlmProfileEnabledAction}>
-                        <input name="id" type="hidden" value={profile.id} />
-                        <input name="enabled" type="hidden" value={String(!profile.enabled)} />
-                        <button className="button-secondary button-inline" type="submit">
-                          {profile.enabled ? "停用" : "启用"}
-                        </button>
-                      </form>
+                      <button
+                        className="button-secondary button-inline"
+                        disabled={isSaving}
+                        onClick={() =>
+                          void updateProfiles(
+                            () =>
+                              window.plreview.toggleModelProfileEnabled(
+                                profile.id,
+                                !profile.enabled,
+                              ),
+                            profile.enabled ? "模型配置已停用。" : "模型配置已启用。",
+                          )
+                        }
+                        type="button"
+                      >
+                        {profile.enabled ? "停用" : "启用"}
+                      </button>
 
-                      <form action={deleteLlmProfileAction}>
-                        <input name="confirmed" type="hidden" value="true" />
-                        <input name="id" type="hidden" value={profile.id} />
-                        <button className="button-ghost button-inline" type="submit">
-                          删除
-                        </button>
-                      </form>
+                      <button
+                        className="button-ghost button-inline"
+                        disabled={isSaving}
+                        onClick={() =>
+                          void updateProfiles(
+                            () => window.plreview.deleteModelProfile(profile.id),
+                            "模型配置已删除。",
+                          )
+                        }
+                        type="button"
+                      >
+                        删除
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -159,10 +198,17 @@ export function ModelManager({
       )}
 
       <ModelEditorDrawer
+        busy={isSaving}
+        errorMessage={feedback}
         onClose={() => {
           setEditingId(null);
           setIsCreateOpen(false);
         }}
+        onSave={(payload: ModelSaveInput) =>
+          updateProfiles(
+            () => window.plreview.saveModelProfile(payload),
+            payload.id ? "模型配置已更新。" : "模型配置已创建。",
+          )}
         open={isCreateOpen || !!editingProfile}
         profile={isCreateOpen ? null : editingProfile}
       />
