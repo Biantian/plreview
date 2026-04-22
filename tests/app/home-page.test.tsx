@@ -74,10 +74,12 @@ describe("HomePage", () => {
       "href",
       "/reviews/new",
     );
-    expect(within(panel as HTMLElement).getByRole("link", { name: "打开评审任务" })).toHaveAttribute(
-      "href",
-      "/reviews",
-    );
+    expect(
+      within(panel as HTMLElement).queryByRole("link", { name: "打开评审任务" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(panel as HTMLElement).queryByRole("link", { name: "查看帮助文档" }),
+    ).not.toBeInTheDocument();
   });
 
   it("short-circuits to a clear failure state when dashboard loading fails", async () => {

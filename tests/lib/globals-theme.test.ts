@@ -38,9 +38,8 @@ describe("globals theme tokens", () => {
   });
 
   it("keeps docs navigation rows neutral and text-first", () => {
-    expect(globalsCss).toContain(".app-sidebar-footer {");
-    expect(globalsCss).toContain("margin-top: auto;");
-    expect(globalsCss).toContain("border-top: 1px solid var(--line);");
+    expect(globalsCss).toContain(".site-nav-link.active");
+    expect(globalsCss).toContain("background: #ffffff;");
     expect(globalsCss).toMatch(
       /\.docs-directory-button,\s*\.docs-toc-link\s*\{[\s\S]*padding:\s*10px 12px;[\s\S]*background:\s*transparent;/m,
     );

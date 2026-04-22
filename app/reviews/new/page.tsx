@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { startTransition, useEffect, useState } from "react";
 
 import type {
@@ -82,16 +81,6 @@ export default function NewReviewPage() {
       <div className="desktop-management-page stack-lg">
         <section className="panel stack-lg">
           <PageIntro
-            actions={
-              <>
-                <Link className="button" href="/reviews">
-                  返回评审任务
-                </Link>
-                <Link className="button-ghost" href="/rules">
-                  打开规则库
-                </Link>
-              </>
-            }
             description="填写批次信息、选择规则并导入文件。"
             eyebrow="Review Launch"
             title="新建批次"
@@ -107,16 +96,6 @@ export default function NewReviewPage() {
     <div className="desktop-management-page stack-lg">
       <section className="panel stack-lg">
         <PageIntro
-          actions={
-            <>
-              <Link className="button" href="/reviews">
-                返回评审任务
-              </Link>
-              <Link className="button-ghost" href="/rules">
-                打开规则库
-              </Link>
-            </>
-          }
           description="填写批次信息、选择规则并导入文件。"
           eyebrow="Review Launch"
           title="新建批次"

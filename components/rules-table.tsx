@@ -106,11 +106,11 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
             <tr>
               <th scope="col">启用</th>
               <th scope="col">规则名称</th>
-              <th scope="col">分类</th>
-              <th scope="col">默认严重级别</th>
-              <th scope="col">最近更新时间</th>
+              <th scope="col" className="table-nowrap">分类</th>
+              <th scope="col" className="table-nowrap">默认严重级别</th>
+              <th scope="col" className="table-nowrap">最近更新时间</th>
               <th scope="col">说明</th>
-              <th scope="col">操作</th>
+              <th scope="col" className="table-nowrap">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -123,19 +123,21 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
             ) : (
               filteredItems.map((item) => (
                 <tr key={item.id}>
-                  <td>{item.enabled ? "启用中" : "已停用"}</td>
+                  <td className="table-nowrap">{item.enabled ? "启用中" : "已停用"}</td>
                   <td>
-                    <strong>{item.name}</strong>
+                    <span className="table-cell-primary">{item.name}</span>
                   </td>
-                  <td>{item.category}</td>
-                  <td>{severityLabel(item.severity)}</td>
-                  <td>{item.updatedAtLabel}</td>
-                  <td>{item.description}</td>
+                  <td className="table-nowrap">{item.category}</td>
+                  <td className="table-nowrap">{severityLabel(item.severity)}</td>
+                  <td className="table-nowrap">{item.updatedAtLabel}</td>
                   <td>
+                    <span className="table-cell-secondary">{item.description}</span>
+                  </td>
+                  <td className="table-nowrap">
                     <div className="table-actions">
                       <button
                         aria-label={`编辑 ${item.name}`}
-                        className="button-ghost button-inline"
+                        className="table-text-button"
                         onClick={() => {
                           setIsCreateOpen(false);
                           setEditingId(item.id);
@@ -146,7 +148,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
                       </button>
 
                       <button
-                        className="button-secondary button-inline"
+                        className="table-text-button"
                         disabled={isSaving}
                         onClick={() =>
                           void updateRules(

@@ -61,6 +61,7 @@ npm run desktop:dev
 
 桌面开发模式会启动 `Electron` 壳层，并继续连接本地 `http://localhost:3000` 的 Next.js 开发服务。
 默认仍使用本地 SQLite，只有大模型调用会走网络。
+开发态的源代码 `preload` 引导现在刻意保持为可直接被 Electron sandbox 执行的自包含 CJS 文件；如果后续调整 `electron/preload.cjs`，不要重新引入 `tsx` 或额外的本地模块加载。
 
 ## 桌面应用打包
 
@@ -103,6 +104,7 @@ npm run desktop:report-size
 - 开发环境由 Electron 加载 `http://localhost:3000`
 - 生产环境由 Electron 直接加载 `out/index.html`
 - 页面数据通过 `electron/preload` 暴露的桌面 bridge 进入渲染层，而不是依赖 Next.js API Routes
+- 开发态的 `desktop:main` 也必须能直接注入 `window.plreview`，不能出现“窗口打开了但桥接不可用”的半失效状态
 
 需要回归桌面核心发起链路时，建议补跑：
 

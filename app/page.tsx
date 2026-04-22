@@ -68,17 +68,9 @@ export default function HomePage() {
         <section className="panel stack-lg desktop-dashboard-header">
           <PageIntro
             actions={
-              <>
-                <Link className="button" href="/reviews/new">
-                  开始新批次
-                </Link>
-                <Link className="button-ghost" href="/reviews">
-                  打开评审任务
-                </Link>
-                <Link className="button-ghost" href="/docs">
-                  查看帮助文档
-                </Link>
-              </>
+              <Link className="button" href="/reviews/new">
+                开始新批次
+              </Link>
             }
             description="查看任务、配置和最近结果。"
             eyebrow="Workspace"
@@ -97,17 +89,9 @@ export default function HomePage() {
         <div className="desktop-heading-grid">
           <PageIntro
             actions={
-              <>
-                <Link className="button" href="/reviews/new">
-                  开始新批次
-                </Link>
-                <Link className="button-ghost" href="/reviews">
-                  打开评审任务
-                </Link>
-                <Link className="button-ghost" href="/docs">
-                  查看帮助文档
-                </Link>
-              </>
+              <Link className="button" href="/reviews/new">
+                开始新批次
+              </Link>
             }
             description="查看任务、配置和最近结果。"
             eyebrow="Workspace"

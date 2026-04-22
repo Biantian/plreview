@@ -472,7 +472,7 @@ export function IntakeWorkbench({
                     共 {workbenchFiles.length} 条 · 待评审 {readyDocuments.length} 条
                   </span>
                   <button
-                    className="button-ghost button-inline"
+                    className="table-text-button is-danger"
                     disabled={isSubmitting || workbenchFiles.length === 0}
                     onClick={handleClearWorkbench}
                     type="button"
@@ -487,10 +487,10 @@ export function IntakeWorkbench({
                   <thead>
                     <tr>
                       <th scope="col">文件名</th>
-                      <th scope="col">类型</th>
-                      <th scope="col">状态</th>
+                      <th scope="col" className="table-nowrap">类型</th>
+                      <th scope="col" className="table-nowrap">状态</th>
                       <th scope="col">备注</th>
-                      <th scope="col">操作</th>
+                      <th scope="col" className="table-nowrap">操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -503,19 +503,23 @@ export function IntakeWorkbench({
                     ) : (
                       workbenchFiles.map((file) => (
                         <tr key={file.id}>
-                          <th scope="row">{file.name}</th>
-                          <td>{file.fileType ?? "待识别"}</td>
-                          <td>
+                          <th scope="row">
+                            <span className="table-cell-primary">{file.name}</span>
+                          </th>
+                          <td className="table-nowrap">{file.fileType ?? "待识别"}</td>
+                          <td className="table-nowrap">
                             <span className="pill pill-brand">{file.status ?? "待处理"}</span>
                           </td>
-                          <td className="muted">
-                            {file.note ?? "已完成本地导入，等待加入评审。"}
-                          </td>
                           <td>
+                            <span className="table-cell-secondary">
+                              {file.note ?? "已完成本地导入，等待加入评审。"}
+                            </span>
+                          </td>
+                          <td className="table-nowrap">
                             <div className="table-actions">
                               <button
                                 aria-label={`查看摘要 ${file.name}`}
-                                className="button-ghost button-inline"
+                                className="table-text-button"
                                 onClick={() => setSelectedSummaryId(file.id)}
                                 type="button"
                               >
@@ -523,7 +527,7 @@ export function IntakeWorkbench({
                               </button>
                               <button
                                 aria-label={`移除 ${file.name}`}
-                                className="button-ghost button-inline"
+                                className="table-text-button is-danger"
                                 disabled={isSubmitting}
                                 onClick={() => handleRemoveFile(file.id)}
                                 type="button"
@@ -547,7 +551,7 @@ export function IntakeWorkbench({
                       <h3 className="subsection-title">解析摘要</h3>
                     </div>
                     <button
-                      className="button-ghost button-inline"
+                      className="table-text-button"
                       onClick={() => setSelectedSummaryId(null)}
                       type="button"
                     >

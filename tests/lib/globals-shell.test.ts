@@ -70,6 +70,16 @@ describe("globals shell styles", () => {
     ]);
   });
 
+  it("keeps dense table controls compact and reserves space for bulk actions", () => {
+    hasRule(".review-bulk-toolbar-shell", ["min-height: 52px;"]);
+    hasRule(".review-bulk-toolbar-shell[data-active=\"false\"]", ["opacity: 0.68;"]);
+    hasRule(".table-text-link,\n.table-text-button", ["padding: 0;", "background: transparent;"]);
+    hasRule(".table-nowrap", ["white-space: nowrap;"]);
+    hasRule(".table-cell-primary", ["font-weight: 600;"]);
+    hasRule(".table-cell-secondary", ["font-size: 12px;"]);
+    hasRule(".icon-button", ["width: 32px;", "height: 32px;"]);
+  });
+
   it("defines the docs workspace as fixed master-detail panes with dedicated scrolling", () => {
     hasRule(".docs-shell", [
       "grid-template-columns: 240px minmax(0, 1fr) 200px;",

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { startTransition, useEffect, useState } from "react";
 
 import type { ModelDashboardData } from "@/desktop/bridge/desktop-api";
@@ -66,16 +65,6 @@ export default function ModelsPage() {
       <div className="desktop-management-page stack-lg">
         <section className="panel stack-lg">
           <PageIntro
-            actions={
-              <>
-                <Link className="button" href="/reviews/new">
-                  去新建批次
-                </Link>
-                <Link className="button-ghost" href="/rules">
-                  查看规则库
-                </Link>
-              </>
-            }
             description="查看和管理模型配置。"
             eyebrow="Model Settings"
             title="模型配置"
@@ -91,16 +80,6 @@ export default function ModelsPage() {
     <div className="desktop-management-page stack-lg">
       <section className="panel stack-lg">
         <PageIntro
-          actions={
-            <>
-              <Link className="button" href="/reviews/new">
-                去新建批次
-              </Link>
-              <Link className="button-ghost" href="/rules">
-                查看规则库
-              </Link>
-            </>
-          }
           description="查看和管理模型配置。"
           eyebrow="Model Settings"
           title="模型配置"

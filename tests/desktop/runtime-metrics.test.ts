@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createDesktopApi } from "@/desktop/bridge/desktop-api";
@@ -191,14 +193,25 @@ describe("electron main runtime publication", () => {
       BrowserWindow: BrowserWindowMock,
       app: {
         whenReady: vi.fn(() => Promise.resolve()),
+        getPath: vi.fn(() => "/tmp/plreview-tests"),
         on: appOn,
         quit: vi.fn(),
+        setPath: vi.fn(),
       },
       dialog: {
         showOpenDialog,
       },
       ipcMain: {
         handle,
+      },
+      net: {
+        fetch: vi.fn(),
+      },
+      protocol: {
+        handle: vi.fn(),
+        isProtocolHandled: vi.fn(() => false),
+        registerSchemesAsPrivileged: vi.fn(),
+        unhandle: vi.fn(),
       },
     }));
 
@@ -223,7 +236,27 @@ describe("electron main runtime publication", () => {
       })),
     }));
 
+    vi.doMock("@/electron/desktop-data-loader", () => ({
+      loadDesktopDataModules: vi.fn(async () => ({
+      getHomeDashboardData: vi.fn(),
+      deleteLlmProfile: vi.fn(),
+      getModelDashboardData: vi.fn(),
+      saveLlmProfile: vi.fn(),
+      toggleLlmProfileEnabled: vi.fn(),
+      getReviewDetailData: vi.fn(),
+      deleteSelectedReviewJobs: vi.fn(),
+      exportReviewListFile: vi.fn(),
+      exportReviewReportArchive: vi.fn(),
+      retryReviewJobById: vi.fn(),
+      getRuleDashboardData: vi.fn(),
+      saveRule: vi.fn(),
+      toggleRuleEnabled: vi.fn(),
+      })),
+    }));
+
     vi.doMock("@/electron/renderer-runtime", () => ({
+      PACKAGED_RENDERER_SCHEME: "plreview",
+      resolvePackagedRendererAssetPath: vi.fn(),
       resolveRendererLoadTarget: vi.fn(async () => ({
         kind: "url",
         url: "http://127.0.0.1:3000",

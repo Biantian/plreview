@@ -42,11 +42,12 @@ describe("desktop packaging scripts", () => {
     );
   });
 
-  it("keeps the source preload bootstrap delegated to the typed ts entry", () => {
+  it("keeps the source preload bootstrap runtime-safe for Electron sandbox execution", () => {
     const preloadBootstrap = fs.readFileSync(path.resolve("electron/preload.cjs"), "utf8");
 
-    expect(preloadBootstrap).toContain('require("tsx/cjs")');
-    expect(preloadBootstrap).toContain('require("./preload.ts")');
+    expect(preloadBootstrap).toContain('require("electron")');
+    expect(preloadBootstrap).toContain('contextBridge.exposeInMainWorld("plreview"');
+    expect(preloadBootstrap).not.toContain('require("tsx/cjs")');
   });
 
   it("packages the compiled desktop runtime instead of tsx-driven source entries", () => {

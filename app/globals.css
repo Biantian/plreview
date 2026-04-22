@@ -122,6 +122,9 @@ svg {
   border-right: 1px solid var(--line);
   border-radius: 0;
   background: var(--shell);
+  background:
+    linear-gradient(180deg, rgba(249, 250, 251, 0.96), rgba(243, 244, 246, 0.92)),
+    var(--shell);
   box-shadow: none;
   -webkit-app-region: drag;
   user-select: none;
@@ -129,20 +132,6 @@ svg {
 
 .app-sidebar > * {
   -webkit-app-region: no-drag;
-}
-
-.app-sidebar-footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-.app-sidebar-footer .button,
-.app-sidebar-footer .button-ghost {
-  width: 100%;
 }
 
 .sidebar-brand {
@@ -331,8 +320,9 @@ svg {
 .page-intro {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   max-width: none;
 }
 
@@ -350,7 +340,8 @@ svg {
 .page-intro-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -684,9 +675,24 @@ svg {
   gap: 10px;
   padding: 10px 0;
   border: 0;
-  border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: transparent;
+}
+
+.review-bulk-toolbar-shell {
+  min-height: 52px;
+  border-bottom: 1px solid var(--line);
+  transition:
+    opacity var(--ease),
+    background-color var(--ease);
+}
+
+.review-bulk-toolbar-shell[data-active="false"] {
+  opacity: 0.68;
+}
+
+.review-bulk-toolbar-shell[data-active="true"] {
+  opacity: 1;
 }
 
 .review-bulk-toolbar-copy {
@@ -733,6 +739,7 @@ svg {
 .table-actions {
   flex-wrap: wrap;
   align-items: center;
+  gap: 12px;
 }
 
 .table-search {
@@ -962,19 +969,20 @@ svg {
 
 .data-table th,
 .data-table td {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
 }
 
 .data-table th {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted-strong);
   background: #f8fafc;
+  white-space: nowrap;
 }
 
 .data-table tbody tr:hover {
@@ -987,7 +995,25 @@ svg {
 }
 
 .table-cell-stack {
-  gap: 6px;
+  gap: 4px;
+}
+
+.table-cell-primary {
+  display: block;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.table-cell-secondary {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #9ca3af;
+}
+
+.table-nowrap {
+  white-space: nowrap;
 }
 
 .drawer {
@@ -1231,6 +1257,68 @@ svg {
   min-width: 104px;
 }
 
+.table-text-link,
+.table-text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand-strong);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.table-text-link:hover,
+.table-text-button:hover {
+  color: var(--brand);
+}
+
+.table-text-link.is-danger,
+.table-text-button.is-danger {
+  color: var(--danger);
+}
+
+.table-text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted-strong);
+  cursor: pointer;
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.icon-button:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.refresh-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.refresh-icon.is-spinning {
+  animation: refresh-spin 800ms linear infinite;
+}
+
 .button:disabled,
 .button-secondary:disabled,
 .button-ghost:disabled {
@@ -1243,6 +1331,9 @@ svg {
 .button:focus-visible,
 .button-secondary:focus-visible,
 .button-ghost:focus-visible,
+.table-text-button:focus-visible,
+.table-text-link:focus-visible,
+.icon-button:focus-visible,
 .field input:focus-visible,
 .field textarea:focus-visible,
 .field select:focus-visible,
@@ -1309,6 +1400,7 @@ svg {
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
   overflow-wrap: anywhere;
 }
 
@@ -2116,6 +2208,7 @@ svg {
   .table-toolbar,
   .desktop-table-toolbar,
   .desktop-table-toolbar-actions,
+  .page-intro,
   .launch-section-header,
   .docs-toolbar {
     flex-direction: column;
@@ -2178,6 +2271,16 @@ svg {
   100% {
     transform: scale(0.94);
     box-shadow: 0 0 0 0 rgba(233, 138, 71, 0);
+  }
+}
+
+@keyframes refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 

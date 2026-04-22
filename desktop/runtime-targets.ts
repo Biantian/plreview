@@ -23,8 +23,8 @@ export function resolveForkTarget(
   }
 
   return {
-    entryPath: path.join(currentDir, sourceEntryRelativePath),
-    execArgv: ["-r", path.join(currentDir, sourceBootstrapRelativePath)],
+    entryPath: path.join(currentDir, sourceBootstrapRelativePath),
+    execArgv: [],
     mode: "source",
   };
 }

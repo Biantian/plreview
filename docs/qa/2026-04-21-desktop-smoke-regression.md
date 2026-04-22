@@ -69,6 +69,9 @@ That means the packaged regression path now exercises the real first-launch runt
   - file import worker flow
   - packaged renderer loading or release packaging
 
+For development-shell changes, also do one manual Electron pass with `npm run desktop:main` and confirm the renderer receives `window.plreview`.
+This catches a different failure mode from packaged smoke: the dev window can render `http://localhost:3000` correctly while the preload bridge silently fails to load, leaving the app stuck on “桌面桥接不可用”.
+
 ## Known Scope
 
 This smoke currently targets the macOS packaged app layout in `release/mac-arm64/PLReview.app`.

@@ -12,8 +12,8 @@ describe("resolveForkTarget", () => {
     );
 
     expect(target).toEqual({
-      entryPath: "/tmp/plreview/desktop/worker/background-entry.ts",
-      execArgv: ["-r", "/tmp/plreview/desktop/worker/background-entry.cjs"],
+      entryPath: "/tmp/plreview/desktop/worker/background-entry.cjs",
+      execArgv: [],
       mode: "source",
     });
   });

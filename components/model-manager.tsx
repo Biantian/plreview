@@ -122,32 +122,32 @@ export function ModelManager({
             <thead>
               <tr>
                 <th scope="col">名称</th>
-                <th scope="col">供应商</th>
-                <th scope="col">模式</th>
+                <th scope="col" className="table-nowrap">供应商</th>
+                <th scope="col" className="table-nowrap">模式</th>
                 <th scope="col">默认模型</th>
-                <th scope="col">Key 状态</th>
-                <th scope="col">启用状态</th>
-                <th scope="col">操作</th>
+                <th scope="col" className="table-nowrap">Key 状态</th>
+                <th scope="col" className="table-nowrap">启用状态</th>
+                <th scope="col" className="table-nowrap">操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredProfiles.map((profile) => (
                 <tr key={profile.id}>
                   <td>
-                    <strong>{profile.name}</strong>
+                    <span className="table-cell-primary">{profile.name}</span>
                   </td>
-                  <td>{profile.provider}</td>
-                  <td>{profile.mode === "demo" ? "演示模式" : "实时模式"}</td>
+                  <td className="table-nowrap">{profile.provider}</td>
+                  <td className="table-nowrap">{profile.mode === "demo" ? "演示模式" : "实时模式"}</td>
                   <td>{profile.defaultModel}</td>
-                  <td>
+                  <td className="table-nowrap">
                     {profile.hasApiKey ? `已配置 Key · 尾号 ${profile.apiKeyLast4}` : "未配置 Key"}
                   </td>
-                  <td>{profile.enabled ? "启用中" : "已停用"}</td>
-                  <td>
+                  <td className="table-nowrap">{profile.enabled ? "启用中" : "已停用"}</td>
+                  <td className="table-nowrap">
                     <div className="table-actions">
                       <button
                         aria-label={`编辑 ${profile.name}`}
-                        className="button-ghost button-inline"
+                        className="table-text-button"
                         onClick={() => {
                           setIsCreateOpen(false);
                           setEditingId(profile.id);
@@ -158,7 +158,7 @@ export function ModelManager({
                       </button>
 
                       <button
-                        className="button-secondary button-inline"
+                        className="table-text-button"
                         disabled={isSaving}
                         onClick={() =>
                           void updateProfiles(
@@ -176,7 +176,7 @@ export function ModelManager({
                       </button>
 
                       <button
-                        className="button-ghost button-inline"
+                        className="table-text-button is-danger"
                         disabled={isSaving}
                         onClick={() =>
                           void updateProfiles(

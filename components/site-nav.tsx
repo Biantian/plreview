@@ -11,7 +11,6 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/", label: "工作台" },
   { href: "/reviews", label: "评审任务" },
-  { href: "/reviews/new", label: "新建批次" },
   { href: "/rules", label: "规则库" },
   { href: "/models", label: "模型配置" },
   { href: "/docs", label: "帮助文档" },

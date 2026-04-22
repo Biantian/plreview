@@ -53,12 +53,11 @@ describe("createTaskRunner", () => {
 
     expect(fs.existsSync(bootstrapPath)).toBe(true);
     expect(fs.readFileSync(bootstrapPath, "utf8")).toContain('require("tsx/cjs")');
+    expect(fs.readFileSync(bootstrapPath, "utf8")).toContain('require("./task-entry.ts")');
     expect(fork).toHaveBeenCalledWith(
-      expect.stringMatching(/desktop\/worker\/task-entry\.ts$/),
+      expect.stringMatching(/desktop\/worker\/task-entry\.cjs$/),
       [],
-      expect.objectContaining({
-        execArgv: ["-r", bootstrapPath],
-      }),
+      {},
     );
     expect(postMessage).toHaveBeenCalledWith({
       id: expect.any(String),

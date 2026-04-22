@@ -177,6 +177,33 @@ describe("ReviewJobsTable", () => {
     expect(screen.getByText("玩法复盘")).toBeInTheDocument();
   });
 
+  it("keeps the bulk toolbar mounted so selection actions do not cause layout reflow", async () => {
+    const user = userEvent.setup();
+
+    render(<ReviewJobsTable items={[createReview()]} />);
+
+    const bulkToolbar = screen.getByRole("toolbar", { name: "批量操作" });
+
+    expect(bulkToolbar).toHaveAttribute("data-active", "false");
+    expect(screen.getByText("选择任务后可批量导出或删除。")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "选择评审任务 玩法复盘" }));
+
+    expect(bulkToolbar).toHaveAttribute("data-active", "true");
+    expect(screen.getByText("已选中 1 条")).toBeInTheDocument();
+  });
+
+  it("uses compact refresh and row action affordances instead of heavy outline buttons", () => {
+    render(<ReviewJobsTable items={[createReview()]} />);
+
+    expect(screen.getByRole("button", { name: "刷新任务列表" })).toHaveClass("icon-button");
+    expect(screen.queryByRole("button", { name: "立即刷新" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "查看详情" })).toHaveClass("table-text-link");
+    expect(screen.getByRole("button", { name: "删除评审任务 玩法复盘" })).toHaveClass(
+      "table-text-button",
+    );
+  });
+
   it("deletes a single review through the desktop bridge", async () => {
     const user = userEvent.setup();
     const deleteReviewJobs = vi.fn().mockResolvedValue({ deletedCount: 1 });

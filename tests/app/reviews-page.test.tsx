@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import ReviewsPage from "@/app/reviews/page";
@@ -31,6 +31,28 @@ function installDesktopApi(overrides: Partial<typeof window.plreview> = {}) {
 }
 
 describe("ReviewsPage", () => {
+  it("keeps page-header actions focused on creating a new batch", async () => {
+    installDesktopApi({
+      listReviewJobs: vi.fn().mockResolvedValue([]),
+    });
+
+    render(<ReviewsPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1, name: "评审任务" })).toBeInTheDocument(),
+    );
+
+    const panel = screen.getByRole("heading", { level: 1, name: "评审任务" }).closest(".panel");
+
+    expect(panel).toBeTruthy();
+    expect(within(panel as HTMLElement).getByRole("link", { name: "新建批次" })).toHaveAttribute(
+      "href",
+      "/reviews/new",
+    );
+    expect(within(panel as HTMLElement).queryByRole("link", { name: "帮助文档" })).not.toBeInTheDocument();
+    expect(within(panel as HTMLElement).queryByRole("link", { name: "返回工作台" })).not.toBeInTheDocument();
+  });
+
   it("shows explicit failure state when review loading rejects", async () => {
     installDesktopApi({
       listReviewJobs: vi.fn().mockRejectedValue(new Error("review jobs failed")),

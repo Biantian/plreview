@@ -82,11 +82,12 @@ describe("NewReviewPage", () => {
 
     const pageHeading = screen.getByRole("heading", { level: 1, name: "新建批次" });
     const pagePanel = pageHeading.closest(".panel");
+    const pageIntro = pageHeading.closest(".page-intro");
     const workspace = screen.getByRole("region", { name: "评审启动工作区" });
 
     expect(pagePanel).toBeTruthy();
-    expect(within(pagePanel as HTMLElement).getByRole("link", { name: "返回评审任务" })).toBeInTheDocument();
-    expect(within(pagePanel as HTMLElement).getByRole("link", { name: "打开规则库" })).toBeInTheDocument();
+    expect(pageIntro).toBeTruthy();
+    expect(within(pageIntro as HTMLElement).queryByRole("link")).not.toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 2, name: "批次配置" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 3, name: "启动批次" })).toBeInTheDocument();

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { startTransition, useEffect, useState } from "react";
 
 import type { RuleDashboardData } from "@/desktop/bridge/desktop-api";
@@ -64,16 +63,6 @@ export default function RulesPage() {
       <div className="desktop-management-page stack-lg">
         <section className="panel stack-lg">
           <PageIntro
-            actions={
-              <>
-                <Link className="button" href="/reviews/new">
-                  去新建批次
-                </Link>
-                <Link className="button-ghost" href="/models">
-                  查看模型配置
-                </Link>
-              </>
-            }
             description="查看和管理规则。"
             eyebrow="Rule Library"
             title="规则库"
@@ -89,16 +78,6 @@ export default function RulesPage() {
     <div className="desktop-management-page stack-lg">
       <section className="panel stack-lg">
         <PageIntro
-          actions={
-            <>
-              <Link className="button" href="/reviews/new">
-                去新建批次
-              </Link>
-              <Link className="button-ghost" href="/models">
-                查看模型配置
-              </Link>
-            </>
-          }
           description="查看和管理规则。"
           eyebrow="Rule Library"
           title="规则库"

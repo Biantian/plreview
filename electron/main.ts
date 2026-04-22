@@ -6,6 +6,7 @@ import { BrowserWindow, app, dialog, ipcMain, net, protocol } from "electron";
 
 import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
 import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
+import { loadDesktopDataModules } from "@/electron/desktop-data-loader";
 import { applyDesktopRuntimeEnv } from "@/electron/runtime-env";
 import {
   PACKAGED_RENDERER_SCHEME,
@@ -35,38 +36,6 @@ let registeredRendererRoot: string | null = null;
 const runtimeMetrics = createRuntimeMetricsService();
 
 configureUserDataPath();
-
-async function loadDesktopDataModules() {
-  const [
-    homeDashboardModule,
-    llmProfilesModule,
-    reviewDetailModule,
-    reviewIpcModule,
-    rulesModule,
-  ] = await Promise.all([
-    import("@/lib/home-dashboard"),
-    import("@/lib/llm-profiles"),
-    import("@/lib/review-detail"),
-    import("@/lib/review-ipc"),
-    import("@/lib/rules"),
-  ]);
-
-  return {
-    getHomeDashboardData: homeDashboardModule.getHomeDashboardData,
-    deleteLlmProfile: llmProfilesModule.deleteLlmProfile,
-    getModelDashboardData: llmProfilesModule.getModelDashboardData,
-    saveLlmProfile: llmProfilesModule.saveLlmProfile,
-    toggleLlmProfileEnabled: llmProfilesModule.toggleLlmProfileEnabled,
-    getReviewDetailData: reviewDetailModule.getReviewDetailData,
-    deleteSelectedReviewJobs: reviewIpcModule.deleteSelectedReviewJobs,
-    exportReviewListFile: reviewIpcModule.exportReviewListFile,
-    exportReviewReportArchive: reviewIpcModule.exportReviewReportArchive,
-    retryReviewJobById: reviewIpcModule.retryReviewJobById,
-    getRuleDashboardData: rulesModule.getRuleDashboardData,
-    saveRule: rulesModule.saveRule,
-    toggleRuleEnabled: rulesModule.toggleRuleEnabled,
-  };
-}
 
 function configureUserDataPath() {
   const overridePath = process.env.PLREVIEW_DESKTOP_USER_DATA_PATH?.trim();

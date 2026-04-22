@@ -80,6 +80,8 @@ describe("RulesTable", () => {
     expect(screen.getByText("规则库")).toBeInTheDocument();
     expect(screen.getByText("共 2 条规则 · 当前显示 2 条")).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "规则表格" }).closest(".desktop-table-card")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "编辑 目标清晰度" })).toHaveClass("table-text-button");
+    expect(screen.getAllByRole("button", { name: "停用" })[0]).toHaveClass("table-text-button");
   });
 
   it("filters rows locally and opens the editor drawer from the row action", async () => {

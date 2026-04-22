@@ -99,6 +99,32 @@ async function triggerDownload(payload: DesktopBinaryPayload, fallbackFilename: 
   }
 }
 
+function RefreshIcon({ spinning = false }: { spinning?: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={spinning ? "refresh-icon is-spinning" : "refresh-icon"}
+      fill="none"
+      viewBox="0 0 16 16"
+    >
+      <path
+        d="M13.5 3.5V6.5H10.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M13 6.1A5.5 5.5 0 1 0 13.2 10.8"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
 export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
   const [reviews, setReviews] = useState(items);
   const [query, setQuery] = useState("");
@@ -441,56 +467,69 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
         <div className="desktop-table-toolbar-actions">
           <p className="muted">支持按标题、文件名、批次名、模型名和状态快速筛选。</p>
           <button
-            className="button-ghost button-inline"
+            aria-label="刷新任务列表"
+            className="icon-button"
             disabled={isRefreshing}
             onClick={() => void handleManualRefresh()}
             type="button"
+            title={isRefreshing ? "正在刷新任务列表" : "刷新任务列表"}
           >
-            {isRefreshing ? "刷新中..." : "立即刷新"}
+            <RefreshIcon spinning={isRefreshing} />
           </button>
         </div>
       </div>
 
-      {hasSelection ? (
+      <div
+        aria-label="批量操作"
+        className="review-bulk-toolbar-shell"
+        data-active={hasSelection ? "true" : "false"}
+        role="toolbar"
+      >
         <div className="review-bulk-toolbar">
           <div className="review-bulk-toolbar-copy">
-            <p className="section-copy">已选中 {selectedCount} 条</p>
+            <p className="section-copy">
+              {hasSelection ? `已选中 ${selectedCount} 条` : "选择任务后可批量导出或删除。"}
+            </p>
             {allFilteredMode ? <span className="pill pill-accent">全部筛选结果</span> : null}
           </div>
           <div className="review-bulk-toolbar-actions">
-            <button className="button-ghost button-inline" onClick={toggleAllFilteredSelection} type="button">
+            {hasSelection ? (
+              <>
+                <button className="table-text-button" onClick={toggleAllFilteredSelection} type="button">
               {allFilteredSelected ? "取消全选筛选结果" : "全选筛选结果"}
-            </button>
-            <button className="button-ghost button-inline" onClick={clearSelection} type="button">
+                </button>
+                <button className="table-text-button" onClick={clearSelection} type="button">
               清除选择
-            </button>
-            <button
-              className="button-ghost button-inline"
-              disabled={isBulkWorking}
-              onClick={() => void runBulkExport("export-list")}
-              type="button"
-            >
+                </button>
+                <button
+                  className="table-text-button"
+                  disabled={isBulkWorking}
+                  onClick={() => void runBulkExport("export-list")}
+                  type="button"
+                >
               导出清单
-            </button>
-            <button
-              className="button-ghost button-inline"
-              disabled={isBulkWorking}
-              onClick={() => void runBulkExport("export-report")}
-              type="button"
-            >
+                </button>
+                <button
+                  className="table-text-button"
+                  disabled={isBulkWorking}
+                  onClick={() => void runBulkExport("export-report")}
+                  type="button"
+                >
               导出报告
-            </button>
-            <button
-              className="button-secondary button-inline"
-              disabled={isBulkWorking}
-              onClick={() => setDeleteScope({ mode: "selection" })}
-              type="button"
-            >
+                </button>
+                <button
+                  className="table-text-button is-danger"
+                  disabled={isBulkWorking}
+                  onClick={() => setDeleteScope({ mode: "selection" })}
+                  type="button"
+                >
               删除
-            </button>
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
-      ) : null}
+      </div>
 
       <ConfirmDialog
         confirmBusyLabel="删除中..."
@@ -535,12 +574,12 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                 <th scope="col">状态</th>
                 <th scope="col">标题</th>
                 <th scope="col">文件</th>
-                <th scope="col">批次</th>
-                <th scope="col">模型</th>
-                <th scope="col">问题数</th>
-                <th scope="col">评分</th>
-                <th scope="col">创建时间</th>
-                <th scope="col">操作</th>
+                <th scope="col" className="table-nowrap">批次</th>
+                <th scope="col" className="table-nowrap">模型</th>
+                <th scope="col" className="table-nowrap">问题数</th>
+                <th scope="col" className="table-nowrap">评分</th>
+                <th scope="col" className="table-nowrap">创建时间</th>
+                <th scope="col" className="table-nowrap">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -566,8 +605,8 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                     </td>
                     <td>
                       <div className="stack table-cell-stack">
-                        <strong>{item.title}</strong>
-                        <span className="muted">
+                        <span className="table-cell-primary">{item.title}</span>
+                        <span className="table-cell-secondary">
                           {item.finishedAt
                             ? `完成于 ${formatDate(item.finishedAt)}`
                             : "结果生成后会显示完成时间"}
@@ -576,21 +615,21 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                     </td>
                     <td>
                       <div className="stack table-cell-stack">
-                        <span>{item.filename}</span>
-                        <span className="muted">{item.fileType}</span>
+                        <span className="table-cell-primary">{item.filename}</span>
+                        <span className="table-cell-secondary">{item.fileType}</span>
                       </div>
                     </td>
-                    <td>{item.batchName ?? "单任务"}</td>
-                    <td>{item.modelName}</td>
-                    <td>{item.annotationsCount}</td>
-                    <td>{item.overallScore ?? "--"}</td>
-                    <td>{formatDate(item.createdAt)}</td>
-                    <td>
+                    <td className="table-nowrap">{item.batchName ?? "单任务"}</td>
+                    <td className="table-nowrap">{item.modelName}</td>
+                    <td className="table-nowrap">{item.annotationsCount}</td>
+                    <td className="table-nowrap">{item.overallScore ?? "--"}</td>
+                    <td className="table-nowrap">{formatDate(item.createdAt)}</td>
+                    <td className="table-nowrap">
                       <div className="table-actions">
                         {canRetryReview(item.status) ? (
                           <button
                             aria-label={`重试评审任务 ${item.title}`}
-                            className="button-ghost button-inline"
+                            className="table-text-button"
                             disabled={isBulkWorking}
                             onClick={() => void retrySingleReview(item.id)}
                             type="button"
@@ -600,7 +639,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                         ) : null}
                         {canOpenReview(item.status) ? (
                           <Link
-                            className="button-ghost button-inline"
+                            className="table-text-link"
                             href={`/reviews/detail?id=${encodeURIComponent(item.id)}`}
                           >
                             查看详情
@@ -610,7 +649,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                         )}
                         <button
                           aria-label={`删除评审任务 ${item.title}`}
-                          className="button-ghost button-inline"
+                          className="table-text-button is-danger"
                           disabled={isBulkWorking}
                           onClick={() => setDeleteScope({ mode: "row", reviewId: item.id })}
                           type="button"
