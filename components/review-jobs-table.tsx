@@ -557,11 +557,21 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
           </Link>
         </div>
       ) : (
-        <div className="table-shell">
+        <div className="table-shell review-jobs-table">
           <table aria-label="评审任务表格" className="data-table">
+            <colgroup>
+              <col className="review-job-selection-col" />
+              <col className="review-job-status-col" />
+              <col className="review-job-title-col" />
+              <col className="review-job-file-col" />
+              <col className="review-job-meta-col" />
+              <col className="review-job-created-col" />
+              <col className="review-job-action-col" />
+            </colgroup>
             <thead>
               <tr>
                 <th scope="col" className="table-selection-head">
+                  选择
                   <input
                     aria-label="选择当前筛选结果"
                     checked={allFilteredSelected}
@@ -572,20 +582,17 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                   />
                 </th>
                 <th scope="col">状态</th>
-                <th scope="col">标题</th>
+                <th scope="col">任务</th>
                 <th scope="col">文件</th>
-                <th scope="col" className="table-nowrap">批次</th>
-                <th scope="col" className="table-nowrap">模型</th>
-                <th scope="col" className="table-nowrap">问题数</th>
-                <th scope="col" className="table-nowrap">评分</th>
-                <th scope="col" className="table-nowrap">创建时间</th>
-                <th scope="col" className="table-nowrap">操作</th>
+                <th scope="col">评审信息</th>
+                <th scope="col">创建时间</th>
+                <th scope="col" className="review-job-action-cell table-action-cell table-nowrap">操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td className="muted" colSpan={10}>
+                  <td className="muted" colSpan={7}>
                     没有匹配的评审任务，试试换一个关键词。
                   </td>
                 </tr>
@@ -603,7 +610,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                     <td>
                       <StatusBadge status={item.status} />
                     </td>
-                    <td>
+                    <th className="review-job-title-cell" scope="row">
                       <div className="stack table-cell-stack">
                         <span className="table-cell-primary">{item.title}</span>
                         <span className="table-cell-secondary">
@@ -612,20 +619,27 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
                             : "结果生成后会显示完成时间"}
                         </span>
                       </div>
-                    </td>
-                    <td>
+                    </th>
+                    <td className="review-job-file-cell">
                       <div className="stack table-cell-stack">
                         <span className="table-cell-primary">{item.filename}</span>
                         <span className="table-cell-secondary">{item.fileType}</span>
                       </div>
                     </td>
-                    <td className="table-nowrap">{item.batchName ?? "单任务"}</td>
-                    <td className="table-nowrap">{item.modelName}</td>
-                    <td className="table-nowrap">{item.annotationsCount}</td>
-                    <td className="table-nowrap">{item.overallScore ?? "--"}</td>
-                    <td className="table-nowrap">{formatDate(item.createdAt)}</td>
-                    <td className="table-nowrap">
-                      <div className="table-actions">
+                    <td className="review-job-meta-cell">
+                      <div className="stack table-cell-stack">
+                        <span className="table-cell-primary">{item.batchName ?? "单任务"}</span>
+                        <span className="table-cell-secondary">{item.modelName}</span>
+                        <span className="table-cell-secondary">
+                          {`${item.annotationsCount} 个问题 · ${
+                            item.overallScore === null ? "暂无评分" : `评分 ${item.overallScore} 分`
+                          }`}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="review-job-created-cell table-nowrap">{formatDate(item.createdAt)}</td>
+                    <td className="review-job-action-cell table-action-cell table-nowrap">
+                      <div className="table-row-actions">
                         {canRetryReview(item.status) ? (
                           <button
                             aria-label={`重试评审任务 ${item.title}`}

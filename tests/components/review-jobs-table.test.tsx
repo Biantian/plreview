@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { isInaccessible, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -202,6 +202,89 @@ describe("ReviewJobsTable", () => {
     expect(screen.getByRole("button", { name: "删除评审任务 玩法复盘" })).toHaveClass(
       "table-text-button",
     );
+  });
+
+  it("renders a bounded reviews table while keeping key fields in separate scan columns", () => {
+    const review = createReview({
+      annotationsCount: 5,
+      batchName: "四月批次",
+      fileType: "PDF",
+      filename: "玩法说明.docx",
+      modelName: "gpt-4.1",
+      overallScore: 92,
+      title: "玩法复盘",
+    });
+
+    render(<ReviewJobsTable items={[review]} />);
+
+    const table = screen.getByRole("table", { name: "评审任务表格" });
+    const headers = within(table)
+      .getAllByRole("columnheader")
+      .filter((header) => !isInaccessible(header))
+      .map((header) => header.textContent?.replace(/\s+/g, " ").trim() ?? "");
+
+    expect(headers).toEqual(["选择", "状态", "任务", "文件", "评审信息", "创建时间", "操作"]);
+
+    const reviewRow = within(table)
+      .getAllByRole("row")
+      .find((row) => within(row).queryByText("玩法复盘"));
+
+    expect(reviewRow).toBeDefined();
+    expect(within(reviewRow as HTMLElement).getByText("玩法复盘")).toBeVisible();
+    expect(within(reviewRow as HTMLElement).getByText("玩法说明.docx")).toBeVisible();
+    expect(within(reviewRow as HTMLElement).getByText("PDF")).toBeVisible();
+    expect(within(reviewRow as HTMLElement).getByText("四月批次")).toBeVisible();
+    expect(within(reviewRow as HTMLElement).getByText("gpt-4.1")).toBeVisible();
+    expect(within(reviewRow as HTMLElement).getByText(/5\s*个问题/u)).toBeVisible();
+    expect(within(reviewRow as HTMLElement).getByText(/评分\s*92\s*分/u)).toBeVisible();
+    expect(
+      within(reviewRow as HTMLElement).getByRole("button", { name: "删除评审任务 玩法复盘" }),
+    ).toBeVisible();
+  });
+
+  it("renders the required review-table hook classes in row markup", () => {
+    render(<ReviewJobsTable items={[createReview()]} />);
+
+    const table = screen.getByRole("table", { name: "评审任务表格" });
+    const columnClasses = Array.from(table.querySelectorAll("col")).map((column) =>
+      column.getAttribute("class"),
+    );
+    const reviewTableRegion = table.closest(".review-jobs-table");
+    const reviewRow = within(table)
+      .getAllByRole("row")
+      .find((row) => within(row).queryByText("玩法复盘"));
+
+    expect(columnClasses).toEqual([
+      "review-job-selection-col",
+      "review-job-status-col",
+      "review-job-title-col",
+      "review-job-file-col",
+      "review-job-meta-col",
+      "review-job-created-col",
+      "review-job-action-col",
+    ]);
+    expect(reviewTableRegion).not.toBeNull();
+    expect(reviewRow).toBeDefined();
+    const rowHeader = within(reviewRow as HTMLElement).getByRole("rowheader", { name: /玩法复盘/u });
+    const rowCells = within(reviewRow as HTMLElement).getAllByRole("cell");
+    const mainInfoCell = rowHeader.classList.contains("review-job-title-cell") ? rowHeader : null;
+    const fileCell = rowCells.find((cell) => cell.classList.contains("review-job-file-cell"));
+    const metaCell = rowCells.find((cell) => cell.classList.contains("review-job-meta-cell"));
+    const createdCell = rowCells.find((cell) => cell.classList.contains("review-job-created-cell"));
+    const actionCell = rowCells.find((cell) => cell.classList.contains("review-job-action-cell"));
+    const actionRow = actionCell?.querySelector(".table-row-actions");
+    expect(mainInfoCell).not.toBeNull();
+    expect(fileCell).not.toBeNull();
+    expect(fileCell).toHaveTextContent("docx");
+    expect(metaCell).not.toBeNull();
+    expect(metaCell).toHaveTextContent("qwen-plus");
+    expect(createdCell).not.toBeNull();
+    expect(actionCell).not.toBeNull();
+    expect(actionCell).toHaveClass("table-action-cell", "table-nowrap");
+    expect(actionRow).not.toBeNull();
+    expect(
+      within(actionCell as HTMLElement).getByRole("button", { name: "删除评审任务 玩法复盘" }),
+    ).toBeVisible();
   });
 
   it("deletes a single review through the desktop bridge", async () => {

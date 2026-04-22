@@ -7,13 +7,25 @@ const globalsCss = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8
 
 describe("globals shell styles", () => {
   const getRuleBody = (selector: string) => {
-    const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const blockRegex = new RegExp(`${escapedSelector}\\s*\\{([\\s\\S]*?)\\}`, "m");
-    const match = globalsCss.match(blockRegex);
+    const normalizedSelector = selector.replace(/\s+/g, " ").trim();
+    const blockRegex = /([^{}]+)\{([^{}]*)\}/g;
+    let match: RegExpExecArray | null = null;
+
+    for (const candidate of globalsCss.matchAll(blockRegex)) {
+      const prelude = candidate[1].replace(/\s+/g, " ").trim();
+      const selectors = candidate[1]
+        .split(",")
+        .map((part) => part.replace(/\s+/g, " ").trim());
+
+      if (prelude === normalizedSelector || selectors.includes(normalizedSelector)) {
+        match = candidate;
+        break;
+      }
+    }
 
     expect(match, `missing CSS rule for ${selector}`).not.toBeNull();
 
-    return match?.[1] ?? "";
+    return match?.[2] ?? "";
   };
 
   const hasRule = (selector: string, required: string[]) => {
@@ -21,6 +33,27 @@ describe("globals shell styles", () => {
 
     for (const token of required) {
       expect(body, `expected ${selector} to contain ${token}`).toContain(token);
+    }
+  };
+
+  const hasAnyRule = (selectors: string[], required: string[]) => {
+    let matchedSelector: string | null = null;
+    let body = "";
+
+    for (const selector of selectors) {
+      try {
+        body = getRuleBody(selector);
+        matchedSelector = selector;
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    expect(matchedSelector, `missing CSS rule for ${selectors.join(" or ")}`).not.toBeNull();
+
+    for (const token of required) {
+      expect(body, `expected ${matchedSelector} to contain ${token}`).toContain(token);
     }
   };
 
@@ -78,6 +111,52 @@ describe("globals shell styles", () => {
     hasRule(".table-cell-primary", ["font-weight: 600;"]);
     hasRule(".table-cell-secondary", ["font-size: 12px;"]);
     hasRule(".icon-button", ["width: 32px;", "height: 32px;"]);
+  });
+
+  it("defines compact review table layout guards for the review-specific hook classes", () => {
+    hasRule(".review-jobs-table", [
+      "container-type: inline-size;",
+      "width: 100%;",
+      "min-width: 0;",
+      "overflow-x: hidden;",
+    ]);
+    hasRule(".review-jobs-table .data-table", [
+      "width: 100%;",
+      "min-width: 0;",
+      "table-layout: fixed;",
+    ]);
+    hasRule(".review-job-selection-col", ["width: 48px;"]);
+    hasRule(".review-job-status-col", ["width: 112px;"]);
+    hasRule(".review-job-file-col", ["width: 180px;"]);
+    hasRule(".review-job-meta-col", ["width: 180px;"]);
+    hasRule(".review-job-created-col", ["width: 130px;"]);
+    hasRule(".review-job-action-col", ["width: 176px;"]);
+    hasRule(".review-jobs-table .review-job-title-cell", ["min-width: 0;", "overflow: hidden;"]);
+    hasRule(".review-jobs-table .review-job-file-cell", ["min-width: 0;", "overflow: hidden;"]);
+    hasRule(".review-jobs-table .review-job-meta-cell", ["min-width: 0;", "overflow: hidden;"]);
+    hasRule(".review-jobs-table .review-job-created-cell", ["min-width: 0;", "overflow: hidden;"]);
+    expect(globalsCss).toContain(
+      ".review-jobs-table .review-job-created-cell {\n  text-overflow: ellipsis;",
+    );
+    hasRule(".review-jobs-table .review-job-action-cell", [
+      "width: 176px;",
+      "white-space: nowrap;",
+    ]);
+    expect(getRuleBody(".review-jobs-table .review-job-action-cell")).not.toContain("width: 1%;");
+    hasAnyRule([".review-jobs-table .table-row-actions", ".review-job-action-cell .table-row-actions"], [
+      "display: inline-flex;",
+      "flex-wrap: nowrap;",
+    ]);
+    expect(globalsCss).toContain("@container (max-width: 900px)");
+    expect(globalsCss).toContain(".review-job-file-col {\n    width: 130px;");
+    expect(globalsCss).toContain(".review-job-meta-col {\n    width: 142px;");
+    expect(globalsCss).toContain(".review-job-created-col {\n    width: 126px;");
+    expect(globalsCss).toContain(".review-job-action-col {\n    width: 148px;");
+    expect(globalsCss).toContain("@container (max-width: 800px)");
+    expect(globalsCss).toContain(".review-job-file-col {\n    width: 112px;");
+    expect(globalsCss).toContain(".review-job-meta-col {\n    width: 126px;");
+    expect(globalsCss).toContain(".review-job-created-col {\n    width: 124px;");
+    expect(globalsCss).toContain(".review-job-action-col {\n    width: 138px;");
   });
 
   it("defines the docs workspace as fixed master-detail panes with dedicated scrolling", () => {
