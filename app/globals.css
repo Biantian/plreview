@@ -1818,8 +1818,7 @@ svg {
   outline-offset: 2px;
 }
 
-.form-overlay,
-.form-overlay-backdrop {
+.form-overlay {
   position: fixed;
   inset: 0;
   z-index: 55;
@@ -1832,22 +1831,23 @@ svg {
   overflow: hidden;
 }
 
-.form-overlay-backdrop {
-  background: rgba(10, 18, 28, 0.5);
-}
-
 .form-overlay::backdrop {
   background: rgba(10, 18, 28, 0.5);
 }
 
-.form-overlay[data-overlay-mode="drawer"],
-.form-overlay-backdrop[data-overlay-mode="drawer"] {
+.form-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(10, 18, 28, 0.5);
+}
+
+.form-overlay[data-overlay-mode="drawer"] {
   align-items: stretch;
   justify-content: flex-end;
 }
 
-.form-overlay[data-overlay-mode="dialog"],
-.form-overlay-backdrop[data-overlay-mode="dialog"] {
+.form-overlay[data-overlay-mode="dialog"] {
   align-items: center;
   justify-content: center;
 }
@@ -1867,14 +1867,12 @@ svg {
   box-shadow: var(--shadow-lg);
 }
 
-.form-overlay[data-overlay-mode="drawer"] .form-overlay-panel,
-.form-overlay-backdrop[data-overlay-mode="drawer"] .form-overlay-panel {
+.form-overlay[data-overlay-mode="drawer"] .form-overlay-panel {
   width: min(720px, 100%);
   justify-self: end;
 }
 
-.form-overlay[data-overlay-mode="dialog"] .form-overlay-panel,
-.form-overlay-backdrop[data-overlay-mode="dialog"] .form-overlay-panel {
+.form-overlay[data-overlay-mode="dialog"] .form-overlay-panel {
   width: min(640px, 100%);
 }
 
