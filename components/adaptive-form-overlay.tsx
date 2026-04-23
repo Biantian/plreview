@@ -13,7 +13,7 @@ import {
 export type OverlayMode = "drawer" | "dialog";
 
 const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'button:not([disabled]):not([hidden]), [href]:not([hidden]), input:not([disabled]):not([type="hidden"]):not([hidden]), select:not([disabled]):not([hidden]), textarea:not([disabled]):not([hidden]), [tabindex]:not([tabindex="-1"]):not([hidden])';
 
 export function getOverlayMode(width: number, height: number): OverlayMode {
   return width >= 1180 && height >= 760 ? "drawer" : "dialog";
@@ -49,13 +49,27 @@ export function AdaptiveFormOverlay({
       return;
     }
 
+    const dialog = overlayRef.current;
+
+    if (!dialog) {
+      return;
+    }
+
     previousActiveElementRef.current = document.activeElement as HTMLElement | null;
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     setMode(getOverlayMode(window.innerWidth, window.innerHeight));
 
-    const focusable = overlayRef.current?.querySelectorAll<HTMLElement>(".form-overlay-body " + FOCUSABLE_SELECTOR);
-    (focusable?.[0] ?? overlayRef.current)?.focus();
+    if (typeof dialog.showModal === "function") {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+    } else {
+      dialog.setAttribute("open", "");
+    }
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(".form-overlay-body " + FOCUSABLE_SELECTOR);
+    (focusable?.[0] ?? dialog)?.focus();
 
     const handleResize = () => {
       setMode(getOverlayMode(window.innerWidth, window.innerHeight));
@@ -66,6 +80,11 @@ export function AdaptiveFormOverlay({
     return () => {
       window.removeEventListener("resize", handleResize);
       document.body.style.overflow = previousBodyOverflow;
+      if (typeof dialog.close === "function" && dialog.open) {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
       previousActiveElementRef.current?.focus?.();
       previousActiveElementRef.current = null;
     };
@@ -129,13 +148,11 @@ export function AdaptiveFormOverlay({
     <dialog
       aria-describedby={description ? descriptionId : undefined}
       aria-labelledby={titleId}
-      aria-modal="true"
       className="form-overlay"
       data-overlay-mode={mode}
       onCancel={handleCancel}
       onKeyDown={handleKeyDown}
       ref={overlayRef}
-      open
       role="dialog"
       tabIndex={-1}
     >

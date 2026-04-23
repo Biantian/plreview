@@ -14,6 +14,7 @@ function OverlayHarness() {
         Open overlay
       </button>
       <AdaptiveFormOverlay open={open} onClose={() => setOpen(false)} title="编辑信息">
+        <input data-testid="hidden-field" type="hidden" value="secret" />
         <label>
           名称
           <input aria-label="名称" defaultValue="" />
@@ -37,6 +38,7 @@ describe("AdaptiveFormOverlay", () => {
 
     const input = screen.getByLabelText("名称");
     expect(input).toHaveFocus();
+    expect(screen.getByTestId("hidden-field")).not.toHaveFocus();
 
     await user.keyboard("{Escape}");
 
@@ -52,33 +54,35 @@ describe("AdaptiveFormOverlay", () => {
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
 
-    window.innerWidth = 1280;
-    window.innerHeight = 900;
+    try {
+      window.innerWidth = 1280;
+      window.innerHeight = 900;
 
-    render(<OverlayHarness />);
+      render(<OverlayHarness />);
 
-    await user.click(screen.getByRole("button", { name: "Open overlay" }));
+      await user.click(screen.getByRole("button", { name: "Open overlay" }));
 
-    const overlay = screen.getByRole("dialog");
-    const input = screen.getByLabelText("名称") as HTMLInputElement;
+      const overlay = screen.getByRole("dialog");
+      const input = screen.getByLabelText("名称") as HTMLInputElement;
 
-    expect(overlay.tagName).toBe("DIALOG");
-    expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
+      expect(overlay.tagName).toBe("DIALOG");
+      expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
 
-    await user.type(input, "已填写的内容");
-    expect(input.value).toBe("已填写的内容");
+      await user.type(input, "已填写的内容");
+      expect(input.value).toBe("已填写的内容");
 
-    window.innerWidth = 1024;
-    window.innerHeight = 700;
-    fireEvent(window, new Event("resize"));
+      window.innerWidth = 1024;
+      window.innerHeight = 700;
+      fireEvent(window, new Event("resize"));
 
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toHaveAttribute("data-overlay-mode", "dialog");
-    });
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toHaveAttribute("data-overlay-mode", "dialog");
+      });
 
-    expect(screen.getByLabelText("名称")).toHaveValue("已填写的内容");
-
-    window.innerWidth = originalInnerWidth;
-    window.innerHeight = originalInnerHeight;
+      expect(screen.getByLabelText("名称")).toHaveValue("已填写的内容");
+    } finally {
+      window.innerWidth = originalInnerWidth;
+      window.innerHeight = originalInnerHeight;
+    }
   });
 });
