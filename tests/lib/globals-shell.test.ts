@@ -80,12 +80,6 @@ describe("globals shell styles", () => {
       "justify-content: center;",
       "overflow: hidden;",
     ]);
-    hasRule(".form-overlay-backdrop", [
-      "position: fixed;",
-      "inset: 0;",
-      "z-index: 55;",
-      "background: rgba(10, 18, 28, 0.5);",
-    ]);
     hasRule(".form-overlay::backdrop", ["background: rgba(10, 18, 28, 0.5);"]);
     hasRule(".form-overlay-panel", [
       "display: grid;",

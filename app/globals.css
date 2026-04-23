@@ -1835,13 +1835,6 @@ svg {
   background: rgba(10, 18, 28, 0.5);
 }
 
-.form-overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-  background: rgba(10, 18, 28, 0.5);
-}
-
 .form-overlay[data-overlay-mode="drawer"] {
   align-items: stretch;
   justify-content: flex-end;
