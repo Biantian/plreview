@@ -33,6 +33,8 @@ describe("AdaptiveFormOverlay", () => {
 
     await user.click(trigger);
 
+    expect(screen.getByRole("dialog").tagName).toBe("DIALOG");
+
     const input = screen.getByLabelText("名称");
     expect(input).toHaveFocus();
 
@@ -60,6 +62,7 @@ describe("AdaptiveFormOverlay", () => {
     const overlay = screen.getByRole("dialog");
     const input = screen.getByLabelText("名称") as HTMLInputElement;
 
+    expect(overlay.tagName).toBe("DIALOG");
     expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
 
     await user.type(input, "已填写的内容");

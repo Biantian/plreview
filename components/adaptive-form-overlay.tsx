@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type SyntheticEvent,
   type ReactNode,
 } from "react";
 
@@ -37,7 +38,7 @@ export function AdaptiveFormOverlay({
 }: AdaptiveFormOverlayProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDialogElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<OverlayMode>(() =>
     typeof window === "undefined" ? "dialog" : getOverlayMode(window.innerWidth, window.innerHeight),
@@ -77,10 +78,19 @@ export function AdaptiveFormOverlay({
   const getFocusableElements = () =>
     Array.from(overlayRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []);
 
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+  const handleClose = () => {
+    onClose();
+  };
+
+  const handleCancel = (event: SyntheticEvent<HTMLDialogElement, Event>) => {
+    event.preventDefault();
+    handleClose();
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDialogElement>) => {
     if (event.key === "Escape") {
       event.preventDefault();
-      onClose();
+      handleClose();
       return;
     }
 
@@ -116,14 +126,16 @@ export function AdaptiveFormOverlay({
   };
 
   return (
-    <div
+    <dialog
       aria-describedby={description ? descriptionId : undefined}
       aria-labelledby={titleId}
       aria-modal="true"
       className="form-overlay"
       data-overlay-mode={mode}
+      onCancel={handleCancel}
       onKeyDown={handleKeyDown}
       ref={overlayRef}
+      open
       role="dialog"
       tabIndex={-1}
     >
@@ -141,6 +153,6 @@ export function AdaptiveFormOverlay({
       <div className="form-overlay-body">{children}</div>
 
       {footer ? <footer className="form-overlay-footer">{footer}</footer> : null}
-    </div>
+    </dialog>
   );
 }
