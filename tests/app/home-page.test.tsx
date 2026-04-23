@@ -119,6 +119,30 @@ describe("HomePage", () => {
     expect(within(readinessPane).getByText("qwen-plus")).toBeInTheDocument();
   });
 
+  it("keeps empty recent reviews and empty model state inside their panes", async () => {
+    installDesktopApi({
+      getHomeDashboard: vi.fn().mockResolvedValue({
+        ...DASHBOARD_FIXTURE,
+        recentReviews: [],
+        llmProfiles: [],
+      }),
+    });
+
+    render(<HomePage />);
+
+    await waitFor(() => expect(screen.getByText("还没有评审记录")).toBeInTheDocument());
+
+    const recentPane = screen.getByTestId("home-recent-reviews-pane");
+    const readinessPane = screen.getByTestId("home-readiness-pane");
+
+    expect(within(recentPane).getByText("还没有评审记录")).toBeInTheDocument();
+    expect(within(recentPane).getByText("创建新评审后，这里会显示结果。")).toBeInTheDocument();
+    expect(within(readinessPane).getByText("当前没有启用模型配置")).toBeInTheDocument();
+    expect(
+      within(readinessPane).getByText("先去模型配置页启用一个配置后再开始批次。"),
+    ).toBeInTheDocument();
+  });
+
   it("keeps the cockpit frame visible when dashboard loading fails", async () => {
     installDesktopApi({
       getHomeDashboard: vi.fn().mockRejectedValue(new Error("dashboard unavailable")),
