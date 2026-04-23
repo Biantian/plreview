@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AdaptiveFormOverlay } from "@/components/adaptive-form-overlay";
+import { AdaptiveFormOverlay, getOverlayMode } from "@/components/adaptive-form-overlay";
 
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
@@ -61,6 +61,14 @@ describe("AdaptiveFormOverlay", () => {
     });
   });
 
+  it("maps overlay mode at the boundary thresholds", () => {
+    expect(getOverlayMode(1179, 759)).toBe("dialog");
+    expect(getOverlayMode(1180, 759)).toBe("dialog");
+    expect(getOverlayMode(1179, 760)).toBe("dialog");
+    expect(getOverlayMode(1180, 760)).toBe("drawer");
+    expect(getOverlayMode(1440, 900)).toBe("drawer");
+  });
+
   it("focuses the first shell control on open, closes on Escape, and restores focus to the trigger", async () => {
     const user = userEvent.setup();
 
@@ -84,6 +92,24 @@ describe("AdaptiveFormOverlay", () => {
     });
 
     expect(trigger).toHaveFocus();
+  });
+
+  it("falls back to focusing the panel when the shell has no focusable controls", async () => {
+    const querySelectorAllSpy = vi
+      .spyOn(HTMLDialogElement.prototype, "querySelectorAll")
+      .mockImplementationOnce(() => [] as unknown as NodeListOf<HTMLElement>);
+
+    try {
+      render(
+        <AdaptiveFormOverlay open onClose={() => {}} title="编辑信息">
+          <p>纯文本内容</p>
+        </AdaptiveFormOverlay>,
+      );
+
+      expect(screen.getByRole("dialog").querySelector(".form-overlay-panel")).toHaveFocus();
+    } finally {
+      querySelectorAllSpy.mockRestore();
+    }
   });
 
   it("traps focus with Tab and Shift+Tab across the dialog edges", async () => {
@@ -128,6 +154,78 @@ describe("AdaptiveFormOverlay", () => {
     });
 
     expect(closeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks body scroll while open and restores it on close", async () => {
+    const user = userEvent.setup();
+    const originalOverflow = document.body.style.overflow;
+
+    try {
+      document.body.style.overflow = "scroll";
+
+      render(<OverlayHarness />);
+
+      await user.click(screen.getByRole("button", { name: "Open overlay" }));
+
+      expect(document.body.style.overflow).toBe("hidden");
+
+      await user.keyboard("{Escape}");
+
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      });
+
+      expect(document.body.style.overflow).toBe("scroll");
+    } finally {
+      document.body.style.overflow = originalOverflow;
+    }
+  });
+
+  it("renders the description, footer, and form body wrapper", () => {
+    const { container } = render(
+      <AdaptiveFormOverlay
+        description="辅助说明"
+        footer={<button type="button">保存</button>}
+        open
+        onClose={() => {}}
+        title="编辑信息"
+      >
+        <input aria-label="名称" defaultValue="" />
+      </AdaptiveFormOverlay>,
+    );
+
+    expect(screen.getByText("辅助说明")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    expect(container.querySelector(".form-overlay-body")).toBeInTheDocument();
+    expect(container.querySelector(".form-overlay-footer")).toBeInTheDocument();
+  });
+
+  it("falls back when native dialog methods are unavailable", async () => {
+    const user = userEvent.setup();
+
+    Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, "close", {
+      configurable: true,
+      value: undefined,
+    });
+
+    render(<OverlayHarness />);
+
+    await user.click(screen.getByRole("button", { name: "Open overlay" }));
+
+    const overlay = screen.getByRole("dialog");
+
+    expect(overlay).toHaveAttribute("open");
+    expect(showModalMock).not.toHaveBeenCalled();
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
   });
 
   it("switches overlay mode on resize without remounting typed form state", async () => {
