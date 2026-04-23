@@ -87,7 +87,8 @@ describe("HomePage", () => {
       "href",
       "/reviews/new",
     );
-    expect(within(commandRail).getByRole("link", { name: "创建评审批次" })).toHaveAttribute(
+    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })).toHaveLength(2);
+    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })[0]).toHaveAttribute(
       "href",
       "/reviews/new",
     );
@@ -135,7 +136,8 @@ describe("HomePage", () => {
     const readinessPane = screen.getByTestId("home-readiness-pane");
 
     expect(cockpit).toHaveClass("home-command-center");
-    expect(within(commandRail).getByRole("link", { name: "创建评审批次" })).toHaveAttribute(
+    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })).toHaveLength(2);
+    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })[0]).toHaveAttribute(
       "href",
       "/reviews/new",
     );

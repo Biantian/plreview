@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { startTransition, useEffect, useState } from "react";
 
-import type { HomeDashboardData } from "@/desktop/bridge/desktop-api";
 import { PageIntro } from "@/components/page-intro";
 import { StatusBadge } from "@/components/status-badge";
+import type { HomeDashboardData } from "@/desktop/bridge/desktop-api";
 import { formatDate } from "@/lib/utils";
 
 const EMPTY_HOME_DASHBOARD: HomeDashboardData = {
@@ -17,6 +17,44 @@ const EMPTY_HOME_DASHBOARD: HomeDashboardData = {
   recentReviews: [],
   llmProfiles: [],
 };
+
+type HomeDashboardViewState = {
+  dashboard: HomeDashboardData;
+  errorMessage: string | null;
+  isLoading: boolean;
+};
+
+type MetricItem = {
+  label: string;
+  value: number;
+};
+
+const QUICK_LINKS = [
+  {
+    description: "查看任务列表、进度和结果。",
+    href: "/reviews",
+    label: "查看评审任务",
+    tag: "任务",
+  },
+  {
+    description: "导入文档并启动评审。",
+    href: "/reviews/new",
+    label: "创建评审批次",
+    tag: "新建",
+  },
+  {
+    description: "维护规则和提示词模板。",
+    href: "/rules",
+    label: "维护规则库",
+    tag: "规则",
+  },
+  {
+    description: "管理可用于评审的模型。",
+    href: "/models",
+    label: "管理模型配置",
+    tag: "模型",
+  },
+] as const;
 
 export default function HomePage() {
   const [dashboard, setDashboard] = useState<HomeDashboardData>(EMPTY_HOME_DASHBOARD);
@@ -62,242 +100,246 @@ export default function HomePage() {
     };
   }, []);
 
-  if (!isLoading && errorMessage) {
-    return (
-      <div className="desktop-dashboard stack-lg">
-        <section className="panel stack-lg desktop-dashboard-header">
-          <PageIntro
-            actions={
-              <Link className="button" href="/reviews/new">
-                开始新批次
-              </Link>
-            }
-            description="查看任务、配置和最近结果。"
-            eyebrow="Workspace"
-            title="评审工作台"
-          />
-          <p className="section-copy">加载失败：{errorMessage}</p>
-          <p className="section-copy">请确认桌面桥接可用后重试。</p>
-        </section>
-      </div>
-    );
-  }
+  const viewState = { dashboard, errorMessage, isLoading };
 
   return (
-    <div className="desktop-dashboard stack-lg">
-      <section className="panel stack-lg desktop-dashboard-header">
-        <div className="desktop-heading-grid">
-          <PageIntro
-            actions={
-              <Link className="button" href="/reviews/new">
-                开始新批次
+    <div className="home-command-center" data-testid="home-desktop-cockpit">
+      <header className="home-command-header" data-testid="home-command-header">
+        <PageIntro
+          actions={
+            <Link className="button" href="/reviews/new">
+              开始新批次
+            </Link>
+          }
+          description="从这里进入任务、规则、模型配置和最近结果。"
+          eyebrow="Workspace"
+          title="评审工作台"
+        />
+      </header>
+
+      <section className="home-cockpit-grid" aria-label="工作台概览">
+        <HomeCommandRail dashboard={dashboard} />
+        <HomeRecentReviewsPane {...viewState} />
+        <HomeReadinessPane {...viewState} />
+      </section>
+    </div>
+  );
+}
+
+function HomeCommandRail({ dashboard }: Pick<HomeDashboardViewState, "dashboard">) {
+  const metrics: MetricItem[] = [
+    { label: "已导入文档", value: dashboard.documentsCount },
+    { label: "评审任务", value: dashboard.reviewJobsCount },
+    { label: "启用规则", value: dashboard.enabledRulesCount },
+    { label: "问题标注", value: dashboard.annotationsCount },
+  ];
+
+  return (
+    <aside
+      className="home-command-rail"
+      data-testid="home-command-rail"
+      aria-label="工作台常用操作"
+    >
+      <Link className="home-primary-action" href="/reviews/new" aria-label="创建评审批次">
+        <span>
+          <span className="section-eyebrow">Primary action</span>
+          <strong>创建评审批次</strong>
+        </span>
+        <span className="home-action-arrow" aria-hidden="true">
+          →
+        </span>
+      </Link>
+
+      <div className="home-quick-links" aria-label="常用入口">
+        {QUICK_LINKS.map((link) => (
+          <Link
+            className="home-quick-link"
+            href={link.href}
+            key={link.href}
+            aria-label={link.label}
+          >
+            <span className="home-quick-link-copy">
+              <strong>{link.label}</strong>
+              <span>{link.description}</span>
+            </span>
+            <span className="pill pill-brand">{link.tag}</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="home-metric-grid" aria-label="工作台指标">
+        {metrics.map((metric) => (
+          <div className="home-metric-card" key={metric.label}>
+            <p className="metric-label">{metric.label}</p>
+            <strong className="metric-value">{metric.value}</strong>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function HomeRecentReviewsPane({
+  dashboard,
+  errorMessage,
+  isLoading,
+}: HomeDashboardViewState) {
+  return (
+    <section
+      className="home-pane home-recent-pane"
+      data-testid="home-recent-reviews-pane"
+      aria-labelledby="home-recent-reviews-title"
+    >
+      <PaneHeader
+        eyebrow="Recent Reviews"
+        title="最近评审"
+        id="home-recent-reviews-title"
+        description="查看最近完成、进行中或失败的任务。"
+      />
+
+      <div className="home-pane-scroll" data-testid="home-recent-scroll">
+        <div className="list">
+          {errorMessage ? (
+            <div className="list-item">
+              <div>
+                <h3>加载失败：{errorMessage}</h3>
+                <p className="muted">请确认桌面桥接可用后重试。</p>
+              </div>
+            </div>
+          ) : isLoading ? (
+            <div className="list-item">
+              <div>
+                <h3>正在读取最近评审</h3>
+                <p className="muted">桌面工作台正在从本地数据库同步状态。</p>
+              </div>
+            </div>
+          ) : dashboard.recentReviews.length === 0 ? (
+            <div className="list-item">
+              <div>
+                <h3>还没有评审记录</h3>
+                <p className="muted">创建新评审后，这里会显示结果。</p>
+              </div>
+            </div>
+          ) : (
+            dashboard.recentReviews.map((review) => (
+              <Link
+                className="list-item"
+                href={`/reviews/detail?id=${encodeURIComponent(review.id)}`}
+                key={review.id}
+              >
+                <div>
+                  <h3>{review.title}</h3>
+                  <p className="muted">
+                    {review.modelName} · {formatDate(review.createdAt)}
+                  </p>
+                </div>
+                <StatusBadge status={review.status} />
               </Link>
-            }
-            description="查看任务、配置和最近结果。"
-            eyebrow="Workspace"
-            title="评审工作台"
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HomeReadinessPane({ dashboard, errorMessage, isLoading }: HomeDashboardViewState) {
+  return (
+    <aside
+      className="home-pane home-readiness-pane"
+      data-testid="home-readiness-pane"
+      aria-labelledby="home-readiness-title"
+    >
+      <PaneHeader
+        eyebrow="Readiness"
+        title="配置准备度"
+        id="home-readiness-title"
+        description="确认规则、模型和结果阅读能力。"
+      />
+
+      <div className="home-pane-scroll" data-testid="home-readiness-scroll">
+        <div className="feature-list">
+          {errorMessage ? (
+            <FeatureRow
+              kicker="桥接"
+              title="桌面桥接不可用"
+              description="无法读取规则、模型和结果状态。"
+            />
+          ) : null}
+
+          <FeatureRow
+            kicker="规则"
+            title={`${dashboard.rulesCount} 条规则已建档`}
+            description={`${dashboard.enabledRulesCount} 条规则已启用`}
           />
 
-          <aside className="desktop-info-rail">
-            <div className="desktop-mini-card">
-              <p className="section-eyebrow">当前值班</p>
-              <h2 className="subsection-title">本地评审工位已就绪</h2>
-              <p className="section-copy">可查看文档、规则、模型和评审结果。</p>
-            </div>
+          {isLoading ? (
+            <FeatureRow
+              kicker="模型"
+              title="正在读取模型配置"
+              description="完成后会显示当前启用的桌面模型。"
+            />
+          ) : dashboard.llmProfiles.length === 0 ? (
+            <FeatureRow
+              kicker="模型"
+              title="当前没有启用模型配置"
+              description="先去模型配置页启用一个配置后再开始批次。"
+            />
+          ) : (
+            dashboard.llmProfiles.map((profile) => (
+              <FeatureRow
+                kicker={profile.provider}
+                title={profile.name}
+                description={profile.defaultModel}
+                key={profile.id}
+              />
+            ))
+          )}
 
-            <div className="desktop-mini-card">
-              <p className="section-eyebrow">今日重点</p>
-              <div className="feature-list">
-                <div className="feature-row">
-                  <span className="feature-kicker">任务</span>
-                  <div>
-                    <strong>{dashboard.reviewJobsCount} 条评审任务留存在队列中</strong>
-                    <p className="muted">可继续处理最近任务。</p>
-                  </div>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-kicker">配置</span>
-                  <div>
-                    <strong>
-                      {dashboard.enabledRulesCount} 条启用规则，{dashboard.llmProfiles.length} 个模型配置在线
-                    </strong>
-                    <p className="muted">当前配置可用于新批次。</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <FeatureRow
+            kicker="结果"
+            title="可查看报告、问题和原文位置"
+            description="结果页会显示对应内容。"
+          />
         </div>
+      </div>
+    </aside>
+  );
+}
 
-        <div className="desktop-kpi-grid">
-          <div className="metric-card">
-            <p className="metric-label">已导入文档</p>
-            <strong className="metric-value">{dashboard.documentsCount}</strong>
-          </div>
-          <div className="metric-card">
-            <p className="metric-label">评审任务</p>
-            <strong className="metric-value">{dashboard.reviewJobsCount}</strong>
-          </div>
-          <div className="metric-card">
-            <p className="metric-label">启用规则</p>
-            <strong className="metric-value">{dashboard.enabledRulesCount}</strong>
-          </div>
-          <div className="metric-card">
-            <p className="metric-label">问题标注</p>
-            <strong className="metric-value">{dashboard.annotationsCount}</strong>
-          </div>
-        </div>
-      </section>
+type PaneHeaderProps = {
+  description: string;
+  eyebrow: string;
+  id: string;
+  title: string;
+};
 
-      <section className="desktop-dashboard-grid">
-        <div className="desktop-surface stack">
-          <div>
-            <p className="section-eyebrow">Recent Reviews</p>
-            <h2 className="subsection-title">最近评审</h2>
-            <p className="section-copy">查看最近完成或失败的任务。</p>
-          </div>
+function PaneHeader({ description, eyebrow, id, title }: PaneHeaderProps) {
+  return (
+    <div className="home-pane-header">
+      <p className="section-eyebrow">{eyebrow}</p>
+      <h2 className="subsection-title" id={id}>
+        {title}
+      </h2>
+      <p className="section-copy">{description}</p>
+    </div>
+  );
+}
 
-          <div className="list">
-            {isLoading ? (
-              <div className="list-item">
-                <div>
-                  <h3>正在读取最近评审</h3>
-                  <p className="muted">桌面工作台正在从本地数据库同步状态。</p>
-                </div>
-              </div>
-            ) : dashboard.recentReviews.length === 0 ? (
-              <div className="list-item">
-                <div>
-                  <h3>还没有评审记录</h3>
-                  <p className="muted">创建新评审后，这里会显示结果。</p>
-                </div>
-              </div>
-            ) : (
-              dashboard.recentReviews.map((review) => (
-                <Link
-                  className="list-item"
-                  href={`/reviews/detail?id=${encodeURIComponent(review.id)}`}
-                  key={review.id}
-                >
-                  <div>
-                    <h3>{review.title}</h3>
-                    <p className="muted">
-                      {review.modelName} · {formatDate(review.createdAt)}
-                    </p>
-                  </div>
-                  <StatusBadge status={review.status} />
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
+type FeatureRowProps = {
+  description: string;
+  kicker: string;
+  title: string;
+};
 
-        <div className="desktop-surface stack">
-          <div>
-            <p className="section-eyebrow">Workbench</p>
-            <h2 className="subsection-title">常用入口</h2>
-            <p className="section-copy">快速进入任务、批次、规则和模型。</p>
-          </div>
-
-          <div className="list">
-            <Link className="list-item" href="/reviews">
-              <div>
-                <h3>查看评审任务列表与进度</h3>
-                <p className="muted">查看当前任务。</p>
-              </div>
-              <span className="pill pill-brand">评审任务</span>
-            </Link>
-
-            <Link className="list-item" href="/reviews/new">
-              <div>
-                <h3>创建新的策划案批次</h3>
-                <p className="muted">填写批次信息并开始评审。</p>
-              </div>
-              <span className="pill pill-brand">主操作</span>
-            </Link>
-
-            <Link className="list-item" href="/rules">
-              <div>
-                <h3>维护规则库与提示词模板</h3>
-                <p className="muted">管理规则和提示词。</p>
-              </div>
-              <span className="pill pill-accent">配置台</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="desktop-dashboard-grid">
-        <div className="desktop-surface stack">
-          <div>
-            <p className="section-eyebrow">Readiness</p>
-            <h2 className="subsection-title">配置准备度</h2>
-            <p className="section-copy">查看当前规则、模型和结果状态。</p>
-          </div>
-
-          <div className="feature-list">
-            <div className="feature-row">
-              <span className="feature-kicker">规则</span>
-              <div>
-                <strong>{dashboard.rulesCount} 条规则已建档</strong>
-                <p className="muted">当前启用规则会参与评审。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">模型</span>
-              <div>
-                <strong>{dashboard.llmProfiles.length} 个启用中的模型配置</strong>
-                <p className="muted">启用的模型可用于新批次。</p>
-              </div>
-            </div>
-            <div className="feature-row">
-              <span className="feature-kicker">结果</span>
-              <div>
-                <strong>可查看报告、问题和原文位置</strong>
-                <p className="muted">结果页会显示对应内容。</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="desktop-surface stack">
-          <div>
-            <p className="section-eyebrow">Enabled Models</p>
-            <h2 className="subsection-title">活跃模型配置</h2>
-            <p className="section-copy">这些模型当前处于启用状态，可直接被新评审批次使用。</p>
-          </div>
-
-          <div className="feature-list">
-            {isLoading ? (
-              <div className="feature-row">
-                <span className="feature-kicker">模型</span>
-                <div>
-                  <strong>正在读取模型配置</strong>
-                  <p className="muted">完成后会显示当前启用的桌面模型。</p>
-                </div>
-              </div>
-            ) : dashboard.llmProfiles.length === 0 ? (
-              <div className="feature-row">
-                <span className="feature-kicker">模型</span>
-                <div>
-                  <strong>当前没有启用模型配置</strong>
-                  <p className="muted">先去模型配置页启用一个配置后再开始批次。</p>
-                </div>
-              </div>
-            ) : (
-              dashboard.llmProfiles.map((profile) => (
-                <div className="feature-row" key={profile.id}>
-                  <span className="feature-kicker">{profile.provider}</span>
-                  <div>
-                    <strong>{profile.name}</strong>
-                    <p className="muted">{profile.defaultModel}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
+function FeatureRow({ description, kicker, title }: FeatureRowProps) {
+  return (
+    <div className="feature-row">
+      <span className="feature-kicker">{kicker}</span>
+      <div>
+        <strong>{title}</strong>
+        <p className="muted">{description}</p>
+      </div>
     </div>
   );
 }
