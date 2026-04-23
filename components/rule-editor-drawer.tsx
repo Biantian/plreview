@@ -2,6 +2,7 @@
 
 import { Severity } from "@prisma/client";
 
+import { AdaptiveFormOverlay } from "@/components/adaptive-form-overlay";
 import type { RuleSaveInput } from "@/desktop/bridge/desktop-api";
 import { RULE_TEMPLATE } from "@/lib/defaults";
 import { severityLabel } from "@/lib/utils";
@@ -43,26 +44,28 @@ export function RuleEditorDrawer({
   }
 
   const isCreateMode = !rule;
+  const title = isCreateMode ? "新增规则" : "规则编辑";
 
   return (
-    <aside
-      aria-label="规则编辑抽屉"
-      aria-modal="true"
-      className="card stack drawer"
-      role="dialog"
-    >
-      <div className="inline-actions">
-        <div>
-          <p className="section-eyebrow">Rule Drawer</p>
-          <h2 className="section-title">{isCreateMode ? "新增规则" : "规则编辑"}</h2>
+    <AdaptiveFormOverlay
+      footer={
+        <div className="actions">
+          {errorMessage ? <p className="section-copy">{errorMessage}</p> : null}
+          <button className="button" disabled={busy} form="rule-editor-form" type="submit">
+            {busy ? "保存中..." : isCreateMode ? "保存规则" : "保存修改"}
+          </button>
+          <button className="button-ghost" disabled={busy} onClick={onClose} type="button">
+            取消
+          </button>
         </div>
-        <button className="button-ghost button-inline" onClick={onClose} type="button">
-          关闭
-        </button>
-      </div>
-
+      }
+      onClose={onClose}
+      open={open}
+      title={title}
+    >
       <form
         className="form-grid"
+        id="rule-editor-form"
         onSubmit={(event) => {
           event.preventDefault();
 
@@ -144,18 +147,7 @@ export function RuleEditorDrawer({
             </div>
           </div>
         </div>
-
-        {errorMessage ? <p className="section-copy">{errorMessage}</p> : null}
-
-        <div className="actions">
-          <button className="button" disabled={busy} type="submit">
-            {busy ? "保存中..." : isCreateMode ? "保存规则" : "保存修改"}
-          </button>
-          <button className="button-ghost" disabled={busy} onClick={onClose} type="button">
-            取消
-          </button>
-        </div>
       </form>
-    </aside>
+    </AdaptiveFormOverlay>
   );
 }
