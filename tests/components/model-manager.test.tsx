@@ -161,10 +161,39 @@ describe("ModelManager", () => {
 
       expect(screen.getByLabelText("配置名称")).toHaveValue("测试模型");
       expect(screen.getByRole("button", { name: "保存配置" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "保存配置" }).closest(".form-overlay-footer")).toBeTruthy();
     } finally {
       window.innerWidth = originalInnerWidth;
       window.innerHeight = originalInnerHeight;
     }
+  });
+
+  it("submits create payload from the footer button outside the form", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "新模型");
+    await user.type(screen.getByLabelText("供应商显示名"), "OpenAI Compatible");
+    await user.type(screen.getByLabelText("默认模型"), "qwen-plus");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/v1");
+    await user.type(screen.getByLabelText("常用模型"), "qwen-plus");
+
+    await user.click(screen.getByRole("button", { name: "保存配置" }));
+
+    await waitFor(() => {
+      expect(window.plreview.saveModelProfile).toHaveBeenCalledWith({
+        id: undefined,
+        name: "新模型",
+        provider: "OpenAI Compatible",
+        vendorKey: "openai_compatible",
+        mode: "live",
+        baseUrl: "https://example.com/v1",
+        defaultModel: "qwen-plus",
+        modelOptionsText: "qwen-plus",
+        apiKey: "",
+        enabled: true,
+      });
+    });
   });
 });
