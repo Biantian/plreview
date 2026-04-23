@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -114,7 +114,7 @@ describe("ModelManager", () => {
 
     expect(screen.getByText("演示配置")).toBeInTheDocument();
     expect(screen.queryByText("百炼生产")).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "模型编辑抽屉" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "模型编辑" })).toBeInTheDocument();
   });
 
   it("opens the create drawer from the toolbar", async () => {
@@ -124,7 +124,47 @@ describe("ModelManager", () => {
 
     await user.click(screen.getByRole("button", { name: "新增模型" }));
 
-    expect(screen.getByRole("dialog", { name: "模型编辑抽屉" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "新增模型配置" })).toBeInTheDocument();
     expect(screen.getByText("新增模型配置")).toBeInTheDocument();
+  });
+
+  it("keeps typed values when the create overlay switches modes on resize", async () => {
+    const user = userEvent.setup();
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+
+    try {
+      window.innerWidth = 1440;
+      window.innerHeight = 900;
+
+      render(<ModelManager profiles={[]} />);
+
+      await user.click(screen.getByRole("button", { name: "新增模型" }));
+
+      const overlay = screen.getByRole("dialog", { name: "新增模型配置" });
+      const nameField = screen.getByLabelText("配置名称");
+
+      expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
+
+      await user.type(nameField, "测试模型");
+
+      window.innerWidth = 1024;
+      window.innerHeight = 720;
+      fireEvent(window, new Event("resize"));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "新增模型配置" })).toHaveAttribute(
+          "data-overlay-mode",
+          "dialog",
+        );
+      });
+
+      expect(screen.getByLabelText("配置名称")).toHaveValue("测试模型");
+      expect(screen.getByRole("button", { name: "保存配置" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "保存配置" }).closest(".form-overlay-footer")).toBeTruthy();
+    } finally {
+      window.innerWidth = originalInnerWidth;
+      window.innerHeight = originalInnerHeight;
+    }
   });
 });
