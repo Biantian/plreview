@@ -217,4 +217,33 @@ describe("globals shell styles", () => {
     ]);
     hasRule(".docs-pane-article", ["padding: 0;"]);
   });
+
+  it("keeps the home cockpit fixed on desktop while allowing the rail and panes to scroll internally", () => {
+    hasRule(".workspace.page:has(.home-command-center)", ["overflow: hidden;"]);
+    hasRule(".home-command-center", [
+      "grid-template-rows: auto minmax(0, 1fr);",
+      "min-height: 0;",
+      "overflow: hidden;",
+    ]);
+    hasRule(".home-cockpit-grid", ["min-height: 0;", "overflow: hidden;"]);
+    hasRule(".home-command-rail,\n.home-pane", [
+      "min-width: 0;",
+      "min-height: 0;",
+    ]);
+    expect(globalsCss).toContain(".home-command-rail {\n  display: flex;");
+    expect(globalsCss).toContain("flex-direction: column;");
+    expect(globalsCss).toContain("overflow-x: hidden;");
+    expect(globalsCss).toContain("overflow-y: auto;");
+    expect(globalsCss).toContain(".home-pane {\n  display: flex;");
+    expect(globalsCss).toContain(".home-pane {\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;");
+    hasRule(".home-pane-scroll", [
+      "min-height: 0;",
+      "overflow-x: hidden;",
+      "overflow-y: auto;",
+    ]);
+    expect(globalsCss).toContain("@media (max-width: 1180px)");
+    expect(globalsCss).toContain(".workspace.page:has(.home-command-center) {\n    overflow-y: auto;");
+    expect(globalsCss).toContain(".home-command-rail,\n  .home-pane {\n    overflow: visible;");
+    expect(globalsCss).toContain(".home-pane-scroll {\n    overflow: visible;");
+  });
 });
