@@ -1,11 +1,20 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RulesTable } from "@/components/rules-table";
 
+let originalShowModalDescriptor: PropertyDescriptor | undefined;
+let originalCloseDescriptor: PropertyDescriptor | undefined;
+
 describe("RulesTable", () => {
   beforeEach(() => {
+    originalShowModalDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLDialogElement.prototype,
+      "showModal",
+    );
+    originalCloseDescriptor = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, "close");
+
     Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
       configurable: true,
       value: vi.fn(function (this: HTMLDialogElement) {
@@ -60,6 +69,25 @@ describe("RulesTable", () => {
       getRuntimeStatus: vi.fn(),
       subscribeRuntimeStatus: vi.fn(),
     };
+  });
+
+  afterEach(() => {
+    Object.defineProperty(
+      HTMLDialogElement.prototype,
+      "showModal",
+      originalShowModalDescriptor ?? {
+        configurable: true,
+        value: undefined,
+      },
+    );
+    Object.defineProperty(
+      HTMLDialogElement.prototype,
+      "close",
+      originalCloseDescriptor ?? {
+        configurable: true,
+        value: undefined,
+      },
+    );
   });
 
   it("renders the desktop rules shell with toolbar summary", () => {
@@ -208,6 +236,56 @@ describe("RulesTable", () => {
 
     expect(screen.getByLabelText("规则名称")).toHaveValue("商业闭环");
     expect(screen.getByLabelText("规则说明")).toHaveValue("检查付费路径");
+  });
+
+  it("submits saveRule through the footer button and preserves the expected payload", async () => {
+    const user = userEvent.setup();
+    const saveRuleMock = vi.fn().mockResolvedValue({
+      enabledCount: 1,
+      categoryCount: 2,
+      latestUpdatedAtLabel: "2026-04-13 11:00",
+      items: [],
+      totalCount: 2,
+    });
+
+    window.plreview.saveRule = saveRuleMock;
+
+    render(
+      <RulesTable
+        items={[
+          {
+            category: "基础质量",
+            description: "检查目标表达是否清楚",
+            enabled: true,
+            id: "1",
+            name: "目标清晰度",
+            promptTemplate: "模板 A",
+            severity: "medium",
+            updatedAtLabel: "2026-04-13 10:00",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "编辑 目标清晰度" }));
+    await user.type(screen.getByLabelText("规则说明"), " - 已调整");
+
+    const saveButton = screen.getByRole("button", { name: "保存修改" });
+    expect(saveButton).toHaveAttribute("form", "rule-editor-form");
+
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(saveRuleMock).toHaveBeenCalledWith({
+        id: "1",
+        name: "目标清晰度",
+        category: "基础质量",
+        description: "检查目标表达是否清楚 - 已调整",
+        promptTemplate: "模板 A",
+        severity: "medium",
+        enabled: true,
+      });
+    });
   });
 
   it("starts in drawer mode on large screens, switches to dialog on resize, and keeps typed values", async () => {
