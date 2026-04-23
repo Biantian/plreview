@@ -40,6 +40,7 @@ export function AdaptiveFormOverlay({
   const titleId = useId();
   const descriptionId = useId();
   const overlayRef = useRef<HTMLDialogElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<OverlayMode>(() =>
     typeof window === "undefined" ? "dialog" : getOverlayMode(window.innerWidth, window.innerHeight),
@@ -69,8 +70,8 @@ export function AdaptiveFormOverlay({
       dialog.setAttribute("open", "");
     }
 
-    const focusable = dialog.querySelectorAll<HTMLElement>(".form-overlay-body " + FOCUSABLE_SELECTOR);
-    (focusable?.[0] ?? dialog)?.focus();
+    const focusable = dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    (focusable?.[0] ?? panelRef.current)?.focus();
 
     const handleResize = () => {
       setMode(getOverlayMode(window.innerWidth, window.innerHeight));
@@ -164,7 +165,7 @@ export function AdaptiveFormOverlay({
       role="dialog"
       tabIndex={-1}
     >
-      <div className="form-overlay-panel">
+      <div className="form-overlay-panel" ref={panelRef} tabIndex={-1}>
         <header className="form-overlay-header">
           <div className="form-overlay-copy">
             <h2 id={titleId}>{title}</h2>

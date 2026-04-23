@@ -61,7 +61,7 @@ describe("AdaptiveFormOverlay", () => {
     });
   });
 
-  it("focuses the first field on open, closes on Escape, and restores focus to the trigger", async () => {
+  it("focuses the first shell control on open, closes on Escape, and restores focus to the trigger", async () => {
     const user = userEvent.setup();
 
     render(<OverlayHarness />);
@@ -72,9 +72,10 @@ describe("AdaptiveFormOverlay", () => {
 
     expect(screen.getByRole("dialog").tagName).toBe("DIALOG");
 
-    const input = screen.getByLabelText("名称");
-    expect(input).toHaveFocus();
+    const closeButton = screen.getByRole("button", { name: "Close overlay" });
+    expect(closeButton).toHaveFocus();
     expect(screen.getByTestId("hidden-field")).not.toHaveFocus();
+    expect(screen.getByLabelText("名称")).not.toHaveFocus();
 
     await user.keyboard("{Escape}");
 
@@ -97,15 +98,15 @@ describe("AdaptiveFormOverlay", () => {
     const input = screen.getByLabelText("名称");
 
     expect(overlay.tagName).toBe("DIALOG");
-    expect(input).toHaveFocus();
+    expect(closeButton).toHaveFocus();
 
     await user.keyboard("{Tab}");
 
-    expect(closeButton).toHaveFocus();
+    expect(input).toHaveFocus();
 
     await user.keyboard("{Shift>}{Tab}{/Shift}");
 
-    expect(input).toHaveFocus();
+    expect(closeButton).toHaveFocus();
   });
 
   it("dismisses from the backdrop using the native dialog modal API", async () => {
