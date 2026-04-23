@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type SyntheticEvent,
   type ReactNode,
@@ -106,6 +107,12 @@ export function AdaptiveFormOverlay({
     handleClose();
   };
 
+  const handleBackdropClick = (event: ReactMouseEvent<HTMLDialogElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
+
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDialogElement>) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -151,25 +158,28 @@ export function AdaptiveFormOverlay({
       className="form-overlay"
       data-overlay-mode={mode}
       onCancel={handleCancel}
+      onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}
       ref={overlayRef}
       role="dialog"
       tabIndex={-1}
     >
-      <header className="form-overlay-header">
-        <div className="form-overlay-copy">
-          <h2 id={titleId}>{title}</h2>
-          {description ? <p id={descriptionId}>{description}</p> : null}
-        </div>
+      <div className="form-overlay-panel">
+        <header className="form-overlay-header">
+          <div className="form-overlay-copy">
+            <h2 id={titleId}>{title}</h2>
+            {description ? <p id={descriptionId}>{description}</p> : null}
+          </div>
 
-        <button aria-label="Close overlay" className="form-overlay-close" onClick={onClose} type="button">
-          ×
-        </button>
-      </header>
+          <button aria-label="Close overlay" className="form-overlay-close" onClick={onClose} type="button">
+            ×
+          </button>
+        </header>
 
-      <div className="form-overlay-body">{children}</div>
+        <div className="form-overlay-body">{children}</div>
 
-      {footer ? <footer className="form-overlay-footer">{footer}</footer> : null}
+        {footer ? <footer className="form-overlay-footer">{footer}</footer> : null}
+      </div>
     </dialog>
   );
 }
