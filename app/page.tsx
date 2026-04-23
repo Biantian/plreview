@@ -285,11 +285,19 @@ function HomeReadinessPane({ dashboard, errorMessage, isLoading }: HomeDashboard
             />
           ) : (
             <>
-              <FeatureRow
-                kicker="规则"
-                title={`${dashboard.rulesCount} 条规则已建档`}
-                description={`${dashboard.enabledRulesCount} 条规则已启用`}
-              />
+              {isLoading ? (
+                <FeatureRow
+                  kicker="规则"
+                  title="正在读取规则状态"
+                  description="完成后会显示已建档规则和启用情况。"
+                />
+              ) : (
+                <FeatureRow
+                  kicker="规则"
+                  title={`${dashboard.rulesCount} 条规则已建档`}
+                  description={`${dashboard.enabledRulesCount} 条规则已启用`}
+                />
+              )}
 
               {isLoading ? (
                 <FeatureRow

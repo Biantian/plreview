@@ -154,7 +154,7 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows explicit loading copy in the command rail before dashboard facts resolve", async () => {
+  it("shows explicit loading copy in the command rail and readiness pane before dashboard facts resolve", async () => {
     const deferredDashboard = createDeferred<HomeDashboardData>();
 
     installDesktopApi({
@@ -164,6 +164,7 @@ describe("HomePage", () => {
     render(<HomePage />);
 
     const commandRail = screen.getByTestId("home-command-rail");
+    const readinessPane = screen.getByTestId("home-readiness-pane");
 
     expect(within(commandRail).getByText("正在读取工作台指标")).toBeInTheDocument();
     expect(
@@ -173,10 +174,20 @@ describe("HomePage", () => {
     expect(within(commandRail).queryByText("评审任务")).not.toBeInTheDocument();
     expect(within(commandRail).queryByText("启用规则")).not.toBeInTheDocument();
     expect(within(commandRail).queryByText("问题标注")).not.toBeInTheDocument();
+    expect(within(readinessPane).getByText("正在读取规则状态")).toBeInTheDocument();
+    expect(
+      within(readinessPane).getByText("完成后会显示已建档规则和启用情况。"),
+    ).toBeInTheDocument();
+    expect(within(readinessPane).queryByText("0 条规则已建档")).not.toBeInTheDocument();
+    expect(within(readinessPane).queryByText("0 条规则已启用")).not.toBeInTheDocument();
 
     deferredDashboard.resolve(DASHBOARD_FIXTURE);
 
-    await waitFor(() => expect(within(commandRail).getByText("已导入文档")).toBeInTheDocument());
+    await waitFor(() => {
+      expect(within(commandRail).getByText("已导入文档")).toBeInTheDocument();
+      expect(within(readinessPane).getByText("12 条规则已建档")).toBeInTheDocument();
+      expect(within(readinessPane).getByText("8 条规则已启用")).toBeInTheDocument();
+    });
   });
 
   it("keeps the cockpit frame visible when dashboard loading fails", async () => {
