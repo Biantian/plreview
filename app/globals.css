@@ -967,6 +967,69 @@ svg {
   border-collapse: collapse;
 }
 
+.review-jobs-table {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.review-jobs-table .data-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.review-job-selection-col {
+  width: 48px;
+}
+
+.review-job-status-col {
+  width: 112px;
+}
+
+.review-job-title-col {
+  width: auto;
+}
+
+.review-job-file-col {
+  width: 180px;
+}
+
+.review-job-meta-col {
+  width: 180px;
+}
+
+.review-job-created-col {
+  width: 130px;
+}
+
+.review-job-action-col {
+  width: 176px;
+}
+
+.review-jobs-table .review-job-title-cell,
+.review-jobs-table .review-job-file-cell,
+.review-jobs-table .review-job-meta-cell,
+.review-jobs-table .review-job-created-cell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.review-jobs-table .review-job-created-cell {
+  text-overflow: ellipsis;
+}
+
+.review-jobs-table tbody .review-job-title-cell {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
+  background: transparent;
+}
+
 .data-table th,
 .data-table td {
   padding: 8px 10px;
@@ -1014,6 +1077,107 @@ svg {
 
 .table-nowrap {
   white-space: nowrap;
+}
+
+.review-jobs-table .table-cell-primary,
+.review-jobs-table .table-cell-secondary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-jobs-table .table-row-actions {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 6px 12px;
+  white-space: nowrap;
+}
+
+.review-jobs-table .table-row-actions > * {
+  flex: 0 0 auto;
+}
+
+.review-jobs-table .review-job-action-cell {
+  width: 176px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@container (max-width: 900px) {
+  .review-jobs-table .data-table th,
+  .review-jobs-table .data-table td {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .review-job-selection-col {
+    width: 44px;
+  }
+
+  .review-job-status-col {
+    width: 92px;
+  }
+
+  .review-job-file-col {
+    width: 130px;
+  }
+
+  .review-job-meta-col {
+    width: 142px;
+  }
+
+  .review-job-created-col {
+    width: 126px;
+  }
+
+  .review-job-action-col {
+    width: 148px;
+  }
+
+  .review-jobs-table .table-row-actions {
+    gap: 6px 10px;
+  }
+
+  .review-jobs-table .review-job-action-cell {
+    width: 148px;
+  }
+}
+
+@container (max-width: 800px) {
+  .review-job-selection-col {
+    width: 42px;
+  }
+
+  .review-job-status-col {
+    width: 86px;
+  }
+
+  .review-job-file-col {
+    width: 112px;
+  }
+
+  .review-job-meta-col {
+    width: 126px;
+  }
+
+  .review-job-created-col {
+    width: 124px;
+  }
+
+  .review-job-action-col {
+    width: 138px;
+  }
+
+  .review-jobs-table .table-row-actions {
+    gap: 6px 8px;
+  }
+
+  .review-jobs-table .review-job-action-cell {
+    width: 138px;
+  }
 }
 
 .drawer {
