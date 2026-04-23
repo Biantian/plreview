@@ -87,11 +87,10 @@ describe("HomePage", () => {
       "href",
       "/reviews/new",
     );
-    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })).toHaveLength(2);
-    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })[0]).toHaveAttribute(
-      "href",
-      "/reviews/new",
-    );
+    const createBatchLinks = within(commandRail).getAllByRole("link", { name: "创建评审批次" });
+    expect(createBatchLinks).toHaveLength(2);
+    expect(createBatchLinks[0]).toHaveAttribute("href", "/reviews/new");
+    expect(createBatchLinks[1]).toHaveAttribute("href", "/reviews/new");
     expect(within(commandRail).getByRole("link", { name: "查看评审任务" })).toHaveAttribute(
       "href",
       "/reviews",
@@ -160,14 +159,24 @@ describe("HomePage", () => {
     const readinessPane = screen.getByTestId("home-readiness-pane");
 
     expect(cockpit).toHaveClass("home-command-center");
-    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })).toHaveLength(2);
-    expect(within(commandRail).getAllByRole("link", { name: "创建评审批次" })[0]).toHaveAttribute(
-      "href",
-      "/reviews/new",
-    );
+    const createBatchLinks = within(commandRail).getAllByRole("link", { name: "创建评审批次" });
+    expect(createBatchLinks).toHaveLength(2);
+    expect(createBatchLinks[0]).toHaveAttribute("href", "/reviews/new");
+    expect(createBatchLinks[1]).toHaveAttribute("href", "/reviews/new");
+    expect(within(commandRail).getByText("工作台指标暂不可用")).toBeInTheDocument();
+    expect(
+      within(commandRail).getByText("桌面桥接恢复后，这里会显示文档、任务、规则和标注概览。"),
+    ).toBeInTheDocument();
+    expect(within(commandRail).queryByText("已导入文档")).not.toBeInTheDocument();
+    expect(within(commandRail).queryByText("评审任务")).not.toBeInTheDocument();
+    expect(within(commandRail).queryByText("启用规则")).not.toBeInTheDocument();
+    expect(within(commandRail).queryByText("问题标注")).not.toBeInTheDocument();
     expect(within(recentPane).getByText("加载失败：dashboard unavailable")).toBeInTheDocument();
     expect(within(readinessPane).getByText("桌面桥接不可用")).toBeInTheDocument();
     expect(within(readinessPane).getByText("无法读取规则、模型和结果状态。")).toBeInTheDocument();
+    expect(within(readinessPane).queryByText("0 条规则已建档")).not.toBeInTheDocument();
+    expect(within(readinessPane).queryByText("0 条规则已启用")).not.toBeInTheDocument();
+    expect(within(readinessPane).queryByText("可查看报告、问题和原文位置")).not.toBeInTheDocument();
   });
 
   it("shows the cockpit bridge warning when launched without the desktop API", async () => {
@@ -185,5 +194,7 @@ describe("HomePage", () => {
     expect(screen.getByTestId("home-command-rail")).toBeInTheDocument();
     expect(screen.getByTestId("home-recent-reviews-pane")).toBeInTheDocument();
     expect(screen.getByTestId("home-readiness-pane")).toBeInTheDocument();
+    expect(screen.getByText("工作台指标暂不可用")).toBeInTheDocument();
+    expect(screen.queryByText("0 条规则已建档")).not.toBeInTheDocument();
   });
 });

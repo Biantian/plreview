@@ -118,7 +118,7 @@ export default function HomePage() {
       </header>
 
       <section className="home-cockpit-grid" aria-label="工作台概览">
-        <HomeCommandRail dashboard={dashboard} />
+        <HomeCommandRail dashboard={dashboard} errorMessage={errorMessage} />
         <HomeRecentReviewsPane {...viewState} />
         <HomeReadinessPane {...viewState} />
       </section>
@@ -126,7 +126,10 @@ export default function HomePage() {
   );
 }
 
-function HomeCommandRail({ dashboard }: Pick<HomeDashboardViewState, "dashboard">) {
+function HomeCommandRail({
+  dashboard,
+  errorMessage,
+}: Pick<HomeDashboardViewState, "dashboard" | "errorMessage">) {
   const metrics: MetricItem[] = [
     { label: "已导入文档", value: dashboard.documentsCount },
     { label: "评审任务", value: dashboard.reviewJobsCount },
@@ -167,14 +170,22 @@ function HomeCommandRail({ dashboard }: Pick<HomeDashboardViewState, "dashboard"
         ))}
       </div>
 
-      <div className="home-metric-grid" aria-label="工作台指标">
-        {metrics.map((metric) => (
-          <div className="home-metric-card" key={metric.label}>
-            <p className="metric-label">{metric.label}</p>
-            <strong className="metric-value">{metric.value}</strong>
-          </div>
-        ))}
-      </div>
+      {errorMessage ? (
+        <div className="home-unavailable-block" aria-label="工作台指标暂不可用">
+          <p className="section-eyebrow">Unavailable</p>
+          <strong>工作台指标暂不可用</strong>
+          <p className="muted">桌面桥接恢复后，这里会显示文档、任务、规则和标注概览。</p>
+        </div>
+      ) : (
+        <div className="home-metric-grid" aria-label="工作台指标">
+          {metrics.map((metric) => (
+            <div className="home-metric-card" key={metric.label}>
+              <p className="metric-label">{metric.label}</p>
+              <strong className="metric-value">{metric.value}</strong>
+            </div>
+          ))}
+        </div>
+      )}
     </aside>
   );
 }
@@ -265,42 +276,44 @@ function HomeReadinessPane({ dashboard, errorMessage, isLoading }: HomeDashboard
               title="桌面桥接不可用"
               description="无法读取规则、模型和结果状态。"
             />
-          ) : null}
-
-          <FeatureRow
-            kicker="规则"
-            title={`${dashboard.rulesCount} 条规则已建档`}
-            description={`${dashboard.enabledRulesCount} 条规则已启用`}
-          />
-
-          {isLoading ? (
-            <FeatureRow
-              kicker="模型"
-              title="正在读取模型配置"
-              description="完成后会显示当前启用的桌面模型。"
-            />
-          ) : dashboard.llmProfiles.length === 0 ? (
-            <FeatureRow
-              kicker="模型"
-              title="当前没有启用模型配置"
-              description="先去模型配置页启用一个配置后再开始批次。"
-            />
           ) : (
-            dashboard.llmProfiles.map((profile) => (
+            <>
               <FeatureRow
-                kicker={profile.provider}
-                title={profile.name}
-                description={profile.defaultModel}
-                key={profile.id}
+                kicker="规则"
+                title={`${dashboard.rulesCount} 条规则已建档`}
+                description={`${dashboard.enabledRulesCount} 条规则已启用`}
               />
-            ))
-          )}
 
-          <FeatureRow
-            kicker="结果"
-            title="可查看报告、问题和原文位置"
-            description="结果页会显示对应内容。"
-          />
+              {isLoading ? (
+                <FeatureRow
+                  kicker="模型"
+                  title="正在读取模型配置"
+                  description="完成后会显示当前启用的桌面模型。"
+                />
+              ) : dashboard.llmProfiles.length === 0 ? (
+                <FeatureRow
+                  kicker="模型"
+                  title="当前没有启用模型配置"
+                  description="先去模型配置页启用一个配置后再开始批次。"
+                />
+              ) : (
+                dashboard.llmProfiles.map((profile) => (
+                  <FeatureRow
+                    kicker={profile.provider}
+                    title={profile.name}
+                    description={profile.defaultModel}
+                    key={profile.id}
+                  />
+                ))
+              )}
+
+              <FeatureRow
+                kicker="结果"
+                title="可查看报告、问题和原文位置"
+                description="结果页会显示对应内容。"
+              />
+            </>
+          )}
         </div>
       </div>
     </aside>
