@@ -1829,8 +1829,11 @@ svg {
   margin: 0;
   padding: 20px;
   border: 0;
-  background: rgba(10, 18, 28, 0.5);
   overflow: hidden;
+}
+
+.form-overlay-backdrop {
+  background: rgba(10, 18, 28, 0.5);
 }
 
 .form-overlay::backdrop {

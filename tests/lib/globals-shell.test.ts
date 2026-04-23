@@ -71,7 +71,8 @@ describe("globals shell styles", () => {
   });
 
   it("defines a fixed overlay shell with a dedicated scrolling body", () => {
-    hasRule(".form-overlay-backdrop", ["position: fixed;", "inset: 0;", "z-index: 55;"]);
+    hasAnyRule([".form-overlay", ".form-overlay-backdrop"], ["position: fixed;", "inset: 0;", "z-index: 55;"]);
+    hasRule(".form-overlay::backdrop", ["background: rgba(10, 18, 28, 0.5);"]);
     hasRule(".form-overlay-panel", [
       "display: grid;",
       "grid-template-rows: auto minmax(0, 1fr) auto;",
