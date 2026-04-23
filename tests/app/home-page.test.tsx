@@ -29,6 +29,18 @@ const DASHBOARD_FIXTURE: HomeDashboardData = {
   ],
 };
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+
+  return { promise, resolve, reject };
+}
+
 function installDesktopApi(overrides: Partial<DesktopApi> = {}) {
   window.plreview = {
     pickFiles: vi.fn(),
@@ -140,6 +152,31 @@ describe("HomePage", () => {
     expect(
       within(readinessPane).getByText("先去模型配置页启用一个配置后再开始批次。"),
     ).toBeInTheDocument();
+  });
+
+  it("shows explicit loading copy in the command rail before dashboard facts resolve", async () => {
+    const deferredDashboard = createDeferred<HomeDashboardData>();
+
+    installDesktopApi({
+      getHomeDashboard: vi.fn().mockReturnValue(deferredDashboard.promise),
+    });
+
+    render(<HomePage />);
+
+    const commandRail = screen.getByTestId("home-command-rail");
+
+    expect(within(commandRail).getByText("正在读取工作台指标")).toBeInTheDocument();
+    expect(
+      within(commandRail).getByText("桌面工作台正在同步文档、任务、规则和标注概览。"),
+    ).toBeInTheDocument();
+    expect(within(commandRail).queryByText("已导入文档")).not.toBeInTheDocument();
+    expect(within(commandRail).queryByText("评审任务")).not.toBeInTheDocument();
+    expect(within(commandRail).queryByText("启用规则")).not.toBeInTheDocument();
+    expect(within(commandRail).queryByText("问题标注")).not.toBeInTheDocument();
+
+    deferredDashboard.resolve(DASHBOARD_FIXTURE);
+
+    await waitFor(() => expect(within(commandRail).getByText("已导入文档")).toBeInTheDocument());
   });
 
   it("keeps the cockpit frame visible when dashboard loading fails", async () => {

@@ -118,7 +118,7 @@ export default function HomePage() {
       </header>
 
       <section className="home-cockpit-grid" aria-label="工作台概览">
-        <HomeCommandRail dashboard={dashboard} errorMessage={errorMessage} />
+        <HomeCommandRail dashboard={dashboard} errorMessage={errorMessage} isLoading={isLoading} />
         <HomeRecentReviewsPane {...viewState} />
         <HomeReadinessPane {...viewState} />
       </section>
@@ -129,7 +129,8 @@ export default function HomePage() {
 function HomeCommandRail({
   dashboard,
   errorMessage,
-}: Pick<HomeDashboardViewState, "dashboard" | "errorMessage">) {
+  isLoading,
+}: Pick<HomeDashboardViewState, "dashboard" | "errorMessage" | "isLoading">) {
   const metrics: MetricItem[] = [
     { label: "已导入文档", value: dashboard.documentsCount },
     { label: "评审任务", value: dashboard.reviewJobsCount },
@@ -175,6 +176,12 @@ function HomeCommandRail({
           <p className="section-eyebrow">Unavailable</p>
           <strong>工作台指标暂不可用</strong>
           <p className="muted">桌面桥接恢复后，这里会显示文档、任务、规则和标注概览。</p>
+        </div>
+      ) : isLoading ? (
+        <div className="home-unavailable-block" aria-label="正在读取工作台指标">
+          <p className="section-eyebrow">Loading</p>
+          <strong>正在读取工作台指标</strong>
+          <p className="muted">桌面工作台正在同步文档、任务、规则和标注概览。</p>
         </div>
       ) : (
         <div className="home-metric-grid" aria-label="工作台指标">
