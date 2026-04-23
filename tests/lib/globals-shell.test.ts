@@ -72,8 +72,8 @@ describe("globals shell styles", () => {
 
   it("pushes content down with container padding while letting the shell itself reach the very top", () => {
     hasRule("html", ["height: 100%;", "padding: 0;"]);
-    hasRule("body", ["height: 100%;", "padding: 0;"]);
-    hasRule(".desktop-shell", ["min-height: 100vh;"]);
+    hasRule("body", ["height: 100%;", "padding: 0;", "overflow: hidden;"]);
+    hasRule(".desktop-shell", ["height: 100vh;", "min-height: 100vh;", "overflow: hidden;"]);
     hasRule(".app-sidebar", [
       "top: 0;",
       "height: 100vh;",
@@ -81,7 +81,10 @@ describe("globals shell styles", () => {
       "-webkit-app-region: drag;",
     ]);
     hasRule(".workspace", [
+      "display: flex;",
+      "height: 100vh;",
       "min-height: 100vh;",
+      "overflow: hidden;",
       "padding-top: var(--titlebar-height);",
       "-webkit-app-region: drag;",
     ]);
@@ -103,9 +106,43 @@ describe("globals shell styles", () => {
     ]);
   });
 
-  it("keeps dense table controls compact and reserves space for bulk actions", () => {
-    hasRule(".review-bulk-toolbar-shell", ["min-height: 52px;"]);
-    hasRule(".review-bulk-toolbar-shell[data-active=\"false\"]", ["opacity: 0.68;"]);
+  it("keeps dense table controls compact and floats contextual bulk actions", () => {
+    hasRule(".management-page-shell", [
+      "display: flex;",
+      "flex: 1 1 auto;",
+      "flex-direction: column;",
+      "overflow: hidden;",
+    ]);
+    hasRule(".workspace.page:has(.management-page-shell)", ["overflow: hidden;"]);
+    hasRule(".reviews-page-shell", [
+      "display: flex;",
+      "flex: 1 1 auto;",
+      "flex-direction: column;",
+      "overflow: hidden;",
+    ]);
+    hasRule(".management-table-shell", [
+      "display: flex;",
+      "flex: 1 1 auto;",
+      "flex-direction: column;",
+      "overflow: hidden;",
+    ]);
+    hasRule(".review-jobs-list-shell", [
+      "display: flex;",
+      "flex: 1 1 auto;",
+      "flex-direction: column;",
+      "overflow: hidden;",
+    ]);
+    hasRule(".review-jobs-scroll-region", [
+      "flex: 1 1 auto;",
+      "overflow-y: auto;",
+    ]);
+    hasRule(".management-table-scroll-region", [
+      "flex: 1 1 auto;",
+      "overflow-y: auto;",
+    ]);
+    hasRule(".review-bulk-toolbar-shell", ["position: absolute;", "pointer-events: none;"]);
+    hasRule(".review-bulk-toolbar-shell[data-active=\"false\"]", ["opacity: 0;", "visibility: hidden;"]);
+    hasRule(".review-bulk-toolbar-shell[data-active=\"true\"]", ["pointer-events: auto;"]);
     hasRule(".table-text-link,\n.table-text-button", ["padding: 0;", "background: transparent;"]);
     hasRule(".table-nowrap", ["white-space: nowrap;"]);
     hasRule(".table-cell-primary", ["font-weight: 600;"]);

@@ -62,8 +62,8 @@ export default function ModelsPage() {
 
   if (!isLoading && errorMessage) {
     return (
-      <div className="desktop-management-page stack-lg">
-        <section className="panel stack-lg">
+      <div className="desktop-management-page management-page-shell">
+        <section className="panel stack-lg management-page-header">
           <PageIntro
             description="查看和管理模型配置。"
             eyebrow="Model Settings"
@@ -77,8 +77,8 @@ export default function ModelsPage() {
   }
 
   return (
-    <div className="desktop-management-page stack-lg">
-      <section className="panel stack-lg">
+    <div className="desktop-management-page management-page-shell">
+      <section className="panel stack-lg management-page-header">
         <PageIntro
           description="查看和管理模型配置。"
           eyebrow="Model Settings"
@@ -106,7 +106,7 @@ export default function ModelsPage() {
       </section>
 
       {isLoading ? (
-        <section className="desktop-surface stack">
+        <section className="desktop-surface stack management-page-loading">
           <p className="section-copy">正在读取模型配置。</p>
         </section>
       ) : (

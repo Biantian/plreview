@@ -72,7 +72,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
   }
 
   return (
-    <section className="desktop-table-card stack">
+    <section className="desktop-table-card management-table-shell">
       <div className="desktop-table-header">
         <div className="desktop-table-heading">
           <p className="section-eyebrow">规则库</p>
@@ -100,7 +100,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
 
       {feedback ? <p className="section-copy">{feedback}</p> : null}
 
-      <div className="table-shell">
+      <div className="table-shell management-table-scroll-region">
         <table aria-label="规则表格" className="data-table">
           <thead>
             <tr>

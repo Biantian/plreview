@@ -328,11 +328,10 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     setBulkFeedback(null);
   }
 
-  async function runBulkExport(route: "export-list" | "export-report") {
+  async function runBulkExport() {
     if (
       typeof window === "undefined" ||
       !window.plreview?.exportReviewList ||
-      !window.plreview?.exportReviewReport ||
       !hasSelection
     ) {
       return;
@@ -351,32 +350,10 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
               allMatching: false,
               selectedIds: selectedReviews.map((item) => item.id),
             };
-      const result =
-        route === "export-report"
-          ? await window.plreview.exportReviewReport(payload)
-          : await window.plreview.exportReviewList(payload);
+      const result = await window.plreview.exportReviewList(payload);
 
-      await triggerDownload(
-        result,
-        route === "export-report" ? "review-reports.zip" : "review-list.xlsx",
-      );
-
-      if (route === "export-report") {
-        const exportedCount = result.exportedCount;
-        const skippedCount = result.skippedCount;
-
-        setBulkFeedback(
-          typeof exportedCount === "number" &&
-            typeof skippedCount === "number" &&
-            skippedCount > 0
-            ? `已导出 ${exportedCount} 份报告，已跳过 ${skippedCount} 个未生成报告的任务。`
-            : typeof exportedCount === "number"
-              ? `已导出 ${exportedCount} 份报告。`
-              : "已导出评审报告。",
-        );
-      } else {
-        setBulkFeedback("已导出评审清单，列表已同步最新结果。");
-      }
+      await triggerDownload(result, "review-list.xlsx");
+      setBulkFeedback("已导出评审清单，列表已同步最新结果。");
 
       await refreshReviews();
     } catch (error) {
@@ -453,7 +430,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     : `确认删除这 ${deleteTargetCount} 条评审任务吗？删除后无法恢复。`;
 
   return (
-    <section className="desktop-table-card stack">
+    <section className="desktop-table-card review-jobs-list-shell">
       <div className="desktop-table-header">
         <div className="desktop-table-heading">
           <p className="section-eyebrow">任务队列</p>
@@ -481,54 +458,40 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
 
       <div
         aria-label="批量操作"
+        aria-hidden={hasSelection ? "false" : "true"}
         className="review-bulk-toolbar-shell"
         data-active={hasSelection ? "true" : "false"}
         role="toolbar"
       >
-        <div className="review-bulk-toolbar">
-          <div className="review-bulk-toolbar-copy">
-            <p className="section-copy">
-              {hasSelection ? `已选中 ${selectedCount} 条` : "选择任务后可批量导出或删除。"}
-            </p>
-            {allFilteredMode ? <span className="pill pill-accent">全部筛选结果</span> : null}
+        {hasSelection ? (
+          <div className="review-bulk-toolbar">
+            <div className="review-bulk-toolbar-copy">
+              <p className="section-copy">已选 {selectedCount} 项</p>
+              {allFilteredMode ? <span className="pill pill-accent">全部筛选结果</span> : null}
+            </div>
+            <div className="review-bulk-toolbar-actions">
+              <button
+                className="table-text-button"
+                disabled={isBulkWorking}
+                onClick={() => void runBulkExport()}
+                type="button"
+              >
+                批量导出
+              </button>
+              <button
+                className="table-text-button is-danger"
+                disabled={isBulkWorking}
+                onClick={() => setDeleteScope({ mode: "selection" })}
+                type="button"
+              >
+                批量删除
+              </button>
+              <button className="table-text-button" onClick={clearSelection} type="button">
+                取消
+              </button>
+            </div>
           </div>
-          <div className="review-bulk-toolbar-actions">
-            {hasSelection ? (
-              <>
-                <button className="table-text-button" onClick={toggleAllFilteredSelection} type="button">
-              {allFilteredSelected ? "取消全选筛选结果" : "全选筛选结果"}
-                </button>
-                <button className="table-text-button" onClick={clearSelection} type="button">
-              清除选择
-                </button>
-                <button
-                  className="table-text-button"
-                  disabled={isBulkWorking}
-                  onClick={() => void runBulkExport("export-list")}
-                  type="button"
-                >
-              导出清单
-                </button>
-                <button
-                  className="table-text-button"
-                  disabled={isBulkWorking}
-                  onClick={() => void runBulkExport("export-report")}
-                  type="button"
-                >
-              导出报告
-                </button>
-                <button
-                  className="table-text-button is-danger"
-                  disabled={isBulkWorking}
-                  onClick={() => setDeleteScope({ mode: "selection" })}
-                  type="button"
-                >
-              删除
-                </button>
-              </>
-            ) : null}
-          </div>
-        </div>
+        ) : null}
       </div>
 
       <ConfirmDialog
@@ -557,7 +520,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
           </Link>
         </div>
       ) : (
-        <div className="table-shell review-jobs-table">
+        <div className="table-shell review-jobs-table review-jobs-scroll-region">
           <table aria-label="评审任务表格" className="data-table">
             <colgroup>
               <col className="review-job-selection-col" />
@@ -571,7 +534,6 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
             <thead>
               <tr>
                 <th scope="col" className="table-selection-head">
-                  选择
                   <input
                     aria-label="选择当前筛选结果"
                     checked={allFilteredSelected}

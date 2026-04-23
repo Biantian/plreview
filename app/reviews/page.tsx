@@ -53,8 +53,8 @@ export default function ReviewsPage() {
 
   if (!isLoading && errorMessage) {
     return (
-      <div className="desktop-management-page stack-lg">
-        <section className="panel stack-lg">
+      <div className="desktop-management-page management-page-shell reviews-page-shell">
+        <section className="panel stack-lg management-page-header reviews-page-header">
           <PageIntro
             actions={<Link className="button" href="/reviews/new">新建批次</Link>}
             description="集中查看后台评审状态，按标题、文件、批次和模型筛选队列，并继续处理失败项、导出结果或打开报告。"
@@ -74,8 +74,8 @@ export default function ReviewsPage() {
   const failedCount = items.filter((review) => review.status === "failed").length;
 
   return (
-    <div className="desktop-management-page stack-lg">
-      <section className="panel stack-lg">
+    <div className="desktop-management-page management-page-shell reviews-page-shell">
+      <section className="panel stack-lg management-page-header reviews-page-header">
         <PageIntro
           actions={<Link className="button" href="/reviews/new">新建批次</Link>}
           description="集中查看后台评审状态，按标题、文件、批次和模型筛选队列，并继续处理失败项、导出结果或打开报告。"
@@ -104,7 +104,7 @@ export default function ReviewsPage() {
       </section>
 
       {isLoading ? (
-        <section className="desktop-surface stack">
+        <section className="desktop-surface stack management-page-loading reviews-page-loading">
           <p className="section-copy">正在从桌面工作线程同步评审任务列表。</p>
         </section>
       ) : (

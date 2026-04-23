@@ -53,6 +53,25 @@ describe("ReviewsPage", () => {
     expect(within(panel as HTMLElement).queryByRole("link", { name: "返回工作台" })).not.toBeInTheDocument();
   });
 
+  it("renders reviews inside the fixed-shell layout with a non-scrolling header region", async () => {
+    installDesktopApi({
+      listReviewJobs: vi.fn().mockResolvedValue([]),
+    });
+
+    const { container } = render(<ReviewsPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1, name: "评审任务" })).toBeInTheDocument(),
+    );
+
+    const shell = container.querySelector(".reviews-page-shell");
+    const header = container.querySelector(".reviews-page-header");
+
+    expect(shell).not.toBeNull();
+    expect(header).not.toBeNull();
+    expect(shell).toContainElement(header as HTMLElement);
+  });
+
   it("shows explicit failure state when review loading rejects", async () => {
     installDesktopApi({
       listReviewJobs: vi.fn().mockRejectedValue(new Error("review jobs failed")),

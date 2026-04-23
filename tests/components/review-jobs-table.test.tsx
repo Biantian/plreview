@@ -155,7 +155,7 @@ describe("ReviewJobsTable", () => {
 
     await user.type(screen.getByRole("searchbox", { name: "搜索评审任务" }), "玩法");
     await user.click(screen.getByRole("checkbox", { name: "选择当前筛选结果" }));
-    await user.click(screen.getByRole("button", { name: "导出清单" }));
+    await user.click(screen.getByRole("button", { name: "批量导出" }));
 
     expect(exportReviewList).toHaveBeenCalledWith({
       allMatching: true,
@@ -177,20 +177,28 @@ describe("ReviewJobsTable", () => {
     expect(screen.getByText("玩法复盘")).toBeInTheDocument();
   });
 
-  it("keeps the bulk toolbar mounted so selection actions do not cause layout reflow", async () => {
+  it("floats contextual bulk actions without reserving static prompt space", async () => {
     const user = userEvent.setup();
 
-    render(<ReviewJobsTable items={[createReview()]} />);
+    const { container } = render(<ReviewJobsTable items={[createReview()]} />);
 
-    const bulkToolbar = screen.getByRole("toolbar", { name: "批量操作" });
+    const bulkToolbar = container.querySelector(".review-bulk-toolbar-shell");
 
+    expect(bulkToolbar).not.toBeNull();
     expect(bulkToolbar).toHaveAttribute("data-active", "false");
-    expect(screen.getByText("选择任务后可批量导出或删除。")).toBeInTheDocument();
+    expect(bulkToolbar).toHaveAttribute("aria-hidden", "true");
+    expect(screen.queryByText("选择任务后可批量导出或删除。")).not.toBeInTheDocument();
+    expect(screen.queryByRole("toolbar", { name: "批量操作" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("checkbox", { name: "选择评审任务 玩法复盘" }));
 
     expect(bulkToolbar).toHaveAttribute("data-active", "true");
-    expect(screen.getByText("已选中 1 条")).toBeInTheDocument();
+    expect(bulkToolbar).toHaveAttribute("aria-hidden", "false");
+    expect(screen.getByRole("toolbar", { name: "批量操作" })).toBeInTheDocument();
+    expect(screen.getByText("已选 1 项")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "批量导出" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "批量删除" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "取消" })).toBeInTheDocument();
   });
 
   it("uses compact refresh and row action affordances instead of heavy outline buttons", () => {
@@ -223,7 +231,7 @@ describe("ReviewJobsTable", () => {
       .filter((header) => !isInaccessible(header))
       .map((header) => header.textContent?.replace(/\s+/g, " ").trim() ?? "");
 
-    expect(headers).toEqual(["选择", "状态", "任务", "文件", "评审信息", "创建时间", "操作"]);
+    expect(headers).toEqual(["", "状态", "任务", "文件", "评审信息", "创建时间", "操作"]);
 
     const reviewRow = within(table)
       .getAllByRole("row")
@@ -285,6 +293,18 @@ describe("ReviewJobsTable", () => {
     expect(
       within(actionCell as HTMLElement).getByRole("button", { name: "删除评审任务 玩法复盘" }),
     ).toBeVisible();
+  });
+
+  it("renders a dedicated internal scroll region for the review rows", () => {
+    render(<ReviewJobsTable items={[createReview()]} />);
+
+    const table = screen.getByRole("table", { name: "评审任务表格" });
+    const scrollRegion = table.closest(".review-jobs-scroll-region");
+    const listShell = table.closest(".review-jobs-list-shell");
+
+    expect(scrollRegion).not.toBeNull();
+    expect(listShell).not.toBeNull();
+    expect(scrollRegion).toContainElement(table);
   });
 
   it("deletes a single review through the desktop bridge", async () => {

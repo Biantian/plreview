@@ -82,7 +82,7 @@ export function ModelManager({
   }
 
   return (
-    <section className="desktop-table-card stack-lg">
+    <section className="desktop-table-card management-table-shell">
       <div className="desktop-table-header">
         <div className="desktop-table-heading">
           <p className="section-eyebrow">模型配置矩阵</p>
@@ -111,13 +111,13 @@ export function ModelManager({
       {feedback ? <p className="section-copy">{feedback}</p> : null}
 
       {filteredProfiles.length === 0 ? (
-        <div className="card stack">
+        <div className="card stack management-table-empty">
           <p className="muted">
             {records.length === 0 ? "还没有模型配置，先新增第一个模型。" : "没有匹配的模型配置，换一个关键词试试。"}
           </p>
         </div>
       ) : (
-        <div className="table-shell">
+        <div className="table-shell management-table-scroll-region">
           <table aria-label="模型表格" className="data-table">
             <thead>
               <tr>

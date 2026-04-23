@@ -45,6 +45,7 @@ body {
   padding: 0;
   height: 100%;
   min-height: 100vh;
+  overflow: hidden;
   overflow-x: hidden;
   color: var(--ink);
   background: var(--bg);
@@ -103,7 +104,9 @@ svg {
   grid-template-columns: 248px minmax(0, 1fr);
   gap: 0;
   width: 100%;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -230,8 +233,12 @@ svg {
 }
 
 .workspace {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   padding-top: var(--titlebar-height);
   background: #ffffff;
   -webkit-app-region: drag;
@@ -257,6 +264,8 @@ svg {
 @media (max-width: 960px) {
   .desktop-shell {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 
   .app-sidebar {
@@ -265,6 +274,11 @@ svg {
     height: auto;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .workspace {
+    height: auto;
+    overflow: visible;
   }
 
   .desktop-heading-grid,
@@ -297,7 +311,16 @@ svg {
   flex-direction: column;
   gap: 0;
   align-items: stretch;
+  min-height: 0;
   padding: 0 20px 28px;
+}
+
+.workspace.page {
+  overflow-y: auto;
+}
+
+.workspace.page:has(.management-page-shell) {
+  overflow: hidden;
 }
 
 .page > * {
@@ -583,6 +606,29 @@ svg {
   gap: 0;
 }
 
+.management-page-shell,
+.reviews-page-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.management-page-header,
+.management-page-loading,
+.reviews-page-header,
+.reviews-page-loading {
+  flex: 0 0 auto;
+}
+
+.management-page-loading,
+.reviews-page-loading {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .docs-page {
   flex: 1 1 auto;
   min-height: 0;
@@ -667,32 +713,76 @@ svg {
   gap: 8px;
 }
 
+.management-table-shell,
+.review-jobs-list-shell {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.management-table-shell > .desktop-table-header,
+.management-table-shell > .desktop-table-toolbar,
+.review-jobs-list-shell > .desktop-table-header,
+.review-jobs-list-shell > .desktop-table-toolbar {
+  flex: 0 0 auto;
+}
+
+.management-table-scroll-region,
+.review-jobs-scroll-region {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.management-table-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .review-bulk-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
 }
 
 .review-bulk-toolbar-shell {
-  min-height: 52px;
-  border-bottom: 1px solid var(--line);
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 8;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(12px);
   transition:
     opacity var(--ease),
-    background-color var(--ease);
+    transform var(--ease),
+    visibility var(--ease);
 }
 
 .review-bulk-toolbar-shell[data-active="false"] {
-  opacity: 0.68;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .review-bulk-toolbar-shell[data-active="true"] {
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .review-bulk-toolbar-copy {
@@ -707,6 +797,24 @@ svg {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+}
+
+.review-bulk-toolbar .section-copy {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.review-bulk-toolbar .table-text-button {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.review-bulk-toolbar .table-text-button:hover {
+  border-color: var(--line-strong);
+  background: #f8fafc;
 }
 
 .launch-section-header,
@@ -1046,6 +1154,13 @@ svg {
   color: var(--muted-strong);
   background: #f8fafc;
   white-space: nowrap;
+}
+
+.management-table-scroll-region .data-table thead th,
+.review-jobs-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .data-table tbody tr:hover {

@@ -72,6 +72,9 @@ describe("ModelsPage", () => {
     expect(
       screen.getByRole("table", { name: "模型表格" }).closest(".desktop-table-card"),
     ).toBeTruthy();
+    expect(screen.getByRole("table", { name: "模型表格" }).closest(".management-table-scroll-region")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "模型配置" }).closest(".management-page-header")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "模型配置" }).closest(".management-page-shell")).toBeTruthy();
     expect(screen.getByText("模型总数").closest(".desktop-table-card")).toBeNull();
   });
 

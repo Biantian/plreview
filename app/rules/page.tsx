@@ -60,8 +60,8 @@ export default function RulesPage() {
 
   if (!isLoading && errorMessage) {
     return (
-      <div className="desktop-management-page stack-lg">
-        <section className="panel stack-lg">
+      <div className="desktop-management-page management-page-shell">
+        <section className="panel stack-lg management-page-header">
           <PageIntro
             description="查看和管理规则。"
             eyebrow="Rule Library"
@@ -75,8 +75,8 @@ export default function RulesPage() {
   }
 
   return (
-    <div className="desktop-management-page stack-lg">
-      <section className="panel stack-lg">
+    <div className="desktop-management-page management-page-shell">
+      <section className="panel stack-lg management-page-header">
         <PageIntro
           description="查看和管理规则。"
           eyebrow="Rule Library"
@@ -104,7 +104,7 @@ export default function RulesPage() {
       </section>
 
       {isLoading ? (
-        <section className="desktop-surface stack">
+        <section className="desktop-surface stack management-page-loading">
           <p className="section-copy">正在读取规则库。</p>
         </section>
       ) : (

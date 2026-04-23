@@ -37,6 +37,23 @@ function installDesktopApi(overrides: Partial<typeof window.plreview> = {}) {
 }
 
 describe("RulesPage", () => {
+  it("renders rules inside the fixed-shell layout with a non-scrolling header region", async () => {
+    installDesktopApi();
+
+    const { container } = render(<RulesPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1, name: "规则库" })).toBeInTheDocument(),
+    );
+
+    const shell = container.querySelector(".management-page-shell");
+    const header = container.querySelector(".management-page-header");
+
+    expect(shell).not.toBeNull();
+    expect(header).not.toBeNull();
+    expect(shell).toContainElement(header as HTMLElement);
+  });
+
   it("shows explicit failure state when rule loading rejects", async () => {
     installDesktopApi({
       getRuleDashboard: vi.fn().mockRejectedValue(new Error("rules failed")),
