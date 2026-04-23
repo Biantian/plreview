@@ -79,6 +79,7 @@ describe("globals shell styles", () => {
       "align-items: center;",
       "justify-content: center;",
       "overflow: hidden;",
+      "background: transparent;",
     ]);
     hasRule(".form-overlay::backdrop", ["background: rgba(10, 18, 28, 0.5);"]);
     hasRule(".form-overlay-panel", [
