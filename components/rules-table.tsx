@@ -4,8 +4,9 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { type Severity } from "@prisma/client";
 
 import type { RuleDashboardData, RuleSaveInput } from "@/desktop/bridge/desktop-api";
-import { RuleEditorDrawer } from "@/components/rule-editor-drawer";
+import { RuleEditorDrawer, type RuleCreateDraft } from "@/components/rule-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
+import { RULE_TEMPLATE } from "@/lib/defaults";
 import { severityLabel } from "@/lib/utils";
 
 export type RuleRow = {
@@ -30,11 +31,23 @@ function matchesQuery(item: RuleRow, query: string) {
     .includes(query);
 }
 
+function createDefaultRuleDraft(): RuleCreateDraft {
+  return {
+    name: "",
+    category: "",
+    description: "",
+    promptTemplate: RULE_TEMPLATE,
+    severity: "medium",
+    enabled: true,
+  };
+}
+
 export function RulesTable({ items }: { items: RuleRow[] }) {
   const [records, setRecords] = useState(items);
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createDraft, setCreateDraft] = useState<RuleCreateDraft>(() => createDefaultRuleDraft());
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
@@ -44,15 +57,19 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     filteredItems.find((item) => item.id === editingId) ??
     records.find((item) => item.id === editingId) ??
     null;
+  const isEditorOpen = isCreateOpen || !!editingRule;
 
   useEffect(() => {
     setRecords(items);
   }, [items]);
 
-  async function updateRules(action: () => Promise<RuleDashboardData>, successMessage: string) {
+  async function updateRules(
+    action: () => Promise<RuleDashboardData>,
+    successMessage: string,
+  ): Promise<boolean> {
     if (!window.plreview?.getRuleDashboard) {
       setFeedback("桌面桥接不可用，请从 Electron 桌面壳启动。");
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -64,8 +81,10 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
       setFeedback(successMessage);
       setEditingId(null);
       setIsCreateOpen(false);
+      return true;
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "规则操作失败。");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -98,7 +117,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
         </div>
       </div>
 
-      {feedback ? <p className="section-copy">{feedback}</p> : null}
+      {feedback && !isEditorOpen ? <p className="section-copy">{feedback}</p> : null}
 
       <div className="table-shell management-table-scroll-region">
         <table aria-label="规则表格" className="data-table">
@@ -172,17 +191,25 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
       <RuleEditorDrawer
         key={isCreateOpen ? "create" : editingRule?.id ?? "closed"}
         busy={isSaving}
+        createDraft={createDraft}
         errorMessage={feedback}
+        onChangeCreateDraft={setCreateDraft}
+        onClearCreateDraft={() => setCreateDraft(createDefaultRuleDraft())}
         onClose={() => {
           setEditingId(null);
           setIsCreateOpen(false);
         }}
-        onSave={(payload: RuleSaveInput) =>
-          updateRules(
+        onSave={async (payload: RuleSaveInput) => {
+          const saved = await updateRules(
             () => window.plreview.saveRule(payload),
             payload.id ? "规则已更新。" : "规则已创建。",
-          )}
-        open={isCreateOpen || !!editingRule}
+          );
+
+          if (saved && !payload.id) {
+            setCreateDraft(createDefaultRuleDraft());
+          }
+        }}
+        open={isEditorOpen}
         rule={isCreateOpen ? null : editingRule}
       />
     </section>

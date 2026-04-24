@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RulesTable } from "@/components/rules-table";
+import { RULE_TEMPLATE } from "@/lib/defaults";
 
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
@@ -352,5 +353,108 @@ describe("RulesTable", () => {
       window.innerWidth = originalInnerWidth;
       window.innerHeight = originalInnerHeight;
     }
+  });
+
+  it("keeps unsaved create rule values after closing and reopening", async () => {
+    const user = userEvent.setup();
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "新增草稿规则");
+    await user.type(screen.getByLabelText("分类"), "体验");
+    await user.type(screen.getByLabelText("规则说明"), "不要在关闭后消失");
+
+    await user.click(screen.getByRole("button", { name: "取消" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "新增规则" })).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+
+    expect(screen.getByLabelText("规则名称")).toHaveValue("新增草稿规则");
+    expect(screen.getByLabelText("分类")).toHaveValue("体验");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("不要在关闭后消失");
+  });
+
+  it("clears the create rule draft only when the user clicks clear", async () => {
+    const user = userEvent.setup();
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "待清空规则");
+    await user.type(screen.getByLabelText("分类"), "草稿");
+    await user.clear(screen.getByLabelText("评审模板"));
+    await user.type(screen.getByLabelText("评审模板"), "临时模板");
+
+    await user.click(screen.getByRole("button", { name: "清空" }));
+
+    expect(screen.getByLabelText("规则名称")).toHaveValue("");
+    expect(screen.getByLabelText("分类")).toHaveValue("");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("");
+    expect(screen.getByLabelText("评审模板")).toHaveValue(RULE_TEMPLATE);
+    expect(screen.getByLabelText("默认严重级别")).toHaveValue("medium");
+    expect(screen.getByLabelText("保存后立即启用")).toBeChecked();
+  });
+
+  it("clears the create rule draft after a successful create save", async () => {
+    const user = userEvent.setup();
+    const saveRuleMock = vi.fn().mockResolvedValue({
+      enabledCount: 1,
+      categoryCount: 1,
+      latestUpdatedAtLabel: "2026-04-24 12:00",
+      items: [],
+      totalCount: 1,
+    });
+
+    window.plreview.saveRule = saveRuleMock;
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "保存后清空");
+    await user.type(screen.getByLabelText("分类"), "规则");
+    await user.type(screen.getByLabelText("规则说明"), "保存成功后不应留在下一次新增");
+
+    await user.click(screen.getByRole("button", { name: "保存规则" }));
+
+    await waitFor(() => {
+      expect(saveRuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: undefined,
+          name: "保存后清空",
+          category: "规则",
+          description: "保存成功后不应留在下一次新增",
+        }),
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+
+    expect(screen.getByLabelText("规则名称")).toHaveValue("");
+    expect(screen.getByLabelText("分类")).toHaveValue("");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("");
+  });
+
+  it("keeps the create rule draft when create save fails", async () => {
+    const user = userEvent.setup();
+    window.plreview.saveRule = vi.fn().mockRejectedValue(new Error("保存失败"));
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "失败保留");
+    await user.type(screen.getByLabelText("分类"), "错误");
+    await user.type(screen.getByLabelText("规则说明"), "失败后还在");
+
+    await user.click(screen.getByRole("button", { name: "保存规则" }));
+
+    expect(await screen.findByText("保存失败")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "新增规则" })).toBeInTheDocument();
+    expect(screen.getByLabelText("规则名称")).toHaveValue("失败保留");
+    expect(screen.getByLabelText("分类")).toHaveValue("错误");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("失败后还在");
   });
 });
