@@ -70,6 +70,29 @@ describe("globals shell styles", () => {
     expect(globalsCss).toContain("box-shadow: none;");
   });
 
+  it("defines a fixed overlay shell with a dedicated scrolling body", () => {
+    hasRule(".form-overlay", [
+      "position: fixed;",
+      "inset: 0;",
+      "z-index: 55;",
+      "display: flex;",
+      "align-items: center;",
+      "justify-content: center;",
+      "overflow: hidden;",
+      "background: transparent;",
+    ]);
+    hasRule(".form-overlay::backdrop", ["background: rgba(10, 18, 28, 0.5);"]);
+    hasRule(".form-overlay-panel", [
+      "display: grid;",
+      "grid-template-rows: auto minmax(0, 1fr) auto;",
+      "max-height: calc(100vh - 40px);",
+      "overflow: hidden;",
+    ]);
+    hasRule(".form-overlay-body", ["min-height: 0;", "overflow-y: auto;"]);
+    hasRule(".form-overlay-header", ["border-bottom: 1px solid var(--line);"]);
+    hasRule(".form-overlay-footer", ["border-top: 1px solid var(--line);"]);
+  });
+
   it("pushes content down with container padding while letting the shell itself reach the very top", () => {
     hasRule("html", ["height: 100%;", "padding: 0;"]);
     hasRule("body", ["height: 100%;", "padding: 0;", "overflow: hidden;"]);

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -114,7 +114,7 @@ describe("ModelManager", () => {
 
     expect(screen.getByText("演示配置")).toBeInTheDocument();
     expect(screen.queryByText("百炼生产")).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "模型编辑抽屉" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "模型编辑" })).toBeInTheDocument();
   });
 
   it("opens the create drawer from the toolbar", async () => {
@@ -124,7 +124,76 @@ describe("ModelManager", () => {
 
     await user.click(screen.getByRole("button", { name: "新增模型" }));
 
-    expect(screen.getByRole("dialog", { name: "模型编辑抽屉" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "新增模型配置" })).toBeInTheDocument();
     expect(screen.getByText("新增模型配置")).toBeInTheDocument();
+  });
+
+  it("keeps typed values when the create overlay switches modes on resize", async () => {
+    const user = userEvent.setup();
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+
+    try {
+      window.innerWidth = 1440;
+      window.innerHeight = 900;
+
+      render(<ModelManager profiles={[]} />);
+
+      await user.click(screen.getByRole("button", { name: "新增模型" }));
+
+      const overlay = screen.getByRole("dialog", { name: "新增模型配置" });
+      const nameField = screen.getByLabelText("配置名称");
+
+      expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
+
+      await user.type(nameField, "测试模型");
+
+      window.innerWidth = 1024;
+      window.innerHeight = 720;
+      fireEvent(window, new Event("resize"));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "新增模型配置" })).toHaveAttribute(
+          "data-overlay-mode",
+          "dialog",
+        );
+      });
+
+      expect(screen.getByLabelText("配置名称")).toHaveValue("测试模型");
+      expect(screen.getByRole("button", { name: "保存配置" })).toBeInTheDocument();
+    } finally {
+      window.innerWidth = originalInnerWidth;
+      window.innerHeight = originalInnerHeight;
+    }
+  });
+
+  it("submits create payload from the footer button outside the form", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "新模型");
+    await user.type(screen.getByLabelText("供应商显示名"), "OpenAI Compatible");
+    await user.type(screen.getByLabelText("默认模型"), "qwen-plus");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/v1");
+    await user.type(screen.getByLabelText("常用模型"), "qwen-plus");
+
+    await user.click(screen.getByRole("button", { name: "保存配置" }));
+
+    await waitFor(() => {
+      expect(window.plreview.saveModelProfile).toHaveBeenCalledWith({
+        id: undefined,
+        name: "新模型",
+        provider: "OpenAI Compatible",
+        vendorKey: "openai_compatible",
+        mode: "live",
+        baseUrl: "https://example.com/v1",
+        defaultModel: "qwen-plus",
+        modelOptionsText: "qwen-plus",
+        apiKey: "",
+        enabled: true,
+      });
+    });
   });
 });
