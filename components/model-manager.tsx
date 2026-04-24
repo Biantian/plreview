@@ -233,6 +233,7 @@ export function ModelManager({
       )}
 
       <ModelEditorDrawer
+        key={isCreateOpen ? "create" : editingProfile?.id ?? "closed"}
         busy={isSaving}
         createDraft={createDraft}
         errorMessage={feedback}

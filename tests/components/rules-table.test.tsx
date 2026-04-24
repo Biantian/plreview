@@ -378,6 +378,29 @@ describe("RulesTable", () => {
     expect(screen.getByLabelText("规则说明")).toHaveValue("不要在关闭后消失");
   });
 
+  it("keeps the create rule draft after header close dismissal", async () => {
+    const user = userEvent.setup();
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "关闭按钮规则草稿");
+    await user.type(screen.getByLabelText("分类"), "关闭按钮");
+    await user.type(screen.getByLabelText("规则说明"), "头部关闭后也要保留");
+
+    await user.click(screen.getByRole("button", { name: "Close overlay" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "新增规则" })).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+
+    expect(screen.getByLabelText("规则名称")).toHaveValue("关闭按钮规则草稿");
+    expect(screen.getByLabelText("分类")).toHaveValue("关闭按钮");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("头部关闭后也要保留");
+  });
+
   it("keeps the create rule draft after Escape dismissal and clears stale feedback on reopen", async () => {
     const user = userEvent.setup();
     window.plreview.saveRule = vi.fn().mockRejectedValue(new Error("保存失败"));

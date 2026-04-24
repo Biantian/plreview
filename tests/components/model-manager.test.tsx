@@ -224,6 +224,52 @@ describe("ModelManager", () => {
     expect(screen.getByLabelText("API Key")).toHaveValue("sk-draft");
   });
 
+  it("keeps the create model draft after header close dismissal", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "关闭按钮模型草稿");
+    await user.type(screen.getByLabelText("供应商显示名"), "Header Close Provider");
+    await user.type(screen.getByLabelText("默认模型"), "header-close-model");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/header-close");
+    await user.type(screen.getByLabelText("API Key"), "sk-header-close");
+
+    await user.click(screen.getByRole("button", { name: "Close overlay" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "新增模型配置" })).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+
+    expect(screen.getByLabelText("配置名称")).toHaveValue("关闭按钮模型草稿");
+    expect(screen.getByLabelText("供应商显示名")).toHaveValue("Header Close Provider");
+    expect(screen.getByLabelText("默认模型")).toHaveValue("header-close-model");
+    expect(screen.getByLabelText("Base URL")).toHaveValue("https://example.com/header-close");
+    expect(screen.getByLabelText("API Key")).toHaveValue("sk-header-close");
+  });
+
+  it("resets edit form values when switching to another model profile", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={profiles} />);
+
+    await user.click(screen.getByRole("button", { name: "编辑 百炼生产" }));
+    await user.clear(screen.getByLabelText("配置名称"));
+    await user.type(screen.getByLabelText("配置名称"), "临时修改的模型");
+    await user.selectOptions(screen.getByLabelText("运行模式"), "demo");
+    await user.click(screen.getByLabelText("保存后立即启用"));
+    await user.click(screen.getByRole("button", { name: "编辑 演示配置" }));
+
+    expect(screen.getByLabelText("配置名称")).toHaveValue("演示配置");
+    expect(screen.getByLabelText("供应商显示名")).toHaveValue("Demo");
+    expect(screen.getByLabelText("运行模式")).toHaveValue("demo");
+    expect(screen.getByLabelText("默认模型")).toHaveValue("mock-model");
+    expect(screen.getByLabelText("保存后立即启用")).not.toBeChecked();
+  });
+
   it("keeps the create model draft after Escape dismissal and clears stale feedback on reopen", async () => {
     const user = userEvent.setup();
     window.plreview.saveModelProfile = vi.fn().mockRejectedValue(new Error("模型保存失败"));
