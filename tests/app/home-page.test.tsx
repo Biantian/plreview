@@ -92,8 +92,8 @@ describe("HomePage", () => {
     expect(recentPane).toHaveClass("home-recent-pane");
     expect(within(recentPane).getByTestId("home-recent-scroll")).toHaveClass("home-pane-scroll");
 
-    expect(screen.getAllByRole("link", { name: "开始新批次" })).toHaveLength(1);
-    expect(within(header).getByRole("link", { name: "开始新批次" })).toHaveAttribute("href", "/reviews/new");
+    expect(within(header).queryByRole("link", { name: "开始新批次" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "开始新批次" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "创建评审批次" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "查看评审任务" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "维护规则库" })).not.toBeInTheDocument();
@@ -177,7 +177,7 @@ describe("HomePage", () => {
     const recentPane = screen.getByTestId("home-recent-reviews-pane");
 
     expect(cockpit).toHaveClass("home-command-center");
-    expect(screen.getAllByRole("link", { name: "开始新批次" })).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "开始新批次" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "创建评审批次" })).not.toBeInTheDocument();
     expect(within(snapshotPane).getByText("工作台状态暂不可用")).toBeInTheDocument();
     expect(

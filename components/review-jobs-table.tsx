@@ -515,9 +515,6 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
             <h3>还没有评审任务</h3>
             <p className="muted">创建第一份评审后，这里会显示任务。</p>
           </div>
-          <Link className="button" href="/reviews/new">
-            去新建批次
-          </Link>
         </div>
       ) : (
         <div className="table-shell review-jobs-table review-jobs-scroll-region">

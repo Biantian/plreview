@@ -74,11 +74,6 @@ export default function HomePage() {
     <div className="home-command-center" data-testid="home-desktop-cockpit">
       <header className="home-command-header" data-testid="home-command-header">
         <PageIntro
-          actions={
-            <Link className="button" href="/reviews/new">
-              开始新批次
-            </Link>
-          }
           description="继续最近评审，或开始一个新的本地批次。"
           eyebrow="Workspace"
           title="评审工作台"

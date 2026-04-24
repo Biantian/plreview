@@ -212,6 +212,13 @@ describe("ReviewJobsTable", () => {
     );
   });
 
+  it("keeps the empty state informational without a duplicate new-batch action", () => {
+    render(<ReviewJobsTable items={[]} />);
+
+    expect(screen.getByText("还没有评审任务")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "去新建批次" })).not.toBeInTheDocument();
+  });
+
   it("renders a bounded reviews table while keeping key fields in separate scan columns", () => {
     const review = createReview({
       annotationsCount: 5,

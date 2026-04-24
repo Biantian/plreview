@@ -7,6 +7,16 @@ import type { DesktopReviewJobRow } from "@/desktop/bridge/desktop-api";
 import { PageIntro } from "@/components/page-intro";
 import { ReviewJobsTable } from "@/components/review-jobs-table";
 
+function NewBatchCommandStrip() {
+  return (
+    <section aria-label="批次操作" className="reviews-command-strip">
+      <Link className="button" href="/reviews/new">
+        新建批次
+      </Link>
+    </section>
+  );
+}
+
 export default function ReviewsPage() {
   const [items, setItems] = useState<DesktopReviewJobRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,11 +66,11 @@ export default function ReviewsPage() {
       <div className="desktop-management-page management-page-shell reviews-page-shell">
         <section className="panel stack-lg management-page-header reviews-page-header">
           <PageIntro
-            actions={<Link className="button" href="/reviews/new">新建批次</Link>}
             description="集中查看后台评审状态，按标题、文件、批次和模型筛选队列，并继续处理失败项、导出结果或打开报告。"
             eyebrow="Review Operations"
             title="评审任务"
           />
+          <NewBatchCommandStrip />
           <p className="section-copy">加载失败：{errorMessage}</p>
           <p className="section-copy">请确认桌面桥接可用后重试。</p>
         </section>
@@ -77,11 +87,11 @@ export default function ReviewsPage() {
     <div className="desktop-management-page management-page-shell reviews-page-shell">
       <section className="panel stack-lg management-page-header reviews-page-header">
         <PageIntro
-          actions={<Link className="button" href="/reviews/new">新建批次</Link>}
           description="集中查看后台评审状态，按标题、文件、批次和模型筛选队列，并继续处理失败项、导出结果或打开报告。"
           eyebrow="Review Operations"
           title="评审任务"
         />
+        <NewBatchCommandStrip />
 
         <div className="desktop-kpi-grid">
           <div className="metric-card">

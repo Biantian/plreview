@@ -31,7 +31,7 @@ function installDesktopApi(overrides: Partial<typeof window.plreview> = {}) {
 }
 
 describe("ReviewsPage", () => {
-  it("keeps page-header actions focused on creating a new batch", async () => {
+  it("places the new-batch action in a command row below the page title", async () => {
     installDesktopApi({
       listReviewJobs: vi.fn().mockResolvedValue([]),
     });
@@ -45,7 +45,10 @@ describe("ReviewsPage", () => {
     const panel = screen.getByRole("heading", { level: 1, name: "评审任务" }).closest(".panel");
 
     expect(panel).toBeTruthy();
-    expect(within(panel as HTMLElement).getByRole("link", { name: "新建批次" })).toHaveAttribute(
+    expect((panel as HTMLElement).querySelector(".page-intro-actions")).not.toBeInTheDocument();
+    const commandRow = within(panel as HTMLElement).getByRole("region", { name: "批次操作" });
+    expect(commandRow).toHaveClass("reviews-command-strip");
+    expect(within(commandRow).getByRole("link", { name: "新建批次" })).toHaveAttribute(
       "href",
       "/reviews/new",
     );

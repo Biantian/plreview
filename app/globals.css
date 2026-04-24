@@ -629,6 +629,12 @@ svg {
   min-height: 0;
 }
 
+.reviews-command-strip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .docs-page {
   flex: 1 1 auto;
   min-height: 0;
