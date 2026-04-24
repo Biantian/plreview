@@ -1797,7 +1797,7 @@ svg {
 }
 
 .form-overlay[data-overlay-mode="dialog"] .form-overlay-panel {
-  width: min(640px, 100%);
+  width: min(820px, 100%);
 }
 
 .form-overlay-header {

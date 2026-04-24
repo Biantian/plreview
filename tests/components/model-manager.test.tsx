@@ -128,7 +128,7 @@ describe("ModelManager", () => {
     expect(screen.getByText("新增模型配置")).toBeInTheDocument();
   });
 
-  it("keeps typed values when the create overlay switches modes on resize", async () => {
+  it("uses centered dialog mode and keeps typed values on resize", async () => {
     const user = userEvent.setup();
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
@@ -144,7 +144,7 @@ describe("ModelManager", () => {
       const overlay = screen.getByRole("dialog", { name: "新增模型配置" });
       const nameField = screen.getByLabelText("配置名称");
 
-      expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
+      expect(overlay).toHaveAttribute("data-overlay-mode", "dialog");
 
       await user.type(nameField, "测试模型");
 

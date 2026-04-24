@@ -16,8 +16,8 @@ export type OverlayMode = "drawer" | "dialog";
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]):not([hidden]), [href]:not([hidden]), input:not([disabled]):not([type="hidden"]):not([hidden]), select:not([disabled]):not([hidden]), textarea:not([disabled]):not([hidden]), [tabindex]:not([tabindex="-1"]):not([hidden])';
 
-export function getOverlayMode(width: number, height: number): OverlayMode {
-  return width >= 1180 && height >= 760 ? "drawer" : "dialog";
+export function getOverlayMode(_width: number, _height: number): OverlayMode {
+  return "dialog";
 }
 
 type AdaptiveFormOverlayProps = {

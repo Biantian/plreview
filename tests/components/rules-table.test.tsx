@@ -288,7 +288,7 @@ describe("RulesTable", () => {
     });
   });
 
-  it("starts in drawer mode on large screens, switches to dialog on resize, and keeps typed values", async () => {
+  it("uses centered dialog mode on large screens and keeps typed values on resize", async () => {
     const user = userEvent.setup();
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
@@ -329,7 +329,7 @@ describe("RulesTable", () => {
       const overlay = screen.getByRole("dialog", { name: "规则编辑" });
       const descriptionField = screen.getByLabelText("规则说明");
 
-      expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
+      expect(overlay).toHaveAttribute("data-overlay-mode", "dialog");
 
       await user.type(descriptionField, " - 已修改");
       expect(descriptionField).toHaveValue("检查目标表达是否清楚 - 已修改");
