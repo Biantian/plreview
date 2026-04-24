@@ -196,4 +196,113 @@ describe("ModelManager", () => {
       });
     });
   });
+
+  it("keeps unsaved create model values after closing and reopening", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "新增模型草稿");
+    await user.type(screen.getByLabelText("供应商显示名"), "OpenAI Compatible");
+    await user.type(screen.getByLabelText("默认模型"), "qwen-plus");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/v1");
+    await user.type(screen.getByLabelText("API Key"), "sk-draft");
+
+    await user.click(screen.getByRole("button", { name: "取消" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "新增模型配置" })).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+
+    expect(screen.getByLabelText("配置名称")).toHaveValue("新增模型草稿");
+    expect(screen.getByLabelText("供应商显示名")).toHaveValue("OpenAI Compatible");
+    expect(screen.getByLabelText("默认模型")).toHaveValue("qwen-plus");
+    expect(screen.getByLabelText("Base URL")).toHaveValue("https://example.com/v1");
+    expect(screen.getByLabelText("API Key")).toHaveValue("sk-draft");
+  });
+
+  it("clears the create model draft only when the user clicks clear", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "待清空模型");
+    await user.type(screen.getByLabelText("供应商显示名"), "Provider");
+    await user.type(screen.getByLabelText("默认模型"), "model-a");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/v1");
+    await user.type(screen.getByLabelText("API Key"), "sk-clear");
+
+    await user.click(screen.getByRole("button", { name: "清空" }));
+
+    expect(screen.getByLabelText("配置名称")).toHaveValue("");
+    expect(screen.getByLabelText("供应商显示名")).toHaveValue("");
+    expect(screen.getByLabelText("运行模式")).toHaveValue("live");
+    expect(screen.getByLabelText("默认模型")).toHaveValue("");
+    expect(screen.getByLabelText("Base URL")).toHaveValue("");
+    expect(screen.getByLabelText("常用模型")).toHaveValue("");
+    expect(screen.getByLabelText("API Key")).toHaveValue("");
+    expect(screen.getByLabelText("保存后立即启用")).toBeChecked();
+  });
+
+  it("clears the create model draft after a successful create save", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "保存后清空模型");
+    await user.type(screen.getByLabelText("供应商显示名"), "OpenAI Compatible");
+    await user.type(screen.getByLabelText("默认模型"), "qwen-plus");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/v1");
+    await user.type(screen.getByLabelText("API Key"), "sk-created");
+
+    await user.click(screen.getByRole("button", { name: "保存配置" }));
+
+    await waitFor(() => {
+      expect(window.plreview.saveModelProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: undefined,
+          name: "保存后清空模型",
+          provider: "OpenAI Compatible",
+          defaultModel: "qwen-plus",
+          baseUrl: "https://example.com/v1",
+          apiKey: "sk-created",
+        }),
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+
+    expect(screen.getByLabelText("配置名称")).toHaveValue("");
+    expect(screen.getByLabelText("供应商显示名")).toHaveValue("");
+    expect(screen.getByLabelText("默认模型")).toHaveValue("");
+    expect(screen.getByLabelText("Base URL")).toHaveValue("");
+    expect(screen.getByLabelText("API Key")).toHaveValue("");
+  });
+
+  it("keeps the create model draft when create save fails", async () => {
+    const user = userEvent.setup();
+    window.plreview.saveModelProfile = vi.fn().mockRejectedValue(new Error("模型保存失败"));
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "失败模型");
+    await user.type(screen.getByLabelText("供应商显示名"), "Provider");
+    await user.type(screen.getByLabelText("默认模型"), "model-a");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/v1");
+    await user.type(screen.getByLabelText("API Key"), "sk-failed");
+
+    await user.click(screen.getByRole("button", { name: "保存配置" }));
+
+    expect(await screen.findByText("模型保存失败")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "新增模型配置" })).toBeInTheDocument();
+    expect(screen.getByLabelText("配置名称")).toHaveValue("失败模型");
+    expect(screen.getByLabelText("供应商显示名")).toHaveValue("Provider");
+    expect(screen.getByLabelText("API Key")).toHaveValue("sk-failed");
+  });
 });

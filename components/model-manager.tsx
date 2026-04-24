@@ -7,7 +7,7 @@ import type {
   ModelDashboardProfile,
   ModelSaveInput,
 } from "@/desktop/bridge/desktop-api";
-import { ModelEditorDrawer } from "@/components/model-editor-drawer";
+import { ModelEditorDrawer, type ModelCreateDraft } from "@/components/model-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
 
 type ModelProfileRecord = ModelDashboardProfile;
@@ -30,6 +30,20 @@ function matchesQuery(profile: ModelProfileRecord, query: string) {
     .includes(query);
 }
 
+function createDefaultModelDraft(): ModelCreateDraft {
+  return {
+    name: "",
+    provider: "",
+    vendorKey: "openai_compatible",
+    mode: "live",
+    baseUrl: "",
+    defaultModel: "",
+    modelOptionsText: "",
+    apiKey: "",
+    enabled: true,
+  };
+}
+
 export function ModelManager({
   profiles,
 }: {
@@ -39,6 +53,7 @@ export function ModelManager({
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createDraft, setCreateDraft] = useState<ModelCreateDraft>(() => createDefaultModelDraft());
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
@@ -51,6 +66,7 @@ export function ModelManager({
     filteredProfiles.find((profile) => profile.id === editingId) ??
     records.find((profile) => profile.id === editingId) ??
     null;
+  const isEditorOpen = isCreateOpen || !!editingProfile;
 
   useEffect(() => {
     setRecords(profiles);
@@ -59,10 +75,10 @@ export function ModelManager({
   async function updateProfiles(
     action: () => Promise<ModelDashboardData>,
     successMessage: string,
-  ) {
+  ): Promise<boolean> {
     if (!window.plreview?.getModelDashboard) {
       setFeedback("桌面桥接不可用，请从 Electron 桌面壳启动。");
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -74,8 +90,10 @@ export function ModelManager({
       setFeedback(successMessage);
       setEditingId(null);
       setIsCreateOpen(false);
+      return true;
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "模型配置操作失败。");
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -108,7 +126,7 @@ export function ModelManager({
         </div>
       </div>
 
-      {feedback ? <p className="section-copy">{feedback}</p> : null}
+      {feedback && !isEditorOpen ? <p className="section-copy">{feedback}</p> : null}
 
       {filteredProfiles.length === 0 ? (
         <div className="card stack management-table-empty">
@@ -199,17 +217,25 @@ export function ModelManager({
 
       <ModelEditorDrawer
         busy={isSaving}
+        createDraft={createDraft}
         errorMessage={feedback}
+        onChangeCreateDraft={setCreateDraft}
+        onClearCreateDraft={() => setCreateDraft(createDefaultModelDraft())}
         onClose={() => {
           setEditingId(null);
           setIsCreateOpen(false);
         }}
-        onSave={(payload: ModelSaveInput) =>
-          updateProfiles(
+        onSave={async (payload: ModelSaveInput) => {
+          const saved = await updateProfiles(
             () => window.plreview.saveModelProfile(payload),
             payload.id ? "模型配置已更新。" : "模型配置已创建。",
-          )}
-        open={isCreateOpen || !!editingProfile}
+          );
+
+          if (saved && !payload.id) {
+            setCreateDraft(createDefaultModelDraft());
+          }
+        }}
+        open={isEditorOpen}
         profile={isCreateOpen ? null : editingProfile}
       />
     </section>
