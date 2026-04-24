@@ -65,6 +65,14 @@ export function ModelEditorDrawer({
     onChangeCreateDraft({ ...createDraft, [field]: value });
   };
 
+  const handleCloseRequest = () => {
+    if (busy) {
+      return;
+    }
+
+    onClose();
+  };
+
   const textFieldProps = (
     field: "name" | "provider" | "baseUrl" | "defaultModel" | "modelOptionsText" | "apiKey",
     fallback: string,
@@ -93,12 +101,12 @@ export function ModelEditorDrawer({
           <button className="button" form="model-editor-form" disabled={busy} type="submit">
             {busy ? "保存中..." : isCreateMode ? "保存配置" : "保存修改"}
           </button>
-          <button className="button-ghost" disabled={busy} onClick={onClose} type="button">
+          <button className="button-ghost" disabled={busy} onClick={handleCloseRequest} type="button">
             取消
           </button>
         </div>
       }
-      onClose={onClose}
+      onClose={handleCloseRequest}
       open={open}
       title={title}
     >

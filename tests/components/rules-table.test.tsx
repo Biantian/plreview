@@ -429,6 +429,40 @@ describe("RulesTable", () => {
     expect(screen.queryByText("保存失败")).not.toBeInTheDocument();
   });
 
+  it("keeps the create rule overlay open when a save is busy and a header close is attempted", async () => {
+    const user = userEvent.setup();
+    let rejectSave: ((reason?: unknown) => void) | undefined;
+    window.plreview.saveRule = vi.fn(
+      () =>
+        new Promise((_, reject) => {
+          rejectSave = reject;
+        }),
+    );
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "忙碌中的规则");
+    await user.type(screen.getByLabelText("分类"), "保存中");
+    await user.type(screen.getByLabelText("规则说明"), "请求未返回前不能关闭");
+
+    await user.click(screen.getByRole("button", { name: "保存规则" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "保存中..." })).toBeDisabled();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Close overlay" }));
+
+    expect(screen.getByRole("dialog", { name: "新增规则" })).toBeInTheDocument();
+    expect(screen.getByLabelText("规则名称")).toHaveValue("忙碌中的规则");
+
+    rejectSave?.(new Error("保存失败"));
+
+    expect(await screen.findByText("保存失败")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "新增规则" })).toBeInTheDocument();
+  });
+
   it("clears the create rule draft only when the user clicks clear", async () => {
     const user = userEvent.setup();
 

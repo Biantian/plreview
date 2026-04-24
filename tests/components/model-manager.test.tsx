@@ -302,6 +302,60 @@ describe("ModelManager", () => {
     expect(screen.queryByText("模型保存失败")).not.toBeInTheDocument();
   });
 
+  it("keeps the create model overlay open when a save is busy and Escape is pressed", async () => {
+    const user = userEvent.setup();
+    let resolveSave:
+      | ((value: {
+          metrics: {
+            totalCount: number;
+            enabledCount: number;
+            liveCount: number;
+            latestUpdatedAtLabel: string;
+          };
+          profiles: typeof profiles;
+        }) => void)
+      | undefined;
+    window.plreview.saveModelProfile = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    render(<ModelManager profiles={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增模型" }));
+    await user.type(screen.getByLabelText("配置名称"), "忙碌模型");
+    await user.type(screen.getByLabelText("供应商显示名"), "Provider");
+    await user.type(screen.getByLabelText("默认模型"), "busy-model");
+    await user.type(screen.getByLabelText("Base URL"), "https://example.com/busy");
+
+    await user.click(screen.getByRole("button", { name: "保存配置" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "保存中..." })).toBeDisabled();
+    });
+
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "新增模型配置" }), { key: "Escape" });
+
+    expect(screen.getByRole("dialog", { name: "新增模型配置" })).toBeInTheDocument();
+    expect(screen.getByLabelText("配置名称")).toHaveValue("忙碌模型");
+
+    resolveSave?.({
+      metrics: {
+        totalCount: profiles.length + 1,
+        enabledCount: 2,
+        liveCount: 2,
+        latestUpdatedAtLabel: "2026-04-15 16:00",
+      },
+      profiles,
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "新增模型配置" })).not.toBeInTheDocument();
+    });
+  });
+
   it("clears the create model draft only when the user clicks clear", async () => {
     const user = userEvent.setup();
 
