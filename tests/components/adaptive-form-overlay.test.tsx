@@ -61,12 +61,12 @@ describe("AdaptiveFormOverlay", () => {
     });
   });
 
-  it("maps overlay mode at the boundary thresholds", () => {
+  it("keeps overlay mode centered across viewport sizes", () => {
     expect(getOverlayMode(1179, 759)).toBe("dialog");
     expect(getOverlayMode(1180, 759)).toBe("dialog");
     expect(getOverlayMode(1179, 760)).toBe("dialog");
-    expect(getOverlayMode(1180, 760)).toBe("drawer");
-    expect(getOverlayMode(1440, 900)).toBe("drawer");
+    expect(getOverlayMode(1180, 760)).toBe("dialog");
+    expect(getOverlayMode(1440, 900)).toBe("dialog");
   });
 
   it("focuses the first shell control on open, closes on Escape, and restores focus to the trigger", async () => {
@@ -215,6 +215,7 @@ describe("AdaptiveFormOverlay", () => {
 
     expect(screen.getByText("辅助说明")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    expect(container.querySelector(".form-overlay-shell")).toBeInTheDocument();
     expect(container.querySelector(".form-overlay-body")).toBeInTheDocument();
     expect(container.querySelector(".form-overlay-footer")).toBeInTheDocument();
   });
@@ -254,7 +255,7 @@ describe("AdaptiveFormOverlay", () => {
     }
   });
 
-  it("switches overlay mode on resize without remounting typed form state", async () => {
+  it("keeps dialog mode on resize without remounting typed form state", async () => {
     const user = userEvent.setup();
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
@@ -271,7 +272,7 @@ describe("AdaptiveFormOverlay", () => {
       const input = screen.getByLabelText("名称") as HTMLInputElement;
 
       expect(overlay.tagName).toBe("DIALOG");
-      expect(overlay).toHaveAttribute("data-overlay-mode", "drawer");
+      expect(overlay).toHaveAttribute("data-overlay-mode", "dialog");
 
       await user.type(input, "已填写的内容");
       expect(input.value).toBe("已填写的内容");

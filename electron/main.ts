@@ -8,6 +8,7 @@ import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
 import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
 import { loadDesktopDataModules } from "@/electron/desktop-data-loader";
 import { applyDesktopRuntimeEnv } from "@/electron/runtime-env";
+import { resolveDesktopUserDataPathOverride } from "@/electron/user-data-path";
 import {
   PACKAGED_RENDERER_SCHEME,
   resolvePackagedRendererAssetPath,
@@ -38,16 +39,20 @@ const runtimeMetrics = createRuntimeMetricsService();
 configureUserDataPath();
 
 function configureUserDataPath() {
-  const overridePath = process.env.PLREVIEW_DESKTOP_USER_DATA_PATH?.trim();
+  const overridePath = resolveDesktopUserDataPathOverride({
+    currentDir,
+    defaultUserDataPath: app.getPath("userData"),
+    env: process.env,
+    isPackaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+  });
 
   if (!overridePath) {
     return;
   }
 
-  const resolvedOverridePath = path.resolve(overridePath);
-
-  fs.mkdirSync(resolvedOverridePath, { recursive: true });
-  app.setPath("userData", resolvedOverridePath);
+  fs.mkdirSync(overridePath, { recursive: true });
+  app.setPath("userData", overridePath);
 }
 
 function publishRuntimeStatus() {

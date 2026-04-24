@@ -5,15 +5,19 @@ import { spawnSync } from "node:child_process";
 const forwardedArgs = process.argv.slice(2);
 
 if (process.env.PLREVIEW_DESKTOP_DIST_SKIP_BUILD !== "1") {
-  runCommand(getNpmCommand(), ["run", "desktop:build"]);
+  runCommand(getNpmCommand(), ["run", "desktop:build"], {
+    ...process.env,
+    PLREVIEW_DESKTOP_LOCAL_BUILD_CONTEXT:
+      process.env.PLREVIEW_DESKTOP_LOCAL_BUILD_CONTEXT ?? "1",
+  });
 }
 
 if (process.env.PLREVIEW_DESKTOP_DIST_CLEAN_OUTPUT !== "0") {
   cleanDistOutput();
 }
 
-runCommand(getBuilderCommand(), forwardedArgs);
-runCommand(getReportCommand(), []);
+runCommand(getBuilderCommand(), forwardedArgs, process.env);
+runCommand(getReportCommand(), [], process.env);
 
 function getNpmCommand() {
   if (process.env.PLREVIEW_DESKTOP_DIST_NPM_CMD) {
@@ -57,10 +61,10 @@ function getReportCommand() {
   };
 }
 
-function runCommand(commandConfig, extraArgs) {
+function runCommand(commandConfig, extraArgs, env) {
   const result = spawnSync(commandConfig.command, [...commandConfig.args, ...extraArgs], {
     stdio: "inherit",
-    env: process.env,
+    env,
   });
 
   if (typeof result.status === "number" && result.status !== 0) {

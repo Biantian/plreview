@@ -1752,18 +1752,29 @@ svg {
   position: fixed;
   inset: 0;
   z-index: 55;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   margin: 0;
-  padding: 20px;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  padding: 0;
   border: 0;
   background: transparent;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .form-overlay::backdrop {
   background: rgba(10, 18, 28, 0.5);
+}
+
+.form-overlay-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
 }
 
 .form-overlay[data-overlay-mode="drawer"] {
@@ -1797,7 +1808,7 @@ svg {
 }
 
 .form-overlay[data-overlay-mode="dialog"] .form-overlay-panel {
-  width: min(640px, 100%);
+  width: min(820px, 100%);
 }
 
 .form-overlay-header {

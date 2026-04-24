@@ -75,11 +75,22 @@ describe("globals shell styles", () => {
       "position: fixed;",
       "inset: 0;",
       "z-index: 55;",
+      "padding: 0;",
+      "max-width: none;",
+      "max-height: none;",
+      "width: 100vw;",
+      "height: 100vh;",
+      "overflow: visible;",
+      "background: transparent;",
+    ]);
+    hasRule(".form-overlay-shell", [
       "display: flex;",
+      "width: 100%;",
+      "height: 100%;",
       "align-items: center;",
       "justify-content: center;",
+      "padding: 20px;",
       "overflow: hidden;",
-      "background: transparent;",
     ]);
     hasRule(".form-overlay::backdrop", ["background: rgba(10, 18, 28, 0.5);"]);
     hasRule(".form-overlay-panel", [

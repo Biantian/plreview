@@ -16,8 +16,8 @@ export type OverlayMode = "drawer" | "dialog";
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]):not([hidden]), [href]:not([hidden]), input:not([disabled]):not([type="hidden"]):not([hidden]), select:not([disabled]):not([hidden]), textarea:not([disabled]):not([hidden]), [tabindex]:not([tabindex="-1"]):not([hidden])';
 
-export function getOverlayMode(width: number, height: number): OverlayMode {
-  return width >= 1180 && height >= 760 ? "drawer" : "dialog";
+export function getOverlayMode(_width: number, _height: number): OverlayMode {
+  return "dialog";
 }
 
 type AdaptiveFormOverlayProps = {
@@ -114,6 +114,12 @@ export function AdaptiveFormOverlay({
     }
   };
 
+  const handleShellBackdropClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
+
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDialogElement>) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -165,21 +171,23 @@ export function AdaptiveFormOverlay({
       role="dialog"
       tabIndex={-1}
     >
-      <div className="form-overlay-panel" ref={panelRef} tabIndex={-1}>
-        <header className="form-overlay-header">
-          <div className="form-overlay-copy">
-            <h2 id={titleId}>{title}</h2>
-            {description ? <p id={descriptionId}>{description}</p> : null}
-          </div>
+      <div className="form-overlay-shell" onClick={handleShellBackdropClick}>
+        <div className="form-overlay-panel" ref={panelRef} tabIndex={-1}>
+          <header className="form-overlay-header">
+            <div className="form-overlay-copy">
+              <h2 id={titleId}>{title}</h2>
+              {description ? <p id={descriptionId}>{description}</p> : null}
+            </div>
 
-          <button aria-label="Close overlay" className="form-overlay-close" onClick={onClose} type="button">
-            ×
-          </button>
-        </header>
+            <button aria-label="Close overlay" className="form-overlay-close" onClick={onClose} type="button">
+              ×
+            </button>
+          </header>
 
-        <div className="form-overlay-body">{children}</div>
+          <div className="form-overlay-body">{children}</div>
 
-        {footer ? <footer className="form-overlay-footer">{footer}</footer> : null}
+          {footer ? <footer className="form-overlay-footer">{footer}</footer> : null}
+        </div>
       </div>
     </dialog>
   );
