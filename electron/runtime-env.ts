@@ -6,6 +6,7 @@ import { applyLocalDevEnvDefaults } from "@/lib/dev-env";
 
 const PACKAGED_DATABASE_FILENAME = "plreview.db";
 const PACKAGED_ENCRYPTION_KEY_FILENAME = "app-encryption.key";
+const REQUIRED_PACKAGED_DATABASE_TABLES = ["Rule", "RuleVersion", "LlmProfile"];
 
 type ResolveDesktopRuntimeEnvOptions = {
   currentDir: string;
@@ -19,6 +20,13 @@ type ResolveDesktopRuntimeEnvOptions = {
 export function resolveDesktopRuntimeEnv(
   options: ResolveDesktopRuntimeEnvOptions,
 ) {
+  if (options.mode === "packaged") {
+    return resolvePackagedRuntimeEnv({
+      ...options,
+      env: options.env,
+    });
+  }
+
   const sourceRoot = findSourceRoot(options.currentDir, options.resourcesPath);
   const fileEnv = sourceRoot ? readDotEnv(sourceRoot) : {};
   const mergedEnv = applyLocalDevEnvDefaults({
@@ -34,13 +42,6 @@ export function resolveDesktopRuntimeEnv(
         path.join(sourceRoot, "prisma"),
       ),
     };
-  }
-
-  if (options.mode === "packaged") {
-    return resolvePackagedRuntimeEnv({
-      ...options,
-      env: options.env,
-    });
   }
 
   return mergedEnv;
@@ -172,6 +173,7 @@ function resolvePackagedDatabaseUrl(
     throw new Error("Missing packaged bootstrap database.");
   }
 
+  backupInvalidDatabaseFile(databaseFilePath);
   fs.writeFileSync(databaseFilePath, fs.readFileSync(bootstrapDatabasePath));
 
   return normalizedDatabaseUrl;
@@ -185,12 +187,31 @@ function isUsableSqliteDatabase(databaseFilePath: string) {
       return false;
     }
 
-    const header = fs.readFileSync(databaseFilePath).subarray(0, 16).toString("utf8");
+    const databaseBuffer = fs.readFileSync(databaseFilePath);
+    const header = databaseBuffer.subarray(0, 16).toString("utf8");
 
-    return header === "SQLite format 3\u0000";
+    if (header !== "SQLite format 3\u0000") {
+      return false;
+    }
+
+    const schemaText = databaseBuffer.toString("utf8");
+
+    return REQUIRED_PACKAGED_DATABASE_TABLES.every((tableName) =>
+      schemaText.includes(`"${tableName}"`),
+    );
   } catch {
     return false;
   }
+}
+
+function backupInvalidDatabaseFile(databaseFilePath: string) {
+  if (!fs.existsSync(databaseFilePath)) {
+    return;
+  }
+
+  const backupPath = `${databaseFilePath}.invalid-${Date.now()}`;
+
+  fs.copyFileSync(databaseFilePath, backupPath);
 }
 
 function resolvePackagedEncryptionKey(

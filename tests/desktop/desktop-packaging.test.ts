@@ -99,6 +99,15 @@ describe("desktop packaging scripts", () => {
     expect(entryPoints.every((entryPoint) => !entryPoint.includes("standalone"))).toBe(true);
   });
 
+  it("embeds local build context metadata into the packaged desktop runtime assets", () => {
+    const buildRuntimeScript = fs.readFileSync(
+      path.resolve("scripts/build-desktop-runtime.mjs"),
+      "utf8",
+    );
+
+    expect(buildRuntimeScript).toContain("local-build-context.json");
+  });
+
   it("forwards desktop dist args to electron-builder before running the size report", () => {
     const tempDir = fs.mkdtempSync(
       path.join(os.tmpdir(), "plreview-desktop-dist-script-"),
@@ -167,6 +176,15 @@ describe("desktop packaging scripts", () => {
         argv: [],
       },
     ]);
+  });
+
+  it("marks local desktop dist builds so packaged apps can isolate per-worktree user data", () => {
+    const distRunnerSource = fs.readFileSync(
+      path.resolve("scripts/run-desktop-dist.mjs"),
+      "utf8",
+    );
+
+    expect(distRunnerSource).toContain("PLREVIEW_DESKTOP_LOCAL_BUILD_CONTEXT");
   });
 
   it("cleans stale release output before builder execution", () => {

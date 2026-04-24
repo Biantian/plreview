@@ -215,6 +215,7 @@ describe("AdaptiveFormOverlay", () => {
 
     expect(screen.getByText("辅助说明")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    expect(container.querySelector(".form-overlay-shell")).toBeInTheDocument();
     expect(container.querySelector(".form-overlay-body")).toBeInTheDocument();
     expect(container.querySelector(".form-overlay-footer")).toBeInTheDocument();
   });
