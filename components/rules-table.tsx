@@ -63,6 +63,26 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     setRecords(items);
   }, [items]);
 
+  function openCreateEditor() {
+    setFeedback(null);
+    setIsCreateOpen(true);
+    setEditingId(null);
+  }
+
+  function clearCreateDraft() {
+    setCreateDraft(createDefaultRuleDraft());
+    setFeedback(null);
+  }
+
+  function closeEditor() {
+    if (isCreateOpen) {
+      setFeedback(null);
+    }
+
+    setEditingId(null);
+    setIsCreateOpen(false);
+  }
+
   async function updateRules(
     action: () => Promise<RuleDashboardData>,
     successMessage: string,
@@ -106,10 +126,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
           <p className="muted">支持按规则名称、分类、说明和严重级别筛选。</p>
           <button
             className="button"
-            onClick={() => {
-              setIsCreateOpen(true);
-              setEditingId(null);
-            }}
+            onClick={openCreateEditor}
             type="button"
           >
             新增规则
@@ -194,11 +211,8 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
         createDraft={createDraft}
         errorMessage={feedback}
         onChangeCreateDraft={setCreateDraft}
-        onClearCreateDraft={() => setCreateDraft(createDefaultRuleDraft())}
-        onClose={() => {
-          setEditingId(null);
-          setIsCreateOpen(false);
-        }}
+        onClearCreateDraft={clearCreateDraft}
+        onClose={closeEditor}
         onSave={async (payload: RuleSaveInput) => {
           const saved = await updateRules(
             () => window.plreview.saveRule(payload),

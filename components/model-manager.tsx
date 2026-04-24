@@ -72,6 +72,26 @@ export function ModelManager({
     setRecords(profiles);
   }, [profiles]);
 
+  function openCreateEditor() {
+    setFeedback(null);
+    setIsCreateOpen(true);
+    setEditingId(null);
+  }
+
+  function clearCreateDraft() {
+    setCreateDraft(createDefaultModelDraft());
+    setFeedback(null);
+  }
+
+  function closeEditor() {
+    if (isCreateOpen) {
+      setFeedback(null);
+    }
+
+    setEditingId(null);
+    setIsCreateOpen(false);
+  }
+
   async function updateProfiles(
     action: () => Promise<ModelDashboardData>,
     successMessage: string,
@@ -115,10 +135,7 @@ export function ModelManager({
           <p className="muted">支持按配置名称、供应商、模式和默认模型筛选。</p>
           <button
             className="button"
-            onClick={() => {
-              setIsCreateOpen(true);
-              setEditingId(null);
-            }}
+            onClick={openCreateEditor}
             type="button"
           >
             新增模型
@@ -220,11 +237,8 @@ export function ModelManager({
         createDraft={createDraft}
         errorMessage={feedback}
         onChangeCreateDraft={setCreateDraft}
-        onClearCreateDraft={() => setCreateDraft(createDefaultModelDraft())}
-        onClose={() => {
-          setEditingId(null);
-          setIsCreateOpen(false);
-        }}
+        onClearCreateDraft={clearCreateDraft}
+        onClose={closeEditor}
         onSave={async (payload: ModelSaveInput) => {
           const saved = await updateProfiles(
             () => window.plreview.saveModelProfile(payload),

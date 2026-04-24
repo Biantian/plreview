@@ -378,6 +378,34 @@ describe("RulesTable", () => {
     expect(screen.getByLabelText("规则说明")).toHaveValue("不要在关闭后消失");
   });
 
+  it("keeps the create rule draft after Escape dismissal and clears stale feedback on reopen", async () => {
+    const user = userEvent.setup();
+    window.plreview.saveRule = vi.fn().mockRejectedValue(new Error("保存失败"));
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "Esc 保留");
+    await user.type(screen.getByLabelText("分类"), "键盘");
+    await user.type(screen.getByLabelText("规则说明"), "关闭后继续保留");
+    await user.click(screen.getByRole("button", { name: "保存规则" }));
+
+    expect(await screen.findByText("保存失败")).toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "新增规则" }), { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "新增规则" })).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+
+    expect(screen.getByLabelText("规则名称")).toHaveValue("Esc 保留");
+    expect(screen.getByLabelText("分类")).toHaveValue("键盘");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("关闭后继续保留");
+    expect(screen.queryByText("保存失败")).not.toBeInTheDocument();
+  });
+
   it("clears the create rule draft only when the user clicks clear", async () => {
     const user = userEvent.setup();
 
@@ -397,6 +425,28 @@ describe("RulesTable", () => {
     expect(screen.getByLabelText("评审模板")).toHaveValue(RULE_TEMPLATE);
     expect(screen.getByLabelText("默认严重级别")).toHaveValue("medium");
     expect(screen.getByLabelText("保存后立即启用")).toBeChecked();
+  });
+
+  it("clears stale create feedback when the user clears the rule draft", async () => {
+    const user = userEvent.setup();
+    window.plreview.saveRule = vi.fn().mockRejectedValue(new Error("保存失败"));
+
+    render(<RulesTable items={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "新增规则" }));
+    await user.type(screen.getByLabelText("规则名称"), "待清空错误");
+    await user.type(screen.getByLabelText("分类"), "错误");
+    await user.type(screen.getByLabelText("规则说明"), "清空时不应保留错误");
+    await user.click(screen.getByRole("button", { name: "保存规则" }));
+
+    expect(await screen.findByText("保存失败")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "清空" }));
+
+    expect(screen.queryByText("保存失败")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("规则名称")).toHaveValue("");
+    expect(screen.getByLabelText("分类")).toHaveValue("");
+    expect(screen.getByLabelText("规则说明")).toHaveValue("");
   });
 
   it("clears the create rule draft after a successful create save", async () => {
@@ -436,6 +486,7 @@ describe("RulesTable", () => {
     expect(screen.getByLabelText("规则名称")).toHaveValue("");
     expect(screen.getByLabelText("分类")).toHaveValue("");
     expect(screen.getByLabelText("规则说明")).toHaveValue("");
+    expect(screen.queryByText("规则已创建。")).not.toBeInTheDocument();
   });
 
   it("keeps the create rule draft when create save fails", async () => {
