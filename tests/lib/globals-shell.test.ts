@@ -241,7 +241,7 @@ describe("globals shell styles", () => {
     hasRule(".docs-pane-article", ["padding: 0;"]);
   });
 
-  it("keeps the home cockpit fixed on desktop while allowing the rail and panes to scroll internally", () => {
+  it("keeps the simplified home cockpit fixed on desktop with internal scrolling", () => {
     hasRule(".workspace.page:has(.home-command-center)", ["overflow: hidden;"]);
     hasRule(".home-command-center", [
       "grid-template-rows: auto minmax(0, 1fr);",
@@ -249,16 +249,18 @@ describe("globals shell styles", () => {
       "overflow: hidden;",
     ]);
     hasRule(".home-cockpit-grid", ["min-height: 0;", "overflow: hidden;"]);
-    hasRule(".home-command-rail,\n.home-pane", [
+    hasRule(".home-pane,\n.home-snapshot-pane", [
       "min-width: 0;",
       "min-height: 0;",
     ]);
-    expect(globalsCss).toContain(".home-command-rail {\n  display: flex;");
-    expect(globalsCss).toContain("flex-direction: column;");
-    expect(globalsCss).toContain("overflow-x: hidden;");
-    expect(globalsCss).toContain("overflow-y: auto;");
+    hasRule(".home-cockpit-grid", ["grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);"]);
     expect(globalsCss).toContain(".home-pane {\n  display: flex;");
     expect(globalsCss).toContain(".home-pane {\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;");
+    expect(globalsCss).toContain(
+      ".home-snapshot-pane {\n  display: flex;\n  flex-direction: column;",
+    );
+    expect(globalsCss).toContain("overflow-x: hidden;\n  overflow-y: auto;");
+    expect(globalsCss).toContain("border-left: 1px solid var(--line);");
     hasRule(".home-pane-scroll", [
       "min-height: 0;",
       "overflow-x: hidden;",
@@ -266,7 +268,7 @@ describe("globals shell styles", () => {
     ]);
     expect(globalsCss).toContain("@media (max-width: 1180px)");
     expect(globalsCss).toContain(".workspace.page:has(.home-command-center) {\n    overflow-y: auto;");
-    expect(globalsCss).toContain(".home-command-rail,\n  .home-pane {\n    overflow: visible;");
+    expect(globalsCss).toContain(".home-pane,\n  .home-snapshot-pane {\n    overflow: visible;");
     expect(globalsCss).toContain(".home-pane-scroll {\n    overflow: visible;");
   });
 });

@@ -24,38 +24,6 @@ type HomeDashboardViewState = {
   isLoading: boolean;
 };
 
-type MetricItem = {
-  label: string;
-  value: number;
-};
-
-const QUICK_LINKS = [
-  {
-    description: "查看任务列表、进度和结果。",
-    href: "/reviews",
-    label: "查看评审任务",
-    tag: "任务",
-  },
-  {
-    description: "导入文档并启动评审。",
-    href: "/reviews/new",
-    label: "创建评审批次",
-    tag: "新建",
-  },
-  {
-    description: "维护规则和提示词模板。",
-    href: "/rules",
-    label: "维护规则库",
-    tag: "规则",
-  },
-  {
-    description: "管理可用于评审的模型。",
-    href: "/models",
-    label: "管理模型配置",
-    tag: "模型",
-  },
-] as const;
-
 export default function HomePage() {
   const [dashboard, setDashboard] = useState<HomeDashboardData>(EMPTY_HOME_DASHBOARD);
   const [isLoading, setIsLoading] = useState(true);
@@ -111,86 +79,83 @@ export default function HomePage() {
               开始新批次
             </Link>
           }
-          description="从这里进入任务、规则、模型配置和最近结果。"
+          description="继续最近评审，或开始一个新的本地批次。"
           eyebrow="Workspace"
           title="评审工作台"
         />
       </header>
 
       <section className="home-cockpit-grid" aria-label="工作台概览">
-        <HomeCommandRail dashboard={dashboard} errorMessage={errorMessage} isLoading={isLoading} />
         <HomeRecentReviewsPane {...viewState} />
-        <HomeReadinessPane {...viewState} />
+        <HomeSnapshotPane dashboard={dashboard} errorMessage={errorMessage} isLoading={isLoading} />
       </section>
     </div>
   );
 }
 
-function HomeCommandRail({
+function HomeSnapshotPane({
   dashboard,
   errorMessage,
   isLoading,
 }: Pick<HomeDashboardViewState, "dashboard" | "errorMessage" | "isLoading">) {
-  const metrics: MetricItem[] = [
-    { label: "已导入文档", value: dashboard.documentsCount },
-    { label: "评审任务", value: dashboard.reviewJobsCount },
-    { label: "启用规则", value: dashboard.enabledRulesCount },
-    { label: "问题标注", value: dashboard.annotationsCount },
-  ];
+  const primaryModel = dashboard.llmProfiles[0];
+  const additionalModelCount = Math.max(dashboard.llmProfiles.length - 1, 0);
 
   return (
     <aside
-      className="home-command-rail"
-      data-testid="home-command-rail"
-      aria-label="工作台常用操作"
+      className="home-snapshot-pane"
+      data-testid="home-snapshot-pane"
+      aria-labelledby="home-snapshot-title"
     >
-      <Link className="home-primary-action" href="/reviews/new" aria-label="创建评审批次">
-        <span>
-          <span className="section-eyebrow">Primary action</span>
-          <strong>创建评审批次</strong>
-        </span>
-        <span className="home-action-arrow" aria-hidden="true">
-          →
-        </span>
-      </Link>
-
-      <div className="home-quick-links" aria-label="常用入口">
-        {QUICK_LINKS.map((link) => (
-          <Link
-            className="home-quick-link"
-            href={link.href}
-            key={link.href}
-            aria-label={link.label}
-          >
-            <span className="home-quick-link-copy">
-              <strong>{link.label}</strong>
-              <span>{link.description}</span>
-            </span>
-            <span className="pill pill-brand">{link.tag}</span>
-          </Link>
-        ))}
+      <div className="home-snapshot-header">
+        <p className="section-eyebrow">Status</p>
+        <h2 className="subsection-title" id="home-snapshot-title">
+          当前状态
+        </h2>
+        <p className="section-copy">只保留开始评审前真正需要确认的信息。</p>
       </div>
 
       {errorMessage ? (
-        <div className="home-unavailable-block" aria-label="工作台指标暂不可用">
+        <div className="home-unavailable-block" aria-label="工作台状态暂不可用">
           <p className="section-eyebrow">Unavailable</p>
-          <strong>工作台指标暂不可用</strong>
-          <p className="muted">桌面桥接恢复后，这里会显示文档、任务、规则和标注概览。</p>
+          <strong>工作台状态暂不可用</strong>
+          <p className="muted">桌面桥接恢复后，这里会显示规则、模型和本地资料。</p>
         </div>
       ) : isLoading ? (
-        <div className="home-unavailable-block" aria-label="正在读取工作台指标">
+        <div className="home-unavailable-block" aria-label="正在读取工作台状态">
           <p className="section-eyebrow">Loading</p>
-          <strong>正在读取工作台指标</strong>
-          <p className="muted">桌面工作台正在同步文档、任务、规则和标注概览。</p>
+          <strong>正在读取工作台状态</strong>
+          <p className="muted">桌面工作台正在同步规则、模型和本地资料。</p>
         </div>
       ) : (
-        <div className="home-metric-grid" aria-label="工作台指标">
-          {metrics.map((metric) => (
-            <div className="home-metric-card" key={metric.label}>
-              <p className="metric-label">{metric.label}</p>
-              <strong className="metric-value">{metric.value}</strong>
-            </div>
-          ))}
+        <div className="home-snapshot-list" aria-label="工作台状态">
+          <SnapshotRow
+            label="规则"
+            title={`${dashboard.enabledRulesCount}/${dashboard.rulesCount} 条规则启用`}
+            description="会作为本地评审的检查依据。"
+          />
+          {primaryModel ? (
+            <SnapshotRow
+              label={primaryModel.provider}
+              title={primaryModel.name}
+              description={
+                additionalModelCount > 0
+                  ? `${primaryModel.defaultModel}，另有 ${additionalModelCount} 个启用配置`
+                  : primaryModel.defaultModel
+              }
+            />
+          ) : (
+            <SnapshotRow
+              label="模型"
+              title="当前没有启用模型配置"
+              description="先在侧边栏进入模型配置启用一个配置。"
+            />
+          )}
+          <SnapshotRow
+            label="本地资料"
+            title={`${dashboard.documentsCount} 份文档`}
+            description={`${dashboard.reviewJobsCount} 个批次，${dashboard.annotationsCount} 个问题标注`}
+          />
         </div>
       )}
     </aside>
@@ -212,7 +177,7 @@ function HomeRecentReviewsPane({
         eyebrow="Recent Reviews"
         title="最近评审"
         id="home-recent-reviews-title"
-        description="查看最近完成、进行中或失败的任务。"
+        description="继续查看近期批次的状态和报告。"
       />
 
       <div className="home-pane-scroll" data-testid="home-recent-scroll">
@@ -261,80 +226,6 @@ function HomeRecentReviewsPane({
   );
 }
 
-function HomeReadinessPane({ dashboard, errorMessage, isLoading }: HomeDashboardViewState) {
-  return (
-    <aside
-      className="home-pane home-readiness-pane"
-      data-testid="home-readiness-pane"
-      aria-labelledby="home-readiness-title"
-    >
-      <PaneHeader
-        eyebrow="Readiness"
-        title="配置准备度"
-        id="home-readiness-title"
-        description="确认规则、模型和结果阅读能力。"
-      />
-
-      <div className="home-pane-scroll" data-testid="home-readiness-scroll">
-        <div className="feature-list">
-          {errorMessage ? (
-            <FeatureRow
-              kicker="桥接"
-              title="桌面桥接不可用"
-              description="无法读取规则、模型和结果状态。"
-            />
-          ) : (
-            <>
-              {isLoading ? (
-                <FeatureRow
-                  kicker="规则"
-                  title="正在读取规则状态"
-                  description="完成后会显示已建档规则和启用情况。"
-                />
-              ) : (
-                <FeatureRow
-                  kicker="规则"
-                  title={`${dashboard.rulesCount} 条规则已建档`}
-                  description={`${dashboard.enabledRulesCount} 条规则已启用`}
-                />
-              )}
-
-              {isLoading ? (
-                <FeatureRow
-                  kicker="模型"
-                  title="正在读取模型配置"
-                  description="完成后会显示当前启用的桌面模型。"
-                />
-              ) : dashboard.llmProfiles.length === 0 ? (
-                <FeatureRow
-                  kicker="模型"
-                  title="当前没有启用模型配置"
-                  description="先去模型配置页启用一个配置后再开始批次。"
-                />
-              ) : (
-                dashboard.llmProfiles.map((profile) => (
-                  <FeatureRow
-                    kicker={profile.provider}
-                    title={profile.name}
-                    description={profile.defaultModel}
-                    key={profile.id}
-                  />
-                ))
-              )}
-
-              <FeatureRow
-                kicker="结果"
-                title="可查看报告、问题和原文位置"
-                description="结果页会显示对应内容。"
-              />
-            </>
-          )}
-        </div>
-      </div>
-    </aside>
-  );
-}
-
 type PaneHeaderProps = {
   description: string;
   eyebrow: string;
@@ -354,16 +245,16 @@ function PaneHeader({ description, eyebrow, id, title }: PaneHeaderProps) {
   );
 }
 
-type FeatureRowProps = {
+type SnapshotRowProps = {
   description: string;
-  kicker: string;
+  label: string;
   title: string;
 };
 
-function FeatureRow({ description, kicker, title }: FeatureRowProps) {
+function SnapshotRow({ description, label, title }: SnapshotRowProps) {
   return (
-    <div className="feature-row">
-      <span className="feature-kicker">{kicker}</span>
+    <div className="home-snapshot-row">
+      <span className="feature-kicker">{label}</span>
       <div>
         <strong>{title}</strong>
         <p className="muted">{description}</p>

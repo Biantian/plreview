@@ -71,7 +71,7 @@ function installDesktopApi(overrides: Partial<DesktopApi> = {}) {
 }
 
 describe("HomePage", () => {
-  it("loads dashboard data into the desktop command center and preserves key links", async () => {
+  it("loads dashboard data into a focused workspace with one primary action", async () => {
     const desktopApi = installDesktopApi();
 
     render(<HomePage />);
@@ -83,51 +83,31 @@ describe("HomePage", () => {
 
     const cockpit = screen.getByTestId("home-desktop-cockpit");
     const header = screen.getByTestId("home-command-header");
-    const commandRail = screen.getByTestId("home-command-rail");
+    const snapshotPane = screen.getByTestId("home-snapshot-pane");
     const recentPane = screen.getByTestId("home-recent-reviews-pane");
-    const readinessPane = screen.getByTestId("home-readiness-pane");
 
     expect(cockpit).toHaveClass("home-command-center");
     expect(header).toHaveClass("home-command-header");
-    expect(commandRail).toHaveClass("home-command-rail");
+    expect(snapshotPane).toHaveClass("home-snapshot-pane");
     expect(recentPane).toHaveClass("home-recent-pane");
-    expect(readinessPane).toHaveClass("home-readiness-pane");
     expect(within(recentPane).getByTestId("home-recent-scroll")).toHaveClass("home-pane-scroll");
-    expect(within(readinessPane).getByTestId("home-readiness-scroll")).toHaveClass("home-pane-scroll");
 
-    expect(within(header).getByRole("link", { name: "开始新批次" })).toHaveAttribute(
-      "href",
-      "/reviews/new",
-    );
-    const createBatchLinks = within(commandRail).getAllByRole("link", { name: "创建评审批次" });
-    expect(createBatchLinks).toHaveLength(2);
-    expect(createBatchLinks[0]).toHaveAttribute("href", "/reviews/new");
-    expect(createBatchLinks[1]).toHaveAttribute("href", "/reviews/new");
-    expect(within(commandRail).getByRole("link", { name: "查看评审任务" })).toHaveAttribute(
-      "href",
-      "/reviews",
-    );
-    expect(within(commandRail).getByRole("link", { name: "维护规则库" })).toHaveAttribute(
-      "href",
-      "/rules",
-    );
-    expect(within(commandRail).getByRole("link", { name: "管理模型配置" })).toHaveAttribute(
-      "href",
-      "/models",
-    );
+    expect(screen.getAllByRole("link", { name: "开始新批次" })).toHaveLength(1);
+    expect(within(header).getByRole("link", { name: "开始新批次" })).toHaveAttribute("href", "/reviews/new");
+    expect(screen.queryByRole("link", { name: "创建评审批次" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "查看评审任务" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "维护规则库" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "管理模型配置" })).not.toBeInTheDocument();
 
-    expect(within(commandRail).getByText("已导入文档").nextElementSibling).toHaveTextContent("25");
-    expect(within(commandRail).getByText("评审任务").nextElementSibling).toHaveTextContent("9");
-    expect(within(commandRail).getByText("启用规则").nextElementSibling).toHaveTextContent("8");
-    expect(within(commandRail).getByText("问题标注").nextElementSibling).toHaveTextContent("31");
+    expect(within(snapshotPane).getByText("25 份文档")).toBeInTheDocument();
+    expect(within(snapshotPane).getByText("9 个批次，31 个问题标注")).toBeInTheDocument();
 
     const recentReviewLink = within(recentPane).getByText("四月活动复盘").closest("a");
     expect(recentReviewLink).toHaveAttribute("href", "/reviews/detail?id=review_home_1");
 
-    expect(within(readinessPane).getByText("12 条规则已建档")).toBeInTheDocument();
-    expect(within(readinessPane).getByText("8 条规则已启用")).toBeInTheDocument();
-    expect(within(readinessPane).getByText("百炼生产")).toBeInTheDocument();
-    expect(within(readinessPane).getByText("qwen-plus")).toBeInTheDocument();
+    expect(within(snapshotPane).getByText("8/12 条规则启用")).toBeInTheDocument();
+    expect(within(snapshotPane).getByText("百炼生产")).toBeInTheDocument();
+    expect(within(snapshotPane).getByText("qwen-plus")).toBeInTheDocument();
   });
 
   it("keeps empty recent reviews and empty model state inside their panes", async () => {
@@ -144,13 +124,13 @@ describe("HomePage", () => {
     await waitFor(() => expect(screen.getByText("还没有评审记录")).toBeInTheDocument());
 
     const recentPane = screen.getByTestId("home-recent-reviews-pane");
-    const readinessPane = screen.getByTestId("home-readiness-pane");
+    const snapshotPane = screen.getByTestId("home-snapshot-pane");
 
     expect(within(recentPane).getByText("还没有评审记录")).toBeInTheDocument();
     expect(within(recentPane).getByText("创建新评审后，这里会显示结果。")).toBeInTheDocument();
-    expect(within(readinessPane).getByText("当前没有启用模型配置")).toBeInTheDocument();
+    expect(within(snapshotPane).getByText("当前没有启用模型配置")).toBeInTheDocument();
     expect(
-      within(readinessPane).getByText("先去模型配置页启用一个配置后再开始批次。"),
+      within(snapshotPane).getByText("先在侧边栏进入模型配置启用一个配置。"),
     ).toBeInTheDocument();
   });
 
@@ -163,30 +143,21 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    const commandRail = screen.getByTestId("home-command-rail");
-    const readinessPane = screen.getByTestId("home-readiness-pane");
+    const snapshotPane = screen.getByTestId("home-snapshot-pane");
 
-    expect(within(commandRail).getByText("正在读取工作台指标")).toBeInTheDocument();
+    expect(within(snapshotPane).getByText("正在读取工作台状态")).toBeInTheDocument();
     expect(
-      within(commandRail).getByText("桌面工作台正在同步文档、任务、规则和标注概览。"),
+      within(snapshotPane).getByText("桌面工作台正在同步规则、模型和本地资料。"),
     ).toBeInTheDocument();
-    expect(within(commandRail).queryByText("已导入文档")).not.toBeInTheDocument();
-    expect(within(commandRail).queryByText("评审任务")).not.toBeInTheDocument();
-    expect(within(commandRail).queryByText("启用规则")).not.toBeInTheDocument();
-    expect(within(commandRail).queryByText("问题标注")).not.toBeInTheDocument();
-    expect(within(readinessPane).getByText("正在读取规则状态")).toBeInTheDocument();
-    expect(
-      within(readinessPane).getByText("完成后会显示已建档规则和启用情况。"),
-    ).toBeInTheDocument();
-    expect(within(readinessPane).queryByText("0 条规则已建档")).not.toBeInTheDocument();
-    expect(within(readinessPane).queryByText("0 条规则已启用")).not.toBeInTheDocument();
+    expect(within(snapshotPane).queryByText("0 份文档")).not.toBeInTheDocument();
+    expect(within(snapshotPane).queryByText("0 个批次")).not.toBeInTheDocument();
+    expect(within(snapshotPane).queryByText("0/0 条规则启用")).not.toBeInTheDocument();
 
     deferredDashboard.resolve(DASHBOARD_FIXTURE);
 
     await waitFor(() => {
-      expect(within(commandRail).getByText("已导入文档")).toBeInTheDocument();
-      expect(within(readinessPane).getByText("12 条规则已建档")).toBeInTheDocument();
-      expect(within(readinessPane).getByText("8 条规则已启用")).toBeInTheDocument();
+      expect(within(snapshotPane).getByText("25 份文档")).toBeInTheDocument();
+      expect(within(snapshotPane).getByText("8/12 条规则启用")).toBeInTheDocument();
     });
   });
 
@@ -202,29 +173,18 @@ describe("HomePage", () => {
     );
 
     const cockpit = screen.getByTestId("home-desktop-cockpit");
-    const commandRail = screen.getByTestId("home-command-rail");
+    const snapshotPane = screen.getByTestId("home-snapshot-pane");
     const recentPane = screen.getByTestId("home-recent-reviews-pane");
-    const readinessPane = screen.getByTestId("home-readiness-pane");
 
     expect(cockpit).toHaveClass("home-command-center");
-    const createBatchLinks = within(commandRail).getAllByRole("link", { name: "创建评审批次" });
-    expect(createBatchLinks).toHaveLength(2);
-    expect(createBatchLinks[0]).toHaveAttribute("href", "/reviews/new");
-    expect(createBatchLinks[1]).toHaveAttribute("href", "/reviews/new");
-    expect(within(commandRail).getByText("工作台指标暂不可用")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "开始新批次" })).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "创建评审批次" })).not.toBeInTheDocument();
+    expect(within(snapshotPane).getByText("工作台状态暂不可用")).toBeInTheDocument();
     expect(
-      within(commandRail).getByText("桌面桥接恢复后，这里会显示文档、任务、规则和标注概览。"),
+      within(snapshotPane).getByText("桌面桥接恢复后，这里会显示规则、模型和本地资料。"),
     ).toBeInTheDocument();
-    expect(within(commandRail).queryByText("已导入文档")).not.toBeInTheDocument();
-    expect(within(commandRail).queryByText("评审任务")).not.toBeInTheDocument();
-    expect(within(commandRail).queryByText("启用规则")).not.toBeInTheDocument();
-    expect(within(commandRail).queryByText("问题标注")).not.toBeInTheDocument();
+    expect(within(snapshotPane).queryByText("0 份文档")).not.toBeInTheDocument();
     expect(within(recentPane).getByText("加载失败：dashboard unavailable")).toBeInTheDocument();
-    expect(within(readinessPane).getByText("桌面桥接不可用")).toBeInTheDocument();
-    expect(within(readinessPane).getByText("无法读取规则、模型和结果状态。")).toBeInTheDocument();
-    expect(within(readinessPane).queryByText("0 条规则已建档")).not.toBeInTheDocument();
-    expect(within(readinessPane).queryByText("0 条规则已启用")).not.toBeInTheDocument();
-    expect(within(readinessPane).queryByText("可查看报告、问题和原文位置")).not.toBeInTheDocument();
   });
 
   it("shows the cockpit bridge warning when launched without the desktop API", async () => {
@@ -239,10 +199,9 @@ describe("HomePage", () => {
     );
 
     expect(screen.getByTestId("home-desktop-cockpit")).toHaveClass("home-command-center");
-    expect(screen.getByTestId("home-command-rail")).toBeInTheDocument();
+    expect(screen.getByTestId("home-snapshot-pane")).toBeInTheDocument();
     expect(screen.getByTestId("home-recent-reviews-pane")).toBeInTheDocument();
-    expect(screen.getByTestId("home-readiness-pane")).toBeInTheDocument();
-    expect(screen.getByText("工作台指标暂不可用")).toBeInTheDocument();
-    expect(screen.queryByText("0 条规则已建档")).not.toBeInTheDocument();
+    expect(screen.getByText("工作台状态暂不可用")).toBeInTheDocument();
+    expect(screen.queryByText("0/0 条规则启用")).not.toBeInTheDocument();
   });
 });
