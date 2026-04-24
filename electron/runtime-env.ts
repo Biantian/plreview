@@ -158,7 +158,11 @@ function resolvePackagedDatabaseUrl(
 
   const databaseFilePath = extractSqliteDatabasePath(normalizedDatabaseUrl);
 
-  if (!databaseFilePath || fs.existsSync(databaseFilePath)) {
+  if (!databaseFilePath) {
+    return normalizedDatabaseUrl;
+  }
+
+  if (fs.existsSync(databaseFilePath) && isUsableSqliteDatabase(databaseFilePath)) {
     return normalizedDatabaseUrl;
   }
 
@@ -171,6 +175,22 @@ function resolvePackagedDatabaseUrl(
   fs.writeFileSync(databaseFilePath, fs.readFileSync(bootstrapDatabasePath));
 
   return normalizedDatabaseUrl;
+}
+
+function isUsableSqliteDatabase(databaseFilePath: string) {
+  try {
+    const stats = fs.statSync(databaseFilePath);
+
+    if (stats.size === 0) {
+      return false;
+    }
+
+    const header = fs.readFileSync(databaseFilePath).subarray(0, 16).toString("utf8");
+
+    return header === "SQLite format 3\u0000";
+  } catch {
+    return false;
+  }
 }
 
 function resolvePackagedEncryptionKey(

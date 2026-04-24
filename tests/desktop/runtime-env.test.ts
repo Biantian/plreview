@@ -100,4 +100,33 @@ describe("resolveDesktopRuntimeEnv", () => {
       fs.readFileSync(path.join(userDataPath, "app-encryption.key"), "utf8").trim(),
     ).toBe(resolved.APP_ENCRYPTION_KEY);
   });
+
+  it("repairs an existing empty packaged database by restoring the bootstrap copy", () => {
+    const packagedRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), "plreview-desktop-packaged-runtime-env-"),
+    );
+    tempDirs.push(packagedRoot);
+
+    const userDataPath = path.join(packagedRoot, "user-data");
+    const bootstrapDatabasePath = path.join(packagedRoot, "bootstrap", "plreview.db");
+    const existingDatabasePath = path.join(userDataPath, "plreview.db");
+
+    fs.mkdirSync(path.dirname(bootstrapDatabasePath), { recursive: true });
+    fs.mkdirSync(userDataPath, { recursive: true });
+    fs.writeFileSync(bootstrapDatabasePath, "bootstrap-db");
+    fs.writeFileSync(existingDatabasePath, "");
+
+    const resolved = resolveDesktopRuntimeEnv({
+      currentDir: path.join(packagedRoot, ".desktop-runtime", "electron"),
+      env: {
+        NODE_ENV: "production",
+      },
+      mode: "packaged",
+      userDataPath,
+      bootstrapDatabasePath,
+    } as Parameters<typeof resolveDesktopRuntimeEnv>[0]);
+
+    expect(resolved.DATABASE_URL).toBe(`file:${existingDatabasePath}`);
+    expect(fs.readFileSync(existingDatabasePath, "utf8")).toBe("bootstrap-db");
+  });
 });
