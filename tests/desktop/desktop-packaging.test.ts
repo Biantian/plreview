@@ -22,6 +22,8 @@ describe("desktop packaging scripts", () => {
     expect(packageJson.scripts["desktop:build"]).toBeTruthy();
     expect(packageJson.scripts["desktop:build:runtime"]).toBeTruthy();
     expect(packageJson.scripts["desktop:dist"]).toBeTruthy();
+    expect(packageJson.scripts["desktop:release:mac"]).toBeTruthy();
+    expect(packageJson.scripts["desktop:verify:mac-release"]).toBeTruthy();
     expect(packageJson.scripts["test:desktop:smoke"]).toBeTruthy();
   });
 
@@ -33,6 +35,15 @@ describe("desktop packaging scripts", () => {
   it("keeps desktop distribution reporting wired through an explicit script", () => {
     expect(packageJson.scripts["desktop:dist"]).toBe(
       "node ./scripts/run-desktop-dist.mjs",
+    );
+  });
+
+  it("keeps mac release orchestration wired through explicit scripts", () => {
+    expect(packageJson.scripts["desktop:release:mac"]).toBe(
+      "node ./scripts/run-mac-release.mjs",
+    );
+    expect(packageJson.scripts["desktop:verify:mac-release"]).toBe(
+      "node ./scripts/verify-mac-release.mjs",
     );
   });
 
@@ -73,6 +84,31 @@ describe("desktop packaging scripts", () => {
     );
     expect(builderConfig).toMatch(/asarUnpack:[\s\S]*node_modules\/\.prisma\/client/u);
     expect(filesEntries.join("\n")).not.toMatch(/\.next/u);
+  });
+
+  it("keeps mac release packaging ready for hardened runtime signing and notarization", () => {
+    const builderConfig = fs.readFileSync(path.resolve("electron-builder.yml"), "utf8");
+
+    expect(builderConfig).toContain("afterSign: scripts/notarize.cjs");
+    expect(builderConfig).toMatch(/mac:[\s\S]*hardenedRuntime:\s*true/u);
+    expect(builderConfig).toMatch(/mac:[\s\S]*gatekeeperAssess:\s*false/u);
+    expect(builderConfig).toMatch(
+      /mac:[\s\S]*entitlements:\s*build\/entitlements\.mac\.plist/u,
+    );
+    expect(builderConfig).toMatch(
+      /mac:[\s\S]*entitlementsInherit:\s*build\/entitlements\.mac\.plist/u,
+    );
+    expect(builderConfig).not.toContain("identity: null");
+  });
+
+  it("keeps a project-level desktop release skill available in the repo", () => {
+    const skillPath = path.resolve(".codex/skills/desktop-release/SKILL.md");
+    const skillSource = fs.readFileSync(skillPath, "utf8");
+
+    expect(skillSource).toContain("name: desktop-release");
+    expect(skillSource).toContain("Use when packaging, verifying, or releasing desktop application artifacts");
+    expect(skillSource).toContain("npm run desktop:release:mac");
+    expect(skillSource).toContain("npm run desktop:verify:mac-release");
   });
 
   it("keeps next configured for static export only", () => {

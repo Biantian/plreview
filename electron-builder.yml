@@ -19,9 +19,13 @@ asarUnpack:
   - node_modules/.prisma/client/**/*
 extraMetadata:
   main: .desktop-runtime/electron/main.cjs
+afterSign: scripts/notarize.cjs
 mac:
   category: public.app-category.productivity
-  identity: null
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
   target:
     - dmg
 win:

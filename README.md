@@ -75,6 +75,7 @@ npm run desktop:dist
 打包产物会额外内置一份预置好的 SQLite 模板库；首次启动时，桌面应用会把它复制到 Electron `userData` 目录，并在同目录生成持久化的 `APP_ENCRYPTION_KEY`，不再依赖源码树里的 `.env` / `prisma/dev.db`。
 `npm run desktop:dist` 现在会在打包完成后自动输出一份机器可读的桌面产物体积报告。
 通过 `npm run desktop:dist -- ...` 追加的参数会继续原样转发给 `electron-builder`，例如 `--win --x64 --dir`。
+`npm run desktop:dist` 更适合本地自测；如果要把 macOS DMG 发给别人安装，请使用下面的正式发布链路。
 
 如需单独查看当前本地产物清单与体积，可执行：
 
@@ -113,6 +114,68 @@ npm run test:desktop:smoke
 ```
 
 说明见 [2026-04-21-desktop-smoke-regression.md](./docs/qa/2026-04-21-desktop-smoke-regression.md)。
+
+### macOS 朋友试用
+
+如果这次只是把应用发给少量朋友试用，可以先不做正式签名和公证，但需要明确这不是正式分发方案。
+
+推荐流程：
+
+1. 你本机打包：`npm run desktop:dist -- --mac dmg --arm64`
+2. 把 `dmg` 或 `.app` 发给朋友
+3. 对方拖到 `Applications`
+4. 对方执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/PLReview.app
+```
+
+5. 再打开应用；如果系统仍拦截，再尝试右键“打开”
+
+这个方案适合小范围试用。只要经过微信、聊天工具、网盘或浏览器下载，macOS 往往会补上 quarantine 标记；未正式签名/公证的应用就容易被提示“已损坏，无法打开”。
+
+### macOS 正式发布
+
+先准备好签名证书。正式对外分发的 mac 版本需要：
+
+- `Developer ID Application` 证书
+- `electron-builder` 可用的签名来源
+  - 本机钥匙串里已导入证书，或
+  - `CSC_LINK` + `CSC_KEY_PASSWORD`
+- 任选一种 notarization 凭据方案
+  - `APPLE_KEYCHAIN_PROFILE`
+  - `APPLE_API_KEY` + `APPLE_API_KEY_ID` + `APPLE_API_ISSUER`
+  - `APPLE_ID` + `APPLE_APP_SPECIFIC_PASSWORD` + `APPLE_TEAM_ID`
+
+正式打包命令：
+
+```bash
+npm run desktop:release:mac
+```
+
+该命令会：
+
+- 触发正式 mac 打包
+- 开启 `PLREVIEW_MAC_NOTARIZE=1`
+- 在 `afterSign` 阶段提交 Apple notarization
+- 打包完成后自动执行本地验签与 stapler 校验
+
+如果只想单独复验当前 `release/` 目录中的 mac 产物，可执行：
+
+```bash
+npm run desktop:verify:mac-release
+```
+
+对应的关键校验命令是：
+
+```bash
+codesign --verify --deep --strict --verbose=2 release/mac-arm64/PLReview.app
+spctl -a -vv release/mac-arm64/PLReview.app
+xcrun stapler validate release/PLReview-0.1.0-arm64.dmg
+```
+
+如果别人从聊天工具或网盘下载后出现“已损坏，无法打开”，优先检查签名、公证和 stapler 是否成功，不要先假设是传输工具本身损坏了文件。
+如果当前只是少量熟人试用，也可以先按上面的“macOS 朋友试用”流程移除 quarantine 标记。
 
 ### Win11 打包（当前环境推荐）
 

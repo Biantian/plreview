@@ -12,7 +12,9 @@
     "desktop:build:runtime": "node ./scripts/build-desktop-runtime.mjs",
     "desktop:build": "npm run desktop:build:renderer && npm run desktop:build:runtime",
     "desktop:dist": "node ./scripts/run-desktop-dist.mjs",
+    "desktop:release:mac": "node ./scripts/run-mac-release.mjs",
     "desktop:report-size": "node ./scripts/report-desktop-bundle-size.mjs",
+    "desktop:verify:mac-release": "node ./scripts/verify-mac-release.mjs",
     "test:desktop:smoke": "node ./scripts/run-desktop-smoke.mjs",
     "start": "next start",
     "lint": "next lint",
@@ -39,6 +41,7 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
