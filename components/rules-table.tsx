@@ -4,6 +4,7 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { type Severity } from "@prisma/client";
 
 import type { RuleDashboardData, RuleSaveInput } from "@/desktop/bridge/desktop-api";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { RuleEditorDrawer, type RuleCreateDraft } from "@/components/rule-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
 import { RULE_TEMPLATE } from "@/lib/defaults";
@@ -18,6 +19,7 @@ export type RuleRow = {
   description: string;
   promptTemplate: string;
   updatedAtLabel: string;
+  isDeleted?: boolean;
 };
 
 function matchesQuery(item: RuleRow, query: string) {
@@ -45,17 +47,20 @@ function createDefaultRuleDraft(): RuleCreateDraft {
 export function RulesTable({ items }: { items: RuleRow[] }) {
   const [records, setRecords] = useState(items);
   const [query, setQuery] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<RuleRow | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<RuleCreateDraft>(() => createDefaultRuleDraft());
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
   const keyword = deferredQuery.trim().toLowerCase();
-  const filteredItems = records.filter((item) => matchesQuery(item, keyword));
+  const visibleRecords = records.filter((item) => showDeleted || !item.isDeleted);
+  const filteredItems = visibleRecords.filter((item) => matchesQuery(item, keyword));
   const editingRule =
     filteredItems.find((item) => item.id === editingId) ??
-    records.find((item) => item.id === editingId) ??
+    visibleRecords.find((item) => item.id === editingId) ??
     null;
   const isEditorOpen = isCreateOpen || !!editingRule;
 
@@ -83,6 +88,32 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     setIsCreateOpen(false);
   }
 
+  async function loadDashboard(includeDeleted: boolean) {
+    if (!window.plreview?.getRuleDashboard) {
+      throw new Error("桌面桥接不可用，请从 Electron 桌面壳启动。");
+    }
+
+    if (includeDeleted) {
+      return window.plreview.getRuleDashboard({ includeDeleted: true });
+    }
+
+    return window.plreview.getRuleDashboard();
+  }
+
+  async function refreshRecords(includeDeleted: boolean) {
+    const nextDashboard = await loadDashboard(includeDeleted);
+    setRecords(nextDashboard.items);
+  }
+
+  function handleToggleShowDeleted(checked: boolean) {
+    if (checked === showDeleted) {
+      return;
+    }
+
+    setShowDeleted(checked);
+    setFeedback(null);
+  }
+
   async function updateRules(
     action: () => Promise<RuleDashboardData>,
     successMessage: string,
@@ -97,7 +128,13 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
 
     try {
       const nextDashboard = await action();
-      setRecords(nextDashboard.items);
+
+      if (showDeleted) {
+        await refreshRecords(true);
+      } else {
+        setRecords(nextDashboard.items);
+      }
+
       setFeedback(successMessage);
       setEditingId(null);
       setIsCreateOpen(false);
@@ -110,6 +147,33 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     }
   }
 
+  async function handleConfirmDelete() {
+    if (!deleteTarget) {
+      return;
+    }
+
+    if (!window.plreview?.deleteRule) {
+      setFeedback("桌面桥接不可用，请从 Electron 桌面壳启动。");
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback(null);
+
+    try {
+      const result = await window.plreview.deleteRule(deleteTarget.id);
+      await refreshRecords(showDeleted);
+      setDeleteTarget(null);
+      setEditingId(null);
+      setIsCreateOpen(false);
+      setFeedback(result.mode === "soft" ? "规则已删除（软删除）。" : "规则已删除（永久删除）。");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "规则删除失败。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <section className="desktop-table-card management-table-shell">
       <div className="desktop-table-header">
@@ -117,13 +181,27 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
           <p className="section-eyebrow">规则库</p>
           <h2 className="subsection-title">规则目录</h2>
         </div>
-        <p className="desktop-table-summary">共 {records.length} 条规则 · 当前显示 {filteredItems.length} 条</p>
+        <p className="desktop-table-summary">
+          共 {visibleRecords.length} 条规则 · 当前显示 {filteredItems.length} 条
+        </p>
       </div>
 
       <div className="desktop-table-toolbar">
         <TableSearchInput label="搜索规则" onChange={setQuery} value={query} />
         <div className="desktop-table-toolbar-actions">
           <p className="muted">支持按规则名称、分类、说明和严重级别筛选。</p>
+          <details className="table-more-filters">
+            <summary className="table-more-filters-trigger">更多筛选</summary>
+            <label className="table-more-filters-option">
+              <input
+                checked={showDeleted}
+                disabled={isSaving}
+                onChange={(event) => handleToggleShowDeleted(event.currentTarget.checked)}
+                type="checkbox"
+              />
+              <span>显示已删除</span>
+            </label>
+          </details>
           <button
             className="button"
             onClick={openCreateEditor}
@@ -156,12 +234,15 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
                   没有匹配的规则，试试换一个关键词。
                 </td>
               </tr>
-            ) : (
+          ) : (
               filteredItems.map((item) => (
-                <tr key={item.id}>
-                  <td className="table-nowrap">{item.enabled ? "启用中" : "已停用"}</td>
+                <tr className={item.isDeleted ? "rule-row-deleted" : undefined} key={item.id}>
+                  <td className="table-nowrap">{item.isDeleted ? "已删除" : item.enabled ? "启用中" : "已停用"}</td>
                   <td>
-                    <span className="table-cell-primary">{item.name}</span>
+                    <div className="rule-name-cell">
+                      <span className="table-cell-primary">{item.name}</span>
+                      {item.isDeleted ? <span className="pill rule-deleted-pill">已删除</span> : null}
+                    </div>
                   </td>
                   <td className="table-nowrap">{item.category}</td>
                   <td className="table-nowrap">{severityLabel(item.severity)}</td>
@@ -170,33 +251,51 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
                     <span className="table-cell-secondary">{item.description}</span>
                   </td>
                   <td className="table-nowrap">
-                    <div className="table-actions">
-                      <button
-                        aria-label={`编辑 ${item.name}`}
-                        className="table-text-button"
-                        onClick={() => {
-                          setIsCreateOpen(false);
-                          setEditingId(item.id);
-                        }}
-                        type="button"
-                      >
-                        编辑
-                      </button>
+                    {item.isDeleted ? (
+                      <span className="muted">已删除</span>
+                    ) : (
+                      <div className="table-actions">
+                        <button
+                          aria-label={`编辑 ${item.name}`}
+                          className="table-text-button"
+                          disabled={isSaving}
+                          onClick={() => {
+                            setIsCreateOpen(false);
+                            setEditingId(item.id);
+                          }}
+                          type="button"
+                        >
+                          编辑
+                        </button>
 
-                      <button
-                        className="table-text-button"
-                        disabled={isSaving}
-                        onClick={() =>
-                          void updateRules(
-                            () => window.plreview.toggleRuleEnabled(item.id, !item.enabled),
-                            item.enabled ? "规则已停用。" : "规则已启用。",
-                          )
-                        }
-                        type="button"
-                      >
-                        {item.enabled ? "停用" : "启用"}
-                      </button>
-                    </div>
+                        <button
+                          className="table-text-button"
+                          disabled={isSaving}
+                          onClick={() =>
+                            void updateRules(
+                              () => window.plreview.toggleRuleEnabled(item.id, !item.enabled),
+                              item.enabled ? "规则已停用。" : "规则已启用。",
+                            )
+                          }
+                          type="button"
+                        >
+                          {item.enabled ? "停用" : "启用"}
+                        </button>
+
+                        <button
+                          aria-label={`删除 ${item.name}`}
+                          className="table-text-button is-danger"
+                          disabled={isSaving}
+                          onClick={() => {
+                            setFeedback(null);
+                            setDeleteTarget(item);
+                          }}
+                          type="button"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))
@@ -204,6 +303,26 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        confirmBusyLabel="删除中..."
+        confirmDisabled={isSaving}
+        confirmLabel="仍要删除"
+        destructive
+        description={
+          deleteTarget
+            ? `确认删除规则「${deleteTarget.name}」吗？删除后将按关联关系进行软删除或永久删除。`
+            : ""
+        }
+        open={deleteTarget !== null}
+        onClose={() => {
+          if (!isSaving) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => void handleConfirmDelete()}
+        title="删除规则"
+      />
 
       <RuleEditorDrawer
         key={isCreateOpen ? "create" : editingRule?.id ?? "closed"}

@@ -8,6 +8,20 @@ import { RULE_TEMPLATE } from "@/lib/defaults";
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
+function createRule(overrides: Partial<Parameters<typeof RulesTable>[0]["items"][number]> = {}) {
+  return {
+    category: "基础质量",
+    description: "检查目标表达是否清楚",
+    enabled: true,
+    id: "1",
+    name: "目标清晰度",
+    promptTemplate: "模板 A",
+    severity: "medium" as const,
+    updatedAtLabel: "2026-04-13 10:00",
+    ...overrides,
+  };
+}
+
 describe("RulesTable", () => {
   beforeEach(() => {
     originalShowModalDescriptor = Object.getOwnPropertyDescriptor(
@@ -126,6 +140,96 @@ describe("RulesTable", () => {
     expect(screen.getByRole("table", { name: "规则表格" }).closest(".management-table-scroll-region")).toBeTruthy();
     expect(screen.getByRole("button", { name: "编辑 目标清晰度" })).toHaveClass("table-text-button");
     expect(screen.getAllByRole("button", { name: "停用" })[0]).toHaveClass("table-text-button");
+  });
+
+  it("hides deleted rows by default", () => {
+    render(
+      <RulesTable
+        items={[
+          createRule(),
+          createRule({
+            enabled: false,
+            id: "2",
+            isDeleted: true,
+            name: "历史规则",
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("目标清晰度")).toBeInTheDocument();
+    expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
+  });
+
+  it("reveals deleted rows from hidden filters", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <RulesTable
+        items={[
+          createRule(),
+          createRule({
+            enabled: false,
+            id: "2",
+            isDeleted: true,
+            name: "历史规则",
+          }),
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByText("更多筛选"));
+    await user.click(screen.getByRole("checkbox", { name: "显示已删除" }));
+
+    expect(screen.getByText("历史规则")).toBeInTheDocument();
+    expect(screen.getAllByText("已删除").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "编辑 历史规则" })).not.toBeInTheDocument();
+  });
+
+  it("opens a confirmation dialog before deleting a rule", async () => {
+    const user = userEvent.setup();
+
+    render(<RulesTable items={[createRule()]} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 目标清晰度" }));
+
+    expect(window.plreview.deleteRule).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "删除规则" })).toBeInTheDocument();
+  });
+
+  it("calls deleteRule and renders delete feedback after confirmation", async () => {
+    const user = userEvent.setup();
+    const deleteRuleMock = vi.fn().mockResolvedValue({ mode: "soft" as const });
+    const getRuleDashboardMock = vi.fn().mockResolvedValue({
+      enabledCount: 0,
+      categoryCount: 1,
+      latestUpdatedAtLabel: "2026-04-13 11:00",
+      items: [
+        createRule({
+          enabled: false,
+          id: "1",
+          isDeleted: true,
+        }),
+      ],
+      totalCount: 1,
+    });
+
+    window.plreview.deleteRule = deleteRuleMock;
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[createRule()]} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 目标清晰度" }));
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    await waitFor(() => {
+      expect(deleteRuleMock).toHaveBeenCalledWith("1");
+    });
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalled();
+    });
+
+    expect(screen.getByText("规则已删除（软删除）。")).toBeInTheDocument();
   });
 
   it("filters rows locally and opens the editor drawer from the row action", async () => {

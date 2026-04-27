@@ -845,6 +845,68 @@ svg {
   gap: 8px;
 }
 
+.table-more-filters {
+  position: relative;
+}
+
+.table-more-filters-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+}
+
+.table-more-filters-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.table-more-filters-trigger::after {
+  content: "▾";
+  font-size: 11px;
+  transform: translateY(-1px);
+}
+
+.table-more-filters[open] .table-more-filters-trigger {
+  color: var(--muted-strong);
+}
+
+.table-more-filters[open] .table-more-filters-trigger::after {
+  content: "▴";
+}
+
+.table-more-filters-option {
+  position: absolute;
+  right: 0;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--muted-strong);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+}
+
+.table-more-filters-option input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--brand);
+}
+
 .management-table-shell,
 .review-jobs-list-shell {
   position: relative;
@@ -1315,11 +1377,33 @@ svg {
   color: var(--ink);
 }
 
+.rule-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .table-cell-secondary {
   display: block;
   font-size: 12px;
   line-height: 1.45;
   color: #9ca3af;
+}
+
+.rule-deleted-pill {
+  border-color: rgba(185, 28, 28, 0.2);
+  background: rgba(185, 28, 28, 0.08);
+  color: var(--danger);
+}
+
+.rule-row-deleted {
+  background: rgba(248, 250, 252, 0.65);
+}
+
+.rule-row-deleted .table-cell-primary,
+.rule-row-deleted .table-cell-secondary,
+.rule-row-deleted td {
+  color: var(--muted-strong);
 }
 
 .table-nowrap {
