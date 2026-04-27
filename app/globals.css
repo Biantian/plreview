@@ -25,6 +25,7 @@
   --radius-lg: 12px;
   --radius-md: 10px;
   --ease: 220ms ease;
+  --sidebar-width: 248px;
   --titlebar-height: 40px;
 }
 
@@ -101,21 +102,30 @@ svg {
   display: block;
 }
 
-.desktop-titlebar {
-  /* If top-edge controls are added later, convert this to a punched-out drag region. */
+.desktop-sidebar-drag-region {
+  left: 0;
+  width: var(--sidebar-width);
+}
+
+.desktop-workspace-drag-region {
+  left: var(--sidebar-width);
+  right: 0;
+}
+
+.desktop-sidebar-drag-region,
+.desktop-workspace-drag-region {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
   height: var(--titlebar-height);
   z-index: 30;
   background: rgba(255, 255, 255, 0.001);
+  pointer-events: auto;
   -webkit-app-region: drag;
 }
 
 .desktop-shell {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   gap: 0;
   width: 100%;
   height: 100vh;
@@ -256,10 +266,6 @@ svg {
   background: #ffffff;
 }
 
-.workspace > * {
-  -webkit-app-region: no-drag;
-}
-
 .app-sidebar a,
 .app-sidebar button,
 .app-sidebar input,
@@ -274,14 +280,15 @@ svg {
 }
 
 @media (max-width: 960px) {
+  .desktop-sidebar-drag-region,
+  .desktop-workspace-drag-region {
+    display: none;
+  }
+
   .desktop-shell {
     grid-template-columns: 1fr;
     height: auto;
     overflow: visible;
-  }
-
-  .desktop-titlebar {
-    display: none;
   }
 
   .app-sidebar {
@@ -932,7 +939,7 @@ svg {
   animation: launch-missing-flash 880ms ease-out;
 }
 
-.launch-guidance-target.is-missing.checkbox-list,
+.launch-guidance-target.is-missing.checkbox-card,
 .launch-guidance-target.is-missing.upload-panel {
   border-color: rgba(180, 83, 9, 0.72);
   box-shadow:
@@ -2210,10 +2217,11 @@ svg {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #ffffff;
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: #f8fafc;
   color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
   transition:
     border-color var(--ease),
     box-shadow var(--ease),
@@ -2223,7 +2231,8 @@ svg {
 .field input:hover,
 .field textarea:hover,
 .field select:hover {
-  border-color: rgba(233, 138, 71, 0.22);
+  border-color: rgba(233, 138, 71, 0.24);
+  background: #ffffff;
 }
 
 .field input:focus-visible,
@@ -2252,11 +2261,12 @@ svg {
   flex-direction: column;
   gap: 16px;
   padding: 22px;
-  border-radius: 26px;
-  border: 1px dashed rgba(233, 138, 71, 0.28);
+  border-radius: 22px;
+  border: 1px solid var(--line-strong);
   background:
-    linear-gradient(135deg, rgba(233, 138, 71, 0.08), rgba(255, 255, 255, 0.72)),
-    rgba(255, 255, 255, 0.52);
+    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.96)),
+    #f8fafc;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .file-input {
@@ -2301,10 +2311,29 @@ svg {
   gap: 12px;
   align-items: flex-start;
   padding: 16px 18px;
-  border-radius: 20px;
-  background: var(--surface-strong);
-  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid var(--line-strong);
   cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  transition:
+    border-color var(--ease),
+    box-shadow var(--ease),
+    background-color var(--ease),
+    transform var(--ease);
+}
+
+.checkbox-card:hover {
+  border-color: rgba(233, 138, 71, 0.24);
+  background: #ffffff;
+}
+
+.checkbox-card:focus-within {
+  border-color: rgba(233, 138, 71, 0.44);
+  box-shadow:
+    0 0 0 4px rgba(233, 138, 71, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  background: #ffffff;
 }
 
 .checkbox-card input {

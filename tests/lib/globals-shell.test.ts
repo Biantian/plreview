@@ -60,7 +60,8 @@ describe("globals shell styles", () => {
   it("uses an edge-to-edge desktop shell with a flat sidebar and flat work surfaces", () => {
     expect(globalsCss).not.toContain("backdrop-filter: blur(18px);");
     expect(globalsCss).toContain(".desktop-shell {");
-    expect(globalsCss).toContain("grid-template-columns: 248px minmax(0, 1fr);");
+    expect(globalsCss).toContain("--sidebar-width: 248px;");
+    expect(globalsCss).toContain("grid-template-columns: var(--sidebar-width) minmax(0, 1fr);");
     expect(globalsCss).toContain("--titlebar-height: 40px;");
     expect(globalsCss).toContain(".app-sidebar {");
     expect(globalsCss).toContain("border-right: 1px solid var(--line);");
@@ -104,7 +105,7 @@ describe("globals shell styles", () => {
     hasRule(".form-overlay-footer", ["border-top: 1px solid var(--line);"]);
   });
 
-  it("uses a transparent top drag overlay without reserving visible whitespace", () => {
+  it("keeps the shell edge-to-edge while limiting drag to transparent top overlays", () => {
     hasRule("html", ["height: 100%;", "padding: 0;"]);
     hasRule("body", [
       "display: flex;",
@@ -131,29 +132,37 @@ describe("globals shell styles", () => {
       "padding-top: 0;",
     ]);
     hasRule(".app-sidebar > *", ["-webkit-app-region: no-drag;"]);
-    hasRule(".workspace > *", ["-webkit-app-region: no-drag;"]);
   });
 
-  it("defines a transparent top drag overlay for desktop chrome and disables it on narrow screens", () => {
-    hasRule(".desktop-titlebar", [
+  it("defines split transparent overlay bands as the only renderer drag regions", () => {
+    hasRule(".desktop-sidebar-drag-region,\n.desktop-workspace-drag-region", [
       "position: fixed;",
       "top: 0;",
-      "left: 0;",
-      "right: 0;",
       "height: var(--titlebar-height);",
       "z-index: 30;",
       "background: rgba(255, 255, 255, 0.001);",
+      "pointer-events: auto;",
       "-webkit-app-region: drag;",
     ]);
+    hasRule(".desktop-sidebar-drag-region", [
+      "left: 0;",
+      "width: var(--sidebar-width);",
+    ]);
+    hasRule(".desktop-workspace-drag-region", [
+      "left: var(--sidebar-width);",
+      "right: 0;",
+    ]);
     expect(globalsCss).toMatch(
-      /@media \(max-width: 960px\)[\s\S]*\.desktop-titlebar\s*\{[\s\S]*display:\s*none;/,
+      /@media \(max-width: 960px\)[\s\S]*\.desktop-sidebar-drag-region,\s*\.desktop-workspace-drag-region\s*\{[\s\S]*display:\s*none;/,
     );
   });
 
-  it("keeps the transparent drag overlay implementation narrow and avoids legacy wrappers", () => {
+  it("avoids container-wide drag regions and legacy fake titlebar wrappers", () => {
     expect(globalsCss).not.toContain(".app-shell-body {");
     expect(globalsCss).not.toContain(".app-drag-region {");
     expect(getRuleBody(".app-sidebar")).not.toContain("top: var(--titlebar-height);");
+    expect(getRuleBody(".app-sidebar")).not.toContain("-webkit-app-region: drag;");
+    expect(getRuleBody(".workspace")).not.toContain("-webkit-app-region: drag;");
   });
 
   it("keeps interactive controls out of drag mode", () => {

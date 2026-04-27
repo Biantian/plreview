@@ -37,6 +37,18 @@ describe("globals theme tokens", () => {
     expect(globalsCss).toContain("border-right: 1px solid var(--line);");
   });
 
+  it("keeps core form controls on a shared desktop surface language", () => {
+    expect(globalsCss).toMatch(
+      /\.field input,\s*\.field textarea,\s*\.field select\s*\{[\s\S]*border-radius:\s*16px;[\s\S]*padding:\s*12px 14px;[\s\S]*background:\s*#f8fafc;/m,
+    );
+    expect(globalsCss).toMatch(
+      /\.checkbox-card\s*\{[\s\S]*border:\s*1px solid var\(--line-strong\);[\s\S]*background:\s*#f8fafc;/m,
+    );
+    expect(globalsCss).toMatch(
+      /\.upload-panel\s*\{[\s\S]*border:\s*1px solid var\(--line-strong\);[\s\S]*#f8fafc/m,
+    );
+  });
+
   it("keeps docs navigation rows neutral and text-first", () => {
     expect(globalsCss).toContain(".site-nav-link.active");
     expect(globalsCss).toContain("background: #ffffff;");
