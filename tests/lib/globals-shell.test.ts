@@ -126,6 +126,21 @@ describe("globals shell styles", () => {
     hasRule(".workspace > *", ["-webkit-app-region: no-drag;"]);
   });
 
+  it("defines a hidden top drag edge for desktop chrome and disables it on narrow screens", () => {
+    hasRule(".desktop-drag-edge", [
+      "position: fixed;",
+      "top: 0;",
+      "left: 0;",
+      "right: 0;",
+      "height: var(--titlebar-height);",
+      "background: transparent;",
+      "-webkit-app-region: drag;",
+    ]);
+    expect(globalsCss).toMatch(
+      /@media \(max-width: 960px\)[\s\S]*\.desktop-drag-edge\s*\{[\s\S]*display:\s*none;/,
+    );
+  });
+
   it("does not keep a standalone fake titlebar strip in the CSS", () => {
     expect(globalsCss).not.toContain(".app-titlebar {");
     expect(globalsCss).not.toContain(".app-shell-body {");

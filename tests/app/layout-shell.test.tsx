@@ -15,6 +15,11 @@ describe("RootLayout shell", () => {
       </RootLayout>,
     );
 
+    expect(markup).toContain('class="desktop-drag-edge"');
+    expect(markup).toContain('aria-hidden="true"');
+    expect(markup.indexOf('class="desktop-drag-edge"')).toBeLessThan(
+      markup.indexOf('class="desktop-shell"'),
+    );
     expect(markup).toContain('class="desktop-shell"');
     expect(markup).not.toContain("app-titlebar");
     expect(markup).not.toContain("app-shell-body");

@@ -110,6 +110,16 @@ svg {
   background: var(--bg);
 }
 
+.desktop-drag-edge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--titlebar-height);
+  background: transparent;
+  -webkit-app-region: drag;
+}
+
 .app-sidebar {
   position: sticky;
   top: 0;
@@ -279,6 +289,10 @@ svg {
   .workspace {
     height: auto;
     overflow: visible;
+  }
+
+  .desktop-drag-edge {
+    display: none;
   }
 
   .desktop-heading-grid,
