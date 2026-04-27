@@ -8,6 +8,20 @@ import { RULE_TEMPLATE } from "@/lib/defaults";
 let originalShowModalDescriptor: PropertyDescriptor | undefined;
 let originalCloseDescriptor: PropertyDescriptor | undefined;
 
+function createRule(overrides: Partial<Parameters<typeof RulesTable>[0]["items"][number]> = {}) {
+  return {
+    category: "基础质量",
+    description: "检查目标表达是否清楚",
+    enabled: true,
+    id: "1",
+    name: "目标清晰度",
+    promptTemplate: "模板 A",
+    severity: "medium" as const,
+    updatedAtLabel: "2026-04-13 10:00",
+    ...overrides,
+  };
+}
+
 describe("RulesTable", () => {
   beforeEach(() => {
     originalShowModalDescriptor = Object.getOwnPropertyDescriptor(
@@ -64,6 +78,7 @@ describe("RulesTable", () => {
         items: [],
         totalCount: 2,
       }),
+      deleteRule: vi.fn(),
       saveModelProfile: vi.fn(),
       toggleModelProfileEnabled: vi.fn(),
       deleteModelProfile: vi.fn(),
@@ -125,6 +140,178 @@ describe("RulesTable", () => {
     expect(screen.getByRole("table", { name: "规则表格" }).closest(".management-table-scroll-region")).toBeTruthy();
     expect(screen.getByRole("button", { name: "编辑 目标清晰度" })).toHaveClass("table-text-button");
     expect(screen.getAllByRole("button", { name: "停用" })[0]).toHaveClass("table-text-button");
+    expect(screen.getByRole("button", { name: "更多筛选" })).toHaveClass("icon-button");
+    expect(screen.getByRole("searchbox", { name: "搜索规则" })).toHaveAttribute(
+      "placeholder",
+      "搜索规则名称、分类、说明和严重级别",
+    );
+    expect(screen.queryByText("支持按规则名称、分类、说明和严重级别筛选。")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新增规则" }).closest(".table-toolbar-primary-actions")).toHaveClass(
+      "table-toolbar-primary-actions",
+    );
+    expect(screen.getByRole("button", { name: "更多筛选" }).closest(".table-toolbar-primary-actions")).toHaveClass(
+      "table-toolbar-primary-actions",
+    );
+  });
+
+  it("hides deleted rows by default", () => {
+    render(
+      <RulesTable
+        items={[
+          createRule(),
+          createRule({
+            enabled: false,
+            id: "2",
+            isDeleted: true,
+            name: "历史规则",
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("目标清晰度")).toBeInTheDocument();
+    expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
+  });
+
+  it("reloads dashboard with includeDeleted toggle and reflects deleted rows", async () => {
+    const user = userEvent.setup();
+    const activeRule = createRule();
+    const deletedRule = createRule({
+      enabled: false,
+      id: "2",
+      isDeleted: true,
+      name: "历史规则",
+    });
+    const getRuleDashboardMock = vi.fn().mockImplementation(
+      async (query?: { includeDeleted?: boolean }) => ({
+        enabledCount: 1,
+        categoryCount: 1,
+        latestUpdatedAtLabel: "2026-04-13 11:00",
+        items: query?.includeDeleted ? [activeRule, deletedRule] : [activeRule],
+        totalCount: query?.includeDeleted ? 2 : 1,
+      }),
+    );
+
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[activeRule]} />);
+
+    await user.type(screen.getByRole("searchbox", { name: "搜索规则" }), "历史");
+    expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "更多筛选" }));
+    await user.click(screen.getByRole("checkbox", { name: "显示已删除" }));
+
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: true });
+    });
+    expect(screen.getByText("历史规则")).toBeInTheDocument();
+    expect(screen.getAllByText("已删除").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "编辑 历史规则" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "显示已删除" }));
+
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: false });
+    });
+    expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
+  });
+
+  it("opens a confirmation dialog before deleting a rule", async () => {
+    const user = userEvent.setup();
+
+    render(<RulesTable items={[createRule()]} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 目标清晰度" }));
+
+    expect(window.plreview.deleteRule).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "删除规则" })).toBeInTheDocument();
+  });
+
+  it("calls deleteRule without rendering delete success feedback after confirmation", async () => {
+    const user = userEvent.setup();
+    const deleteRuleMock = vi.fn().mockResolvedValue({ mode: "soft" as const });
+    const getRuleDashboardMock = vi.fn().mockResolvedValue({
+      enabledCount: 0,
+      categoryCount: 1,
+      latestUpdatedAtLabel: "2026-04-13 11:00",
+      items: [
+        createRule({
+          enabled: false,
+          id: "1",
+          isDeleted: true,
+        }),
+      ],
+      totalCount: 1,
+    });
+
+    window.plreview.deleteRule = deleteRuleMock;
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[createRule()]} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 目标清晰度" }));
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    await waitFor(() => {
+      expect(deleteRuleMock).toHaveBeenCalledWith("1");
+    });
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText(/规则已删除/)).not.toBeInTheDocument();
+  });
+
+  it("closes confirm dialog and shows refresh failure feedback when delete succeeds but refresh fails", async () => {
+    const user = userEvent.setup();
+    const deleteRuleMock = vi.fn().mockResolvedValue({ mode: "soft" as const });
+    const getRuleDashboardMock = vi.fn().mockRejectedValue(new Error("刷新失败"));
+
+    window.plreview.deleteRule = deleteRuleMock;
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[createRule()]} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 目标清晰度" }));
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    await waitFor(() => {
+      expect(deleteRuleMock).toHaveBeenCalledWith("1");
+    });
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: false });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "删除规则" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("规则列表刷新失败：刷新失败")).toBeInTheDocument();
+  });
+
+  it("reverts deleted toggle state when reload fails", async () => {
+    const user = userEvent.setup();
+    const activeRule = createRule();
+    const getRuleDashboardMock = vi.fn().mockRejectedValue(new Error("筛选刷新失败"));
+
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[activeRule]} />);
+
+    await user.click(screen.getByRole("button", { name: "更多筛选" }));
+    const showDeletedCheckbox = screen.getByRole("checkbox", { name: "显示已删除" });
+
+    expect(showDeletedCheckbox).not.toBeChecked();
+
+    await user.click(showDeletedCheckbox);
+
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: true });
+    });
+    await waitFor(() => {
+      expect(showDeletedCheckbox).not.toBeChecked();
+    });
+    expect(screen.getByText("筛选刷新失败")).toBeInTheDocument();
   });
 
   it("filters rows locally and opens the editor drawer from the row action", async () => {

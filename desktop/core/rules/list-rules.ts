@@ -23,6 +23,7 @@ function formatUpdatedAt(date: Date) {
 
 export async function listRules(prisma: PrismaClient) {
   const rules = await prisma.rule.findMany({
+    where: { deletedAt: null },
     orderBy: [{ enabled: "desc" }, { category: "asc" }, { updatedAt: "desc" }],
   });
 

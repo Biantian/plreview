@@ -871,7 +871,7 @@ git commit -m "feat: add hidden top drag edge for desktop shell"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-04-27-launch-guidance-and-rule-delete-implementation-plan.md` (checklist updates only)
 
-- [ ] **Step 1: Run focused regression suite**
+- [x] **Step 1: Run focused regression suite**
 
 Run:
 
@@ -881,7 +881,7 @@ npm test -- --run tests/lib/rules.test.ts tests/desktop/create-review-batch.test
 
 Expected: PASS with zero failing tests.
 
-- [ ] **Step 2: Run broad safety net**
+- [x] **Step 2: Run broad safety net**
 
 Run:
 
@@ -891,7 +891,7 @@ npm test
 
 Expected: PASS for full Vitest suite.
 
-- [ ] **Step 3: Mark task checklist completion in plan**
+- [x] **Step 3: Mark task checklist completion in plan**
 
 Update this plan by checking completed boxes:
 
@@ -900,9 +900,15 @@ Update this plan by checking completed boxes:
 - [x] **Step 2: Run broad safety net**
 ```
 
-- [ ] **Step 4: Final commit for verification-only updates**
+- [x] **Step 4: Final commit for verification-only updates**
 
 ```bash
 git add docs/superpowers/plans/2026-04-27-launch-guidance-and-rule-delete-implementation-plan.md
 git commit -m "docs: mark launch guidance and rule delete plan execution status"
 ```
+
+## Known Follow-Ups
+
+- 顶部透明拖拽区目前仍未在主内容顶边达到预期效果，现阶段只有左侧导航顶部区域能稳定拖拽；后续需重新评估 Electron 窗口 chrome 与 renderer drag region 的组合方案。
+- 表单样式仍有一轮统一优化空间，当前只完成了搜索框的全局样式收口，尚未系统梳理其他表单控件视觉一致性。
+- “规则选择”缺失引导目前仍会高亮整个选择容器边框；后续应继续收敛到更细粒度的最小交互单元高亮。

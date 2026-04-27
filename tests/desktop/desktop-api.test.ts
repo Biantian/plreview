@@ -74,7 +74,7 @@ describe("createDesktopApi", () => {
     await api.pickFiles();
     await api.getHomeDashboard();
     await api.getModelDashboard();
-    await api.getRuleDashboard();
+    await api.getRuleDashboard({ includeDeleted: true });
     await api.getReviewDetail("review_1");
     await api.listReviewJobs();
     await api.searchReviewJobs("待处理");
@@ -90,6 +90,7 @@ describe("createDesktopApi", () => {
     });
     await api.saveRule(rulePayload);
     await api.toggleRuleEnabled("rule_1", false);
+    await api.deleteRule("rule_2");
     await api.saveModelProfile(modelPayload);
     await api.toggleModelProfileEnabled("profile_1", false);
     await api.deleteModelProfile("profile_2");
@@ -99,7 +100,7 @@ describe("createDesktopApi", () => {
       [CHANNELS.filesPick],
       [CHANNELS.homeDashboard],
       [CHANNELS.modelsDashboard],
-      [CHANNELS.rulesDashboard],
+      [CHANNELS.rulesDashboard, { includeDeleted: true }],
       [CHANNELS.reviewDetail, { reviewId: "review_1" }],
       [CHANNELS.reviewJobsList],
       [CHANNELS.reviewJobsSearch, { query: "待处理" }],
@@ -112,6 +113,7 @@ describe("createDesktopApi", () => {
       [CHANNELS.reviewJobsExportReport, { allMatching: true, query: "已完成" }],
       [CHANNELS.rulesSave, rulePayload],
       [CHANNELS.rulesToggleEnabled, { id: "rule_1", enabled: false }],
+      [CHANNELS.rulesDelete, { id: "rule_2" }],
       [CHANNELS.modelsSave, modelPayload],
       [CHANNELS.modelsToggleEnabled, { id: "profile_1", enabled: false }],
       [CHANNELS.modelsDelete, { id: "profile_2" }],

@@ -440,9 +440,13 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
       </div>
 
       <div className="desktop-table-toolbar">
-        <TableSearchInput label="搜索评审任务" onChange={setQuery} value={query} />
+        <TableSearchInput
+          label="搜索评审任务"
+          onChange={setQuery}
+          placeholder="搜索标题、文件名、批次名、模型名和状态"
+          value={query}
+        />
         <div className="desktop-table-toolbar-actions">
-          <p className="muted">支持按标题、文件名、批次名、模型名和状态快速筛选。</p>
           <button
             aria-label="刷新任务列表"
             className="icon-button"

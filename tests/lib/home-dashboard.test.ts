@@ -76,8 +76,10 @@ describe("home-dashboard", () => {
 
     const data = await getHomeDashboardData();
 
-    expect(ruleCount).toHaveBeenNthCalledWith(1);
-    expect(ruleCount).toHaveBeenNthCalledWith(2, { where: { enabled: true } });
+    expect(ruleCount).toHaveBeenNthCalledWith(1, { where: { deletedAt: null } });
+    expect(ruleCount).toHaveBeenNthCalledWith(2, {
+      where: { enabled: true, deletedAt: null },
+    });
     expect(reviewJobFindMany).toHaveBeenCalledWith({
       include: {
         document: true,

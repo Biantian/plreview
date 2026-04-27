@@ -53,6 +53,7 @@ describe("desktop worker protocol", () => {
   });
 
   it("exposes runtime channels through the public constants", () => {
+    expect(DESKTOP_REQUESTS.rulesDelete).toBe("rules:delete");
     expect(DESKTOP_REQUESTS.runtimeStatus).toBe("desktop-runtime:status");
     expect(DESKTOP_EVENTS.runtimeUpdated).toBe("desktop-runtime:updated");
   });

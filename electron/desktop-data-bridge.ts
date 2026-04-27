@@ -17,6 +17,7 @@ export {
   retryReviewJobById,
 } from "@/lib/review-ipc";
 export {
+  deleteRule,
   getRuleDashboardData,
   saveRule,
   toggleRuleEnabled,

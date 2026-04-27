@@ -89,6 +89,7 @@ model Rule {
   promptTemplate String
   severity       Severity
   enabled        Boolean       @default(true)
+  deletedAt      DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   versions       RuleVersion[]

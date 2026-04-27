@@ -14,6 +14,7 @@ export const DESKTOP_REQUESTS = {
   rulesSearch: "rules:search",
   rulesSave: "rules:save",
   rulesToggleEnabled: "rules:toggle-enabled",
+  rulesDelete: "rules:delete",
   modelsSave: "models:save",
   modelsToggleEnabled: "models:toggle-enabled",
   modelsDelete: "models:delete",

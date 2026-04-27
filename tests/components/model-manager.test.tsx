@@ -60,6 +60,7 @@ describe("ModelManager", () => {
       exportReviewReport: vi.fn(),
       saveRule: vi.fn(),
       toggleRuleEnabled: vi.fn(),
+      deleteRule: vi.fn(),
       saveModelProfile: vi.fn().mockResolvedValue({
         metrics: {
           totalCount: profiles.length + 1,
@@ -101,7 +102,12 @@ describe("ModelManager", () => {
     expect(screen.getByRole("table", { name: "模型表格" }).closest(".management-table-scroll-region")).toBeTruthy();
     expect(screen.getByRole("button", { name: "编辑 百炼生产" })).toHaveClass("table-text-button");
     expect(screen.getByRole("button", { name: "停用" })).toHaveClass("table-text-button");
-    expect(screen.getAllByRole("button", { name: "删除" })[0]).toHaveClass("table-text-button");
+    expect(screen.getByRole("button", { name: "删除 百炼生产" })).toHaveClass("table-text-button");
+    expect(screen.getByRole("searchbox", { name: "搜索模型" })).toHaveAttribute(
+      "placeholder",
+      "搜索配置名称、供应商、模式和默认模型",
+    );
+    expect(screen.queryByText("支持按配置名称、供应商、模式和默认模型筛选。")).not.toBeInTheDocument();
   });
 
   it("filters rows and opens the drawer for editing", async () => {
@@ -126,6 +132,30 @@ describe("ModelManager", () => {
 
     expect(screen.getByRole("dialog", { name: "新增模型配置" })).toBeInTheDocument();
     expect(screen.getByText("新增模型配置")).toBeInTheDocument();
+  });
+
+  it("opens a confirmation dialog before deleting a model profile", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={profiles} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 百炼生产" }));
+
+    expect(window.plreview.deleteModelProfile).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "删除模型配置" })).toBeInTheDocument();
+  });
+
+  it("deletes a model profile only after confirmation", async () => {
+    const user = userEvent.setup();
+
+    render(<ModelManager profiles={profiles} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 百炼生产" }));
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    await waitFor(() => {
+      expect(window.plreview.deleteModelProfile).toHaveBeenCalledWith("profile_1");
+    });
   });
 
   it("uses centered dialog mode and keeps typed values on resize", async () => {

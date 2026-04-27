@@ -104,33 +104,55 @@ describe("globals shell styles", () => {
     hasRule(".form-overlay-footer", ["border-top: 1px solid var(--line);"]);
   });
 
-  it("pushes content down with container padding while letting the shell itself reach the very top", () => {
+  it("uses a transparent top drag overlay without reserving visible whitespace", () => {
     hasRule("html", ["height: 100%;", "padding: 0;"]);
-    hasRule("body", ["height: 100%;", "padding: 0;", "overflow: hidden;"]);
-    hasRule(".desktop-shell", ["height: 100vh;", "min-height: 100vh;", "overflow: hidden;"]);
+    hasRule("body", [
+      "display: flex;",
+      "flex-direction: column;",
+      "height: 100%;",
+      "padding: 0;",
+      "overflow: hidden;",
+    ]);
+    hasRule(".desktop-shell", [
+      "height: 100vh;",
+      "min-height: 100vh;",
+      "overflow: hidden;",
+    ]);
     hasRule(".app-sidebar", [
       "top: 0;",
       "height: 100vh;",
       "padding: calc(var(--titlebar-height) + 18px) 16px 18px;",
-      "-webkit-app-region: drag;",
     ]);
     hasRule(".workspace", [
       "display: flex;",
-      "height: 100vh;",
-      "min-height: 100vh;",
+      "height: 100%;",
+      "min-height: 0;",
       "overflow: hidden;",
-      "padding-top: var(--titlebar-height);",
-      "-webkit-app-region: drag;",
+      "padding-top: 0;",
     ]);
     hasRule(".app-sidebar > *", ["-webkit-app-region: no-drag;"]);
     hasRule(".workspace > *", ["-webkit-app-region: no-drag;"]);
   });
 
-  it("does not keep a standalone fake titlebar strip in the CSS", () => {
-    expect(globalsCss).not.toContain(".app-titlebar {");
+  it("defines a transparent top drag overlay for desktop chrome and disables it on narrow screens", () => {
+    hasRule(".desktop-titlebar", [
+      "position: fixed;",
+      "top: 0;",
+      "left: 0;",
+      "right: 0;",
+      "height: var(--titlebar-height);",
+      "z-index: 30;",
+      "background: rgba(255, 255, 255, 0.001);",
+      "-webkit-app-region: drag;",
+    ]);
+    expect(globalsCss).toMatch(
+      /@media \(max-width: 960px\)[\s\S]*\.desktop-titlebar\s*\{[\s\S]*display:\s*none;/,
+    );
+  });
+
+  it("keeps the transparent drag overlay implementation narrow and avoids legacy wrappers", () => {
     expect(globalsCss).not.toContain(".app-shell-body {");
     expect(globalsCss).not.toContain(".app-drag-region {");
-    expect(globalsCss).not.toContain("calc(100vh - var(--titlebar-height))");
     expect(getRuleBody(".app-sidebar")).not.toContain("top: var(--titlebar-height);");
   });
 
@@ -182,6 +204,12 @@ describe("globals shell styles", () => {
     hasRule(".table-cell-primary", ["font-weight: 600;"]);
     hasRule(".table-cell-secondary", ["font-size: 12px;"]);
     hasRule(".icon-button", ["width: 32px;", "height: 32px;"]);
+    hasRule(".table-search", ["position: relative;", "display: flex;", "align-items: center;"]);
+    hasRule(".table-search input", [
+      "padding: 11px 14px 11px 38px;",
+      "border-radius: 999px;",
+      "background: #f3f4f6;",
+    ]);
   });
 
   it("defines compact review table layout guards for the review-specific hook classes", () => {

@@ -10,8 +10,8 @@ export async function getHomeDashboardData() {
     recentReviews,
     llmProfiles,
   ] = await Promise.all([
-    prisma.rule.count(),
-    prisma.rule.count({ where: { enabled: true } }),
+    prisma.rule.count({ where: { deletedAt: null } }),
+    prisma.rule.count({ where: { enabled: true, deletedAt: null } }),
     prisma.document.count(),
     prisma.reviewJob.count(),
     prisma.annotation.count(),

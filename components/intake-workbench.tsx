@@ -39,7 +39,23 @@ type IntakeWorkbenchProps = {
   importedFiles?: ImportedFile[];
 };
 
+type LaunchMissingKey = "batch" | "profile" | "rules" | "documents";
+
 const EMPTY_IMPORTED_FILES: ImportedFile[] = [];
+const SECTION_FOCUS_FALLBACK_SELECTOR =
+  "input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
+const MISSING_KEY_TO_SECTION: Record<LaunchMissingKey, "batchProfile" | "rules" | "documents"> = {
+  batch: "batchProfile",
+  profile: "batchProfile",
+  rules: "rules",
+  documents: "documents",
+};
+const MISSING_KEY_TO_FOCUS_SELECTOR: Record<LaunchMissingKey, string> = {
+  batch: "#batchName",
+  profile: "#llmProfileId",
+  rules: "input[name='ruleIds']:not([disabled])",
+  documents: "button[aria-label='选择本地文件']:not([disabled])",
+};
 
 function normalizeImportedFile(file: ImportedFile): ImportedFile {
   return {
@@ -101,6 +117,10 @@ export function IntakeWorkbench({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
+  const [highlightedLaunchKeys, setHighlightedLaunchKeys] = useState<LaunchMissingKey[]>([]);
+  const batchProfileSectionRef = useRef<HTMLElement | null>(null);
+  const rulesSectionRef = useRef<HTMLElement | null>(null);
+  const documentsSectionRef = useRef<HTMLElement | null>(null);
   const hasInitializedRuleSelection = useRef(false);
   const readyDocuments = workbenchFiles.filter(
     (file): file is ImportedFile & { documentId: string } => isReadyDocument(file),
@@ -108,35 +128,54 @@ export function IntakeWorkbench({
   const selectedSummaryFile =
     workbenchFiles.find((file) => file.id === selectedSummaryId) ?? null;
   const hasDesktopPicker = typeof window !== "undefined" && Boolean(window.plreview?.pickFiles);
+  const isBatchReady = batchName.trim().length > 0;
+  const isProfileReady = selectedProfileId.length > 0;
+  const isRulesReady = selectedRuleIds.length > 0;
+  const isDocumentsReady = readyDocuments.length > 0;
+  const launchMissingKeys: LaunchMissingKey[] = [];
+
+  if (!isBatchReady) {
+    launchMissingKeys.push("batch");
+  }
+
+  if (!isProfileReady) {
+    launchMissingKeys.push("profile");
+  }
+
+  if (!isRulesReady) {
+    launchMissingKeys.push("rules");
+  }
+
+  if (!isDocumentsReady) {
+    launchMissingKeys.push("documents");
+  }
+
   const isLaunchReady =
     !isPickingFiles &&
     !isSubmitting &&
-    batchName.trim().length > 0 &&
-    selectedProfileId.length > 0 &&
-    readyDocuments.length > 0 &&
-    selectedRuleIds.length > 0;
+    launchMissingKeys.length === 0;
   const launchChecklist = [
     {
       id: "batch",
-      isReady: batchName.trim().length > 0,
+      isReady: isBatchReady,
       label: "批次名称",
       value: batchName.trim() || "待命名",
     },
     {
       id: "profile",
-      isReady: selectedProfileId.length > 0,
+      isReady: isProfileReady,
       label: "模型配置",
       value: selectedProfile?.name ?? "未配置",
     },
     {
       id: "rules",
-      isReady: selectedRuleIds.length > 0,
+      isReady: isRulesReady,
       label: "评审规则",
       value: selectedRuleIds.length > 0 ? `${selectedRuleIds.length} 条已选` : "待选择",
     },
     {
       id: "documents",
-      isReady: readyDocuments.length > 0,
+      isReady: isDocumentsReady,
       label: "待评审文件",
       value: readyDocuments.length > 0 ? `${readyDocuments.length} 条待评审` : "待导入",
     },
@@ -200,6 +239,12 @@ export function IntakeWorkbench({
     }
   }, [selectedProfile]);
 
+  useEffect(() => {
+    setHighlightedLaunchKeys((current) =>
+      current.filter((missingKey) => launchMissingKeys.includes(missingKey)),
+    );
+  }, [isBatchReady, isProfileReady, isRulesReady, isDocumentsReady]);
+
   const handlePickFiles = async () => {
     if (!window.plreview?.pickFiles) {
       return;
@@ -218,14 +263,49 @@ export function IntakeWorkbench({
     }
   };
 
+  const focusSectionControl = (missingKey: LaunchMissingKey) => {
+    const targetSection = MISSING_KEY_TO_SECTION[missingKey];
+    const sectionElement =
+      targetSection === "batchProfile"
+        ? batchProfileSectionRef.current
+        : targetSection === "rules"
+          ? rulesSectionRef.current
+          : documentsSectionRef.current;
+
+    if (!sectionElement) {
+      return;
+    }
+
+    if (typeof sectionElement.scrollIntoView === "function") {
+      sectionElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    const preferredSelector = MISSING_KEY_TO_FOCUS_SELECTOR[missingKey];
+    const preferredElement = sectionElement.querySelector<HTMLElement>(preferredSelector);
+    const fallbackElement = sectionElement.querySelector<HTMLElement>(SECTION_FOCUS_FALLBACK_SELECTOR);
+    const focusTarget = preferredElement ?? fallbackElement;
+
+    if (!focusTarget) {
+      return;
+    }
+
+    focusTarget.focus();
+
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => {
+        focusTarget.focus({ preventScroll: true });
+      });
+    }
+  };
+
   const handleCreateReviewBatch = async () => {
-    if (
-      !window.plreview?.createReviewBatch ||
-      !selectedProfileId ||
-      readyDocuments.length === 0 ||
-      selectedRuleIds.length === 0 ||
-      batchName.trim().length === 0
-    ) {
+    if (launchMissingKeys.length > 0) {
+      setHighlightedLaunchKeys(launchMissingKeys);
+      focusSectionControl(launchMissingKeys[0]);
+      return;
+    }
+
+    if (!window.plreview?.createReviewBatch || !selectedProfileId) {
       return;
     }
 
@@ -258,10 +338,20 @@ export function IntakeWorkbench({
     setErrorMessage("");
   };
 
+  const isBatchHighlighted = highlightedLaunchKeys.includes("batch");
+  const isProfileHighlighted = highlightedLaunchKeys.includes("profile");
+  const isRulesHighlighted = highlightedLaunchKeys.includes("rules");
+  const isDocumentsHighlighted = highlightedLaunchKeys.includes("documents");
+
   return (
     <section aria-label="评审启动工作区" className="launch-workspace">
       <div className="launch-main-column">
-        <section className="desktop-surface stack-lg" aria-labelledby="launch-config-heading">
+        <section
+          aria-labelledby="launch-config-heading"
+          className="desktop-surface stack-lg launch-guidance-section"
+          data-testid="launch-section-batch-profile"
+          ref={batchProfileSectionRef}
+        >
           <div className="launch-section-header">
             <div>
               <p className="section-eyebrow">Launch Setup</p>
@@ -278,7 +368,11 @@ export function IntakeWorkbench({
           <p className="section-copy">填写批次名称并选择模型。</p>
 
           <div className="form-grid two">
-            <div className="field">
+            <div
+              className={`field launch-guidance-target ${isProfileHighlighted ? "is-missing" : ""}`}
+              data-missing={isProfileHighlighted ? "true" : "false"}
+              data-testid="launch-missing-profile"
+            >
               <label htmlFor="llmProfileId">模型配置</label>
               <select
                 id="llmProfileId"
@@ -319,7 +413,11 @@ export function IntakeWorkbench({
             </div>
           </div>
 
-          <div className="field">
+          <div
+            className={`field launch-guidance-target ${isBatchHighlighted ? "is-missing" : ""}`}
+            data-missing={isBatchHighlighted ? "true" : "false"}
+            data-testid="launch-missing-batch"
+          >
             <label htmlFor="batchName">批次名称</label>
             <input
               id="batchName"
@@ -347,7 +445,12 @@ export function IntakeWorkbench({
           </div>
 
           <div className="launch-zone-grid">
-            <section className="launch-zone stack" aria-labelledby="launch-rules-heading">
+            <section
+              aria-labelledby="launch-rules-heading"
+              className="launch-zone stack launch-guidance-section"
+              data-testid="launch-section-rules"
+              ref={rulesSectionRef}
+            >
               <div className="launch-section-header">
                 <div>
                   <p className="section-eyebrow">Rules</p>
@@ -362,7 +465,11 @@ export function IntakeWorkbench({
 
               <p className="section-copy">选择本次评审要使用的规则。</p>
 
-              <div className="checkbox-list">
+              <div
+                className={`checkbox-list launch-guidance-target ${isRulesHighlighted ? "is-missing" : ""}`}
+                data-missing={isRulesHighlighted ? "true" : "false"}
+                data-testid="launch-missing-rules"
+              >
                 {rules.length === 0 ? (
                   <div className="checkbox-card">
                     <div>
@@ -400,7 +507,12 @@ export function IntakeWorkbench({
               </div>
             </section>
 
-            <section className="launch-zone stack" aria-labelledby="launch-files-heading">
+            <section
+              aria-labelledby="launch-files-heading"
+              className="launch-zone stack launch-guidance-section"
+              data-testid="launch-section-documents"
+              ref={documentsSectionRef}
+            >
               <div className="launch-section-header">
                 <div>
                   <p className="section-eyebrow">File Intake</p>
@@ -415,7 +527,11 @@ export function IntakeWorkbench({
               </div>
 
               {hasDesktopPicker ? (
-                <div className="upload-panel">
+                <div
+                  className={`upload-panel launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
+                  data-missing={isDocumentsHighlighted ? "true" : "false"}
+                  data-testid="launch-missing-documents"
+                >
                   <div>
                     <p className="section-eyebrow">Desktop Intake</p>
                     <strong>选择本地文件</strong>
@@ -435,7 +551,11 @@ export function IntakeWorkbench({
                   </div>
                 </div>
               ) : (
-                <div className="upload-panel">
+                <div
+                  className={`upload-panel launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
+                  data-missing={isDocumentsHighlighted ? "true" : "false"}
+                  data-testid="launch-missing-documents"
+                >
                   <div>
                     <p className="section-eyebrow">Desktop Required</p>
                     <strong>请在桌面应用中启动后再导入本地文件。</strong>
@@ -647,7 +767,7 @@ export function IntakeWorkbench({
                 <button
                   aria-label="开始评审"
                   className="button"
-                  disabled={!isLaunchReady}
+                  disabled={isSubmitting || isPickingFiles}
                   onClick={handleCreateReviewBatch}
                   type="button"
                 >
