@@ -871,7 +871,7 @@ git commit -m "feat: add hidden top drag edge for desktop shell"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-04-27-launch-guidance-and-rule-delete-implementation-plan.md` (checklist updates only)
 
-- [ ] **Step 1: Run focused regression suite**
+- [x] **Step 1: Run focused regression suite**
 
 Run:
 
@@ -881,7 +881,7 @@ npm test -- --run tests/lib/rules.test.ts tests/desktop/create-review-batch.test
 
 Expected: PASS with zero failing tests.
 
-- [ ] **Step 2: Run broad safety net**
+- [x] **Step 2: Run broad safety net**
 
 Run:
 
@@ -891,7 +891,7 @@ npm test
 
 Expected: PASS for full Vitest suite.
 
-- [ ] **Step 3: Mark task checklist completion in plan**
+- [x] **Step 3: Mark task checklist completion in plan**
 
 Update this plan by checking completed boxes:
 
@@ -900,7 +900,7 @@ Update this plan by checking completed boxes:
 - [x] **Step 2: Run broad safety net**
 ```
 
-- [ ] **Step 4: Final commit for verification-only updates**
+- [x] **Step 4: Final commit for verification-only updates**
 
 ```bash
 git add docs/superpowers/plans/2026-04-27-launch-guidance-and-rule-delete-implementation-plan.md
