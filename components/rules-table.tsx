@@ -106,6 +106,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
       return;
     }
 
+    const previousShowDeleted = showDeleted;
     setShowDeleted(checked);
     setFeedback(null);
     setIsSaving(true);
@@ -113,6 +114,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     try {
       await refreshRecords(checked);
     } catch (error) {
+      setShowDeleted(previousShowDeleted);
       setFeedback(error instanceof Error ? error.message : "规则加载失败。");
     } finally {
       setIsSaving(false);
@@ -167,11 +169,19 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
 
     try {
       const result = await window.plreview.deleteRule(deleteTarget.id);
-      await refreshRecords(showDeleted);
       setDeleteTarget(null);
       setEditingId(null);
       setIsCreateOpen(false);
-      setFeedback(result.mode === "soft" ? "规则已删除（软删除）。" : "规则已删除（永久删除）。");
+
+      const deleteSuccessMessage = result.mode === "soft" ? "规则已删除（软删除）" : "规则已删除（永久删除）";
+
+      try {
+        await refreshRecords(showDeleted);
+        setFeedback(`${deleteSuccessMessage}。`);
+      } catch (refreshError) {
+        const refreshMessage = refreshError instanceof Error ? refreshError.message : "规则刷新失败。";
+        setFeedback(`${deleteSuccessMessage}，但刷新失败：${refreshMessage}`);
+      }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "规则删除失败。");
     } finally {

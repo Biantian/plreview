@@ -251,6 +251,57 @@ describe("RulesTable", () => {
     expect(screen.getByText("规则已删除（软删除）。")).toBeInTheDocument();
   });
 
+  it("closes confirm dialog and shows partial-success feedback when delete succeeds but refresh fails", async () => {
+    const user = userEvent.setup();
+    const deleteRuleMock = vi.fn().mockResolvedValue({ mode: "soft" as const });
+    const getRuleDashboardMock = vi.fn().mockRejectedValue(new Error("刷新失败"));
+
+    window.plreview.deleteRule = deleteRuleMock;
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[createRule()]} />);
+
+    await user.click(screen.getByRole("button", { name: "删除 目标清晰度" }));
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    await waitFor(() => {
+      expect(deleteRuleMock).toHaveBeenCalledWith("1");
+    });
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: false });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "删除规则" })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("规则已删除（软删除），但刷新失败：刷新失败")).toBeInTheDocument();
+  });
+
+  it("reverts deleted toggle state when reload fails", async () => {
+    const user = userEvent.setup();
+    const activeRule = createRule();
+    const getRuleDashboardMock = vi.fn().mockRejectedValue(new Error("筛选刷新失败"));
+
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[activeRule]} />);
+
+    await user.click(screen.getByText("更多筛选"));
+    const showDeletedCheckbox = screen.getByRole("checkbox", { name: "显示已删除" });
+
+    expect(showDeletedCheckbox).not.toBeChecked();
+
+    await user.click(showDeletedCheckbox);
+
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: true });
+    });
+    await waitFor(() => {
+      expect(showDeletedCheckbox).not.toBeChecked();
+    });
+    expect(screen.getByText("筛选刷新失败")).toBeInTheDocument();
+  });
+
   it("filters rows locally and opens the editor drawer from the row action", async () => {
     const user = userEvent.setup();
 
