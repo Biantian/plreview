@@ -72,6 +72,7 @@ export type DesktopBinaryPayload = {
 export type RuleDashboardItem = {
   id: string;
   enabled: boolean;
+  isDeleted?: boolean;
   name: string;
   category: string;
   severity: Severity;
