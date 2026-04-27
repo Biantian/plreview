@@ -93,11 +93,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
       throw new Error("桌面桥接不可用，请从 Electron 桌面壳启动。");
     }
 
-    if (includeDeleted) {
-      return window.plreview.getRuleDashboard({ includeDeleted: true });
-    }
-
-    return window.plreview.getRuleDashboard();
+    return window.plreview.getRuleDashboard({ includeDeleted });
   }
 
   async function refreshRecords(includeDeleted: boolean) {
@@ -105,13 +101,22 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     setRecords(nextDashboard.items);
   }
 
-  function handleToggleShowDeleted(checked: boolean) {
+  async function handleToggleShowDeleted(checked: boolean) {
     if (checked === showDeleted) {
       return;
     }
 
     setShowDeleted(checked);
     setFeedback(null);
+    setIsSaving(true);
+
+    try {
+      await refreshRecords(checked);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "规则加载失败。");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function updateRules(
@@ -196,7 +201,7 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
               <input
                 checked={showDeleted}
                 disabled={isSaving}
-                onChange={(event) => handleToggleShowDeleted(event.currentTarget.checked)}
+                onChange={(event) => void handleToggleShowDeleted(event.currentTarget.checked)}
                 type="checkbox"
               />
               <span>显示已删除</span>

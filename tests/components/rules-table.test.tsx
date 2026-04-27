@@ -161,29 +161,48 @@ describe("RulesTable", () => {
     expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
   });
 
-  it("reveals deleted rows from hidden filters", async () => {
+  it("reloads dashboard with includeDeleted toggle and reflects deleted rows", async () => {
     const user = userEvent.setup();
-
-    render(
-      <RulesTable
-        items={[
-          createRule(),
-          createRule({
-            enabled: false,
-            id: "2",
-            isDeleted: true,
-            name: "历史规则",
-          }),
-        ]}
-      />,
+    const activeRule = createRule();
+    const deletedRule = createRule({
+      enabled: false,
+      id: "2",
+      isDeleted: true,
+      name: "历史规则",
+    });
+    const getRuleDashboardMock = vi.fn().mockImplementation(
+      async (query?: { includeDeleted?: boolean }) => ({
+        enabledCount: 1,
+        categoryCount: 1,
+        latestUpdatedAtLabel: "2026-04-13 11:00",
+        items: query?.includeDeleted ? [activeRule, deletedRule] : [activeRule],
+        totalCount: query?.includeDeleted ? 2 : 1,
+      }),
     );
+
+    window.plreview.getRuleDashboard = getRuleDashboardMock;
+
+    render(<RulesTable items={[activeRule]} />);
+
+    await user.type(screen.getByRole("searchbox", { name: "搜索规则" }), "历史");
+    expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
 
     await user.click(screen.getByText("更多筛选"));
     await user.click(screen.getByRole("checkbox", { name: "显示已删除" }));
 
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: true });
+    });
     expect(screen.getByText("历史规则")).toBeInTheDocument();
     expect(screen.getAllByText("已删除").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "编辑 历史规则" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "显示已删除" }));
+
+    await waitFor(() => {
+      expect(getRuleDashboardMock).toHaveBeenCalledWith({ includeDeleted: false });
+    });
+    expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
   });
 
   it("opens a confirmation dialog before deleting a rule", async () => {
