@@ -475,6 +475,21 @@ svg {
   grid-column: 1 / -1;
 }
 
+.launch-guidance-section {
+  scroll-margin-top: 96px;
+}
+
+.launch-guidance-section.is-missing {
+  border-color: rgba(180, 83, 9, 0.72);
+  background:
+    linear-gradient(180deg, rgba(251, 191, 36, 0.1), rgba(255, 255, 255, 0.94)),
+    rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(180, 83, 9, 0.2),
+    0 14px 32px rgba(180, 83, 9, 0.14);
+  animation: launch-missing-flash 880ms ease-out;
+}
+
 .launch-readiness-rail {
   position: sticky;
   top: 24px;
@@ -2922,6 +2937,29 @@ svg {
   100% {
     transform: scale(0.94);
     box-shadow: 0 0 0 0 rgba(233, 138, 71, 0);
+  }
+}
+
+@keyframes launch-missing-flash {
+  0% {
+    transform: translateY(0);
+    box-shadow:
+      0 0 0 1px rgba(180, 83, 9, 0.16),
+      0 0 0 0 rgba(251, 191, 36, 0.3);
+  }
+
+  45% {
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 1px rgba(180, 83, 9, 0.22),
+      0 0 0 8px rgba(251, 191, 36, 0);
+  }
+
+  100% {
+    transform: translateY(0);
+    box-shadow:
+      0 0 0 1px rgba(180, 83, 9, 0.2),
+      0 14px 32px rgba(180, 83, 9, 0.14);
   }
 }
 
