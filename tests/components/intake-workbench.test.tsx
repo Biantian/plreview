@@ -174,33 +174,48 @@ describe("IntakeWorkbench", () => {
     expect(within(readinessRail).getByText("可创建批次")).toBeInTheDocument();
   });
 
-  it("highlights all missing launch sections and focuses the first missing input on submit", async () => {
+  it("highlights only the missing launch controls and focuses the first missing input on submit", async () => {
     const user = userEvent.setup();
 
     render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
 
     await user.click(screen.getByRole("button", { name: "开始评审" }));
 
-    expect(screen.getByTestId("launch-section-batch-profile")).toHaveAttribute("data-missing", "true");
-    expect(screen.getByTestId("launch-section-rules")).toHaveAttribute("data-missing", "false");
-    expect(screen.getByTestId("launch-section-documents")).toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-section-batch-profile")).not.toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-missing-batch")).toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-missing-profile")).toHaveAttribute("data-missing", "false");
+    expect(screen.getByTestId("launch-missing-rules")).toHaveAttribute("data-missing", "false");
+    expect(screen.getByTestId("launch-missing-documents")).toHaveAttribute("data-missing", "true");
     expect(screen.getByLabelText("批次名称")).toHaveFocus();
     expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
   });
 
-  it("clears section missing highlight as soon as that section becomes ready", async () => {
+  it("focuses the exact model config field when batch config is missing only the profile", async () => {
+    const user = userEvent.setup();
+
+    render(<IntakeWorkbench llmProfiles={[]} rules={defaultRules} />);
+
+    await user.type(screen.getByLabelText("批次名称"), "四月策划案");
+    await user.click(screen.getByRole("button", { name: "开始评审" }));
+
+    expect(screen.getByLabelText("模型配置")).toHaveFocus();
+    expect(screen.getByTestId("launch-missing-profile")).toHaveAttribute("data-missing", "true");
+    expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
+  });
+
+  it("clears missing control highlight as soon as that control becomes ready", async () => {
     const user = userEvent.setup();
 
     render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
 
     await user.click(screen.getByRole("button", { name: "开始评审" }));
-    expect(screen.getByTestId("launch-section-batch-profile")).toHaveAttribute("data-missing", "true");
-    expect(screen.getByTestId("launch-section-documents")).toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-missing-batch")).toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-missing-documents")).toHaveAttribute("data-missing", "true");
 
     await user.type(screen.getByLabelText("批次名称"), "四月策划案");
 
-    expect(screen.getByTestId("launch-section-batch-profile")).toHaveAttribute("data-missing", "false");
-    expect(screen.getByTestId("launch-section-documents")).toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-missing-batch")).toHaveAttribute("data-missing", "false");
+    expect(screen.getByTestId("launch-missing-documents")).toHaveAttribute("data-missing", "true");
   });
 
   it("hydrates late-loaded model and rule defaults so batch launch can unlock", async () => {

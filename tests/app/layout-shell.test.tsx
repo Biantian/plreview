@@ -8,21 +8,19 @@ vi.mock("@/components/app-sidebar", () => ({
 import RootLayout from "@/app/layout";
 
 describe("RootLayout shell", () => {
-  it("renders the desktop shell without a separate fake titlebar wrapper", () => {
+  it("renders the desktop shell with a dedicated top drag bar", () => {
     const markup = renderToStaticMarkup(
       <RootLayout>
         <div>workspace</div>
       </RootLayout>,
     );
 
-    expect(markup).toContain('class="desktop-drag-edge"');
+    expect(markup).toContain('class="desktop-titlebar"');
     expect(markup).toContain('aria-hidden="true"');
-    expect(markup.indexOf('class="desktop-drag-edge"')).toBeLessThan(
+    expect(markup.indexOf('class="desktop-titlebar"')).toBeLessThan(
       markup.indexOf('class="desktop-shell"'),
     );
     expect(markup).toContain('class="desktop-shell"');
-    expect(markup).not.toContain("app-titlebar");
-    expect(markup).not.toContain("app-shell-body");
     expect(markup).toContain("workspace");
   });
 });

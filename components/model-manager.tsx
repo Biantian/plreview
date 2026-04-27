@@ -7,6 +7,7 @@ import type {
   ModelDashboardProfile,
   ModelSaveInput,
 } from "@/desktop/bridge/desktop-api";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ModelEditorDrawer, type ModelCreateDraft } from "@/components/model-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
 
@@ -52,6 +53,7 @@ export function ModelManager({
   const [records, setRecords] = useState(profiles);
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ModelProfileRecord | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<ModelCreateDraft>(() => createDefaultModelDraft());
   const [isSaving, setIsSaving] = useState(false);
@@ -92,6 +94,19 @@ export function ModelManager({
     setIsCreateOpen(false);
   }
 
+  async function handleConfirmDelete() {
+    if (!deleteTarget) {
+      return;
+    }
+
+    const targetId = deleteTarget.id;
+    setDeleteTarget(null);
+    await updateProfiles(
+      () => window.plreview.deleteModelProfile(targetId),
+      "模型配置已删除。",
+    );
+  }
+
   async function updateProfiles(
     action: () => Promise<ModelDashboardData>,
     successMessage: string,
@@ -130,9 +145,13 @@ export function ModelManager({
       </div>
 
       <div className="desktop-table-toolbar">
-        <TableSearchInput label="搜索模型" onChange={setQuery} value={query} />
+        <TableSearchInput
+          label="搜索模型"
+          onChange={setQuery}
+          placeholder="搜索配置名称、供应商、模式和默认模型"
+          value={query}
+        />
         <div className="desktop-table-toolbar-actions">
-          <p className="muted">支持按配置名称、供应商、模式和默认模型筛选。</p>
           <button
             className="button"
             onClick={openCreateEditor}
@@ -211,14 +230,10 @@ export function ModelManager({
                       </button>
 
                       <button
+                        aria-label={`删除 ${profile.name}`}
                         className="table-text-button is-danger"
                         disabled={isSaving}
-                        onClick={() =>
-                          void updateProfiles(
-                            () => window.plreview.deleteModelProfile(profile.id),
-                            "模型配置已删除。",
-                          )
-                        }
+                        onClick={() => setDeleteTarget(profile)}
                         type="button"
                       >
                         删除
@@ -252,6 +267,28 @@ export function ModelManager({
         }}
         open={isEditorOpen}
         profile={isCreateOpen ? null : editingProfile}
+      />
+      <ConfirmDialog
+        cancelLabel="取消"
+        confirmBusyLabel="删除中..."
+        confirmDisabled={isSaving}
+        confirmLabel="仍要删除"
+        description={
+          deleteTarget
+            ? `删除后将移除模型配置“${deleteTarget.name}”。该操作不可撤销。`
+            : ""
+        }
+        destructive
+        onClose={() => {
+          if (!isSaving) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
+        open={deleteTarget !== null}
+        title="删除模型配置"
       />
     </section>
   );

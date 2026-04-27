@@ -40,12 +40,11 @@ type IntakeWorkbenchProps = {
 };
 
 type LaunchMissingKey = "batch" | "profile" | "rules" | "documents";
-type LaunchSectionKey = "batchProfile" | "rules" | "documents";
 
 const EMPTY_IMPORTED_FILES: ImportedFile[] = [];
 const SECTION_FOCUS_FALLBACK_SELECTOR =
   "input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
-const MISSING_KEY_TO_SECTION: Record<LaunchMissingKey, LaunchSectionKey> = {
+const MISSING_KEY_TO_SECTION: Record<LaunchMissingKey, "batchProfile" | "rules" | "documents"> = {
   batch: "batchProfile",
   profile: "batchProfile",
   rules: "rules",
@@ -118,7 +117,7 @@ export function IntakeWorkbench({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
-  const [highlightedLaunchSections, setHighlightedLaunchSections] = useState<LaunchSectionKey[]>([]);
+  const [highlightedLaunchKeys, setHighlightedLaunchKeys] = useState<LaunchMissingKey[]>([]);
   const batchProfileSectionRef = useRef<HTMLElement | null>(null);
   const rulesSectionRef = useRef<HTMLElement | null>(null);
   const documentsSectionRef = useRef<HTMLElement | null>(null);
@@ -151,11 +150,6 @@ export function IntakeWorkbench({
     launchMissingKeys.push("documents");
   }
 
-  const launchReadinessBySection: Record<LaunchSectionKey, boolean> = {
-    batchProfile: isBatchReady && isProfileReady,
-    rules: isRulesReady,
-    documents: isDocumentsReady,
-  };
   const isLaunchReady =
     !isPickingFiles &&
     !isSubmitting &&
@@ -246,14 +240,10 @@ export function IntakeWorkbench({
   }, [selectedProfile]);
 
   useEffect(() => {
-    setHighlightedLaunchSections((current) =>
-      current.filter((sectionKey) => !launchReadinessBySection[sectionKey]),
+    setHighlightedLaunchKeys((current) =>
+      current.filter((missingKey) => launchMissingKeys.includes(missingKey)),
     );
-  }, [
-    launchReadinessBySection.batchProfile,
-    launchReadinessBySection.rules,
-    launchReadinessBySection.documents,
-  ]);
+  }, [isBatchReady, isProfileReady, isRulesReady, isDocumentsReady]);
 
   const handlePickFiles = async () => {
     if (!window.plreview?.pickFiles) {
@@ -293,17 +283,24 @@ export function IntakeWorkbench({
     const preferredSelector = MISSING_KEY_TO_FOCUS_SELECTOR[missingKey];
     const preferredElement = sectionElement.querySelector<HTMLElement>(preferredSelector);
     const fallbackElement = sectionElement.querySelector<HTMLElement>(SECTION_FOCUS_FALLBACK_SELECTOR);
+    const focusTarget = preferredElement ?? fallbackElement;
 
-    (preferredElement ?? fallbackElement)?.focus();
+    if (!focusTarget) {
+      return;
+    }
+
+    focusTarget.focus();
+
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => {
+        focusTarget.focus({ preventScroll: true });
+      });
+    }
   };
 
   const handleCreateReviewBatch = async () => {
     if (launchMissingKeys.length > 0) {
-      const missingSections = Array.from(
-        new Set(launchMissingKeys.map((missingKey) => MISSING_KEY_TO_SECTION[missingKey])),
-      );
-
-      setHighlightedLaunchSections(missingSections);
+      setHighlightedLaunchKeys(launchMissingKeys);
       focusSectionControl(launchMissingKeys[0]);
       return;
     }
@@ -341,19 +338,17 @@ export function IntakeWorkbench({
     setErrorMessage("");
   };
 
-  const isBatchProfileHighlighted = highlightedLaunchSections.includes("batchProfile");
-  const isRulesHighlighted = highlightedLaunchSections.includes("rules");
-  const isDocumentsHighlighted = highlightedLaunchSections.includes("documents");
+  const isBatchHighlighted = highlightedLaunchKeys.includes("batch");
+  const isProfileHighlighted = highlightedLaunchKeys.includes("profile");
+  const isRulesHighlighted = highlightedLaunchKeys.includes("rules");
+  const isDocumentsHighlighted = highlightedLaunchKeys.includes("documents");
 
   return (
     <section aria-label="评审启动工作区" className="launch-workspace">
       <div className="launch-main-column">
         <section
           aria-labelledby="launch-config-heading"
-          className={`desktop-surface stack-lg launch-guidance-section ${
-            isBatchProfileHighlighted ? "is-missing" : ""
-          }`}
-          data-missing={isBatchProfileHighlighted ? "true" : "false"}
+          className="desktop-surface stack-lg launch-guidance-section"
           data-testid="launch-section-batch-profile"
           ref={batchProfileSectionRef}
         >
@@ -373,7 +368,11 @@ export function IntakeWorkbench({
           <p className="section-copy">填写批次名称并选择模型。</p>
 
           <div className="form-grid two">
-            <div className="field">
+            <div
+              className={`field launch-guidance-target ${isProfileHighlighted ? "is-missing" : ""}`}
+              data-missing={isProfileHighlighted ? "true" : "false"}
+              data-testid="launch-missing-profile"
+            >
               <label htmlFor="llmProfileId">模型配置</label>
               <select
                 id="llmProfileId"
@@ -414,7 +413,11 @@ export function IntakeWorkbench({
             </div>
           </div>
 
-          <div className="field">
+          <div
+            className={`field launch-guidance-target ${isBatchHighlighted ? "is-missing" : ""}`}
+            data-missing={isBatchHighlighted ? "true" : "false"}
+            data-testid="launch-missing-batch"
+          >
             <label htmlFor="batchName">批次名称</label>
             <input
               id="batchName"
@@ -444,8 +447,7 @@ export function IntakeWorkbench({
           <div className="launch-zone-grid">
             <section
               aria-labelledby="launch-rules-heading"
-              className={`launch-zone stack launch-guidance-section ${isRulesHighlighted ? "is-missing" : ""}`}
-              data-missing={isRulesHighlighted ? "true" : "false"}
+              className="launch-zone stack launch-guidance-section"
               data-testid="launch-section-rules"
               ref={rulesSectionRef}
             >
@@ -463,7 +465,11 @@ export function IntakeWorkbench({
 
               <p className="section-copy">选择本次评审要使用的规则。</p>
 
-              <div className="checkbox-list">
+              <div
+                className={`checkbox-list launch-guidance-target ${isRulesHighlighted ? "is-missing" : ""}`}
+                data-missing={isRulesHighlighted ? "true" : "false"}
+                data-testid="launch-missing-rules"
+              >
                 {rules.length === 0 ? (
                   <div className="checkbox-card">
                     <div>
@@ -503,10 +509,7 @@ export function IntakeWorkbench({
 
             <section
               aria-labelledby="launch-files-heading"
-              className={`launch-zone stack launch-guidance-section ${
-                isDocumentsHighlighted ? "is-missing" : ""
-              }`}
-              data-missing={isDocumentsHighlighted ? "true" : "false"}
+              className="launch-zone stack launch-guidance-section"
               data-testid="launch-section-documents"
               ref={documentsSectionRef}
             >
@@ -524,7 +527,11 @@ export function IntakeWorkbench({
               </div>
 
               {hasDesktopPicker ? (
-                <div className="upload-panel">
+                <div
+                  className={`upload-panel launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
+                  data-missing={isDocumentsHighlighted ? "true" : "false"}
+                  data-testid="launch-missing-documents"
+                >
                   <div>
                     <p className="section-eyebrow">Desktop Intake</p>
                     <strong>选择本地文件</strong>
@@ -544,7 +551,11 @@ export function IntakeWorkbench({
                   </div>
                 </div>
               ) : (
-                <div className="upload-panel">
+                <div
+                  className={`upload-panel launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
+                  data-missing={isDocumentsHighlighted ? "true" : "false"}
+                  data-testid="launch-missing-documents"
+                >
                   <div>
                     <p className="section-eyebrow">Desktop Required</p>
                     <strong>请在桌面应用中启动后再导入本地文件。</strong>

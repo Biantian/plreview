@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { type Severity } from "@prisma/client";
 
 import type { RuleDashboardData, RuleSaveInput } from "@/desktop/bridge/desktop-api";
@@ -48,12 +48,14 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
   const [records, setRecords] = useState(items);
   const [query, setQuery] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RuleRow | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDraft, setCreateDraft] = useState<RuleCreateDraft>(() => createDefaultRuleDraft());
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const deferredQuery = useDeferredValue(query);
   const keyword = deferredQuery.trim().toLowerCase();
   const visibleRecords = records.filter((item) => showDeleted || !item.isDeleted);
@@ -67,6 +69,26 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
   useEffect(() => {
     setRecords(items);
   }, [items]);
+
+  useEffect(() => {
+    if (!isFilterMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (filterMenuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      setIsFilterMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [isFilterMenuOpen]);
 
   function openCreateEditor() {
     setFeedback(null);
@@ -168,19 +190,17 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
     setFeedback(null);
 
     try {
-      const result = await window.plreview.deleteRule(deleteTarget.id);
+      await window.plreview.deleteRule(deleteTarget.id);
       setDeleteTarget(null);
       setEditingId(null);
       setIsCreateOpen(false);
 
-      const deleteSuccessMessage = result.mode === "soft" ? "规则已删除（软删除）" : "规则已删除（永久删除）";
-
       try {
         await refreshRecords(showDeleted);
-        setFeedback(`${deleteSuccessMessage}。`);
+        setFeedback(null);
       } catch (refreshError) {
         const refreshMessage = refreshError instanceof Error ? refreshError.message : "规则刷新失败。";
-        setFeedback(`${deleteSuccessMessage}，但刷新失败：${refreshMessage}`);
+        setFeedback(`规则列表刷新失败：${refreshMessage}`);
       }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "规则删除失败。");
@@ -202,28 +222,52 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
       </div>
 
       <div className="desktop-table-toolbar">
-        <TableSearchInput label="搜索规则" onChange={setQuery} value={query} />
+        <TableSearchInput
+          label="搜索规则"
+          onChange={setQuery}
+          placeholder="搜索规则名称、分类、说明和严重级别"
+          value={query}
+        />
         <div className="desktop-table-toolbar-actions">
-          <p className="muted">支持按规则名称、分类、说明和严重级别筛选。</p>
-          <details className="table-more-filters">
-            <summary className="table-more-filters-trigger">更多筛选</summary>
-            <label className="table-more-filters-option">
-              <input
-                checked={showDeleted}
-                disabled={isSaving}
-                onChange={(event) => void handleToggleShowDeleted(event.currentTarget.checked)}
-                type="checkbox"
-              />
-              <span>显示已删除</span>
-            </label>
-          </details>
-          <button
-            className="button"
-            onClick={openCreateEditor}
-            type="button"
-          >
-            新增规则
-          </button>
+          <div className="table-toolbar-primary-actions">
+            <button
+              className="button"
+              onClick={openCreateEditor}
+              type="button"
+            >
+              新增规则
+            </button>
+            <div className="table-more-filters" ref={filterMenuRef}>
+              <button
+                aria-expanded={isFilterMenuOpen}
+                aria-haspopup="true"
+                aria-label="更多筛选"
+                className="icon-button table-more-filters-trigger"
+                onClick={() => {
+                  setIsFilterMenuOpen((current) => !current);
+                }}
+                title="更多筛选"
+                type="button"
+              >
+                <span aria-hidden="true" className="table-more-filters-dots">
+                  ...
+                </span>
+              </button>
+              {isFilterMenuOpen ? (
+                <div aria-label="更多筛选选项" className="table-more-filters-menu" role="group">
+                  <label className="table-more-filters-option">
+                    <input
+                      checked={showDeleted}
+                      disabled={isSaving}
+                      onChange={(event) => void handleToggleShowDeleted(event.currentTarget.checked)}
+                      type="checkbox"
+                    />
+                    <span>显示已删除</span>
+                  </label>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
 

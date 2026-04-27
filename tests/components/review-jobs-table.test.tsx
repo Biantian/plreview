@@ -205,6 +205,11 @@ describe("ReviewJobsTable", () => {
   it("uses compact refresh and row action affordances instead of heavy outline buttons", () => {
     render(<ReviewJobsTable items={[createReview()]} />);
 
+    expect(screen.getByRole("searchbox", { name: "搜索评审任务" })).toHaveAttribute(
+      "placeholder",
+      "搜索标题、文件名、批次名、模型名和状态",
+    );
+    expect(screen.queryByText("支持按标题、文件名、批次名、模型名和状态快速筛选。")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "刷新任务列表" })).toHaveClass("icon-button");
     expect(screen.queryByRole("button", { name: "立即刷新" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "查看详情" })).toHaveClass("table-text-link");
