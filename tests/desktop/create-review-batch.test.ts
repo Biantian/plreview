@@ -138,6 +138,13 @@ describe("createReviewBatch", () => {
 
     expect(result).toBe(batch);
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.rule.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["rule_a", "rule_b"] },
+        enabled: true,
+        deletedAt: null,
+      },
+    });
     expect(tx.reviewBatch.create).toHaveBeenCalledWith({
       data: {
         name: "四月策划案",

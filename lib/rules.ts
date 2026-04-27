@@ -13,12 +13,17 @@ type SaveRuleInput = {
   enabled: boolean;
 };
 
-export async function getRuleDashboardData() {
+type RuleDashboardQuery = {
+  includeDeleted?: boolean;
+};
+
+export async function getRuleDashboardData(query: RuleDashboardQuery = {}) {
   const rules = await prisma.rule.findMany({
+    ...(query.includeDeleted ? {} : { where: { deletedAt: null } }),
     orderBy: [{ enabled: "desc" }, { category: "asc" }, { updatedAt: "desc" }],
   });
 
-  const enabledCount = rules.filter((rule) => rule.enabled).length;
+  const enabledCount = rules.filter((rule) => rule.enabled && !rule.deletedAt).length;
   const categoryCount = new Set(rules.map((rule) => rule.category)).size;
   const latestUpdatedAt = rules.reduce<Date | null>(
     (latest, rule) => (!latest || rule.updatedAt > latest ? rule.updatedAt : latest),
@@ -37,6 +42,7 @@ export async function getRuleDashboardData() {
       promptTemplate: rule.promptTemplate,
       severity: rule.severity,
       enabled: rule.enabled,
+      isDeleted: Boolean(rule.deletedAt),
       updatedAtLabel: formatDate(rule.updatedAt),
     })),
     totalCount: rules.length,
@@ -97,4 +103,41 @@ export async function toggleRuleEnabled(id: string, enabled: boolean) {
   });
 
   return getRuleDashboardData();
+}
+
+export async function deleteRule(id: string) {
+  const normalizedId = id.trim();
+
+  if (!normalizedId) {
+    throw new Error("缺少规则 ID。");
+  }
+
+  const [annotationRefCount, batchRuleRefCount] = await Promise.all([
+    prisma.annotation.count({
+      where: { ruleId: normalizedId },
+    }),
+    prisma.reviewBatchRule.count({
+      where: {
+        ruleVersion: {
+          ruleId: normalizedId,
+        },
+      },
+    }),
+  ]);
+
+  if (annotationRefCount > 0 || batchRuleRefCount > 0) {
+    await prisma.rule.update({
+      where: { id: normalizedId },
+      data: {
+        deletedAt: new Date(),
+        enabled: false,
+      },
+    });
+    return { mode: "soft" as const };
+  }
+
+  await prisma.rule.delete({
+    where: { id: normalizedId },
+  });
+  return { mode: "hard" as const };
 }

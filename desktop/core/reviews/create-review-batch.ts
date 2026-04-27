@@ -116,6 +116,8 @@ export async function createReviewBatch(
     const selectedRules = await tx.rule.findMany({
       where: {
         id: { in: ruleIds },
+        enabled: true,
+        deletedAt: null,
       },
     });
 
