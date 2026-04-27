@@ -1,28 +1,43 @@
 import { Severity } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { ruleFindMany, ruleUpdate, ruleDelete, annotationCount, reviewBatchRuleCount } = vi.hoisted(
-  () => ({
+const {
+  ruleFindMany,
+  rootRuleUpdate,
+  rootRuleDelete,
+  rootAnnotationCount,
+  rootReviewBatchRuleCount,
+  txRuleUpdate,
+  txRuleDelete,
+  txAnnotationCount,
+  txReviewBatchRuleCount,
+  transaction,
+} = vi.hoisted(() => ({
     ruleFindMany: vi.fn(),
-    ruleUpdate: vi.fn(),
-    ruleDelete: vi.fn(),
-    annotationCount: vi.fn(),
-    reviewBatchRuleCount: vi.fn(),
-  }),
-);
+    rootRuleUpdate: vi.fn(),
+    rootRuleDelete: vi.fn(),
+    rootAnnotationCount: vi.fn(),
+    rootReviewBatchRuleCount: vi.fn(),
+    txRuleUpdate: vi.fn(),
+    txRuleDelete: vi.fn(),
+    txAnnotationCount: vi.fn(),
+    txReviewBatchRuleCount: vi.fn(),
+    transaction: vi.fn(),
+  }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: transaction,
     rule: {
       findMany: ruleFindMany,
-      update: ruleUpdate,
-      delete: ruleDelete,
+      update: rootRuleUpdate,
+      delete: rootRuleDelete,
     },
     annotation: {
-      count: annotationCount,
+      count: rootAnnotationCount,
     },
     reviewBatchRule: {
-      count: reviewBatchRuleCount,
+      count: rootReviewBatchRuleCount,
     },
   },
 }));
@@ -32,10 +47,29 @@ import { deleteRule, getRuleDashboardData } from "@/lib/rules";
 describe("rules data layer", () => {
   beforeEach(() => {
     ruleFindMany.mockReset();
-    ruleUpdate.mockReset();
-    ruleDelete.mockReset();
-    annotationCount.mockReset();
-    reviewBatchRuleCount.mockReset();
+    rootRuleUpdate.mockReset();
+    rootRuleDelete.mockReset();
+    rootAnnotationCount.mockReset();
+    rootReviewBatchRuleCount.mockReset();
+    txRuleUpdate.mockReset();
+    txRuleDelete.mockReset();
+    txAnnotationCount.mockReset();
+    txReviewBatchRuleCount.mockReset();
+    transaction.mockReset();
+    transaction.mockImplementation(async (callback) =>
+      callback({
+        rule: {
+          update: txRuleUpdate,
+          delete: txRuleDelete,
+        },
+        annotation: {
+          count: txAnnotationCount,
+        },
+        reviewBatchRule: {
+          count: txReviewBatchRuleCount,
+        },
+      } as never),
+    );
   });
 
   it("default dashboard query filters out deleted rows", async () => {
@@ -98,38 +132,48 @@ describe("rules data layer", () => {
   });
 
   it("deleteRule performs soft delete when associations exist", async () => {
-    annotationCount.mockResolvedValue(1);
-    reviewBatchRuleCount.mockResolvedValue(0);
-    ruleUpdate.mockResolvedValue({});
+    txAnnotationCount.mockResolvedValue(1);
+    txReviewBatchRuleCount.mockResolvedValue(0);
+    txRuleUpdate.mockResolvedValue({});
 
     await expect(deleteRule("  rule_1  ")).resolves.toEqual({ mode: "soft" });
 
-    expect(annotationCount).toHaveBeenCalledWith({
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(txAnnotationCount).toHaveBeenCalledWith({
       where: { ruleId: "rule_1" },
     });
-    expect(reviewBatchRuleCount).toHaveBeenCalledWith({
+    expect(txReviewBatchRuleCount).toHaveBeenCalledWith({
       where: { ruleVersion: { ruleId: "rule_1" } },
     });
-    expect(ruleUpdate).toHaveBeenCalledWith({
+    expect(txRuleUpdate).toHaveBeenCalledWith({
       where: { id: "rule_1" },
       data: {
         deletedAt: expect.any(Date),
         enabled: false,
       },
     });
-    expect(ruleDelete).not.toHaveBeenCalled();
+    expect(txRuleDelete).not.toHaveBeenCalled();
+    expect(rootAnnotationCount).not.toHaveBeenCalled();
+    expect(rootReviewBatchRuleCount).not.toHaveBeenCalled();
+    expect(rootRuleUpdate).not.toHaveBeenCalled();
+    expect(rootRuleDelete).not.toHaveBeenCalled();
   });
 
   it("deleteRule performs hard delete when no associations exist", async () => {
-    annotationCount.mockResolvedValue(0);
-    reviewBatchRuleCount.mockResolvedValue(0);
-    ruleDelete.mockResolvedValue({});
+    txAnnotationCount.mockResolvedValue(0);
+    txReviewBatchRuleCount.mockResolvedValue(0);
+    txRuleDelete.mockResolvedValue({});
 
     await expect(deleteRule("rule_2")).resolves.toEqual({ mode: "hard" });
 
-    expect(ruleDelete).toHaveBeenCalledWith({
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(txRuleDelete).toHaveBeenCalledWith({
       where: { id: "rule_2" },
     });
-    expect(ruleUpdate).not.toHaveBeenCalled();
+    expect(txRuleUpdate).not.toHaveBeenCalled();
+    expect(rootAnnotationCount).not.toHaveBeenCalled();
+    expect(rootReviewBatchRuleCount).not.toHaveBeenCalled();
+    expect(rootRuleUpdate).not.toHaveBeenCalled();
+    expect(rootRuleDelete).not.toHaveBeenCalled();
   });
 });

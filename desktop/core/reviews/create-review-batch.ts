@@ -122,7 +122,7 @@ export async function createReviewBatch(
     });
 
     if (selectedRules.length !== ruleIds.length) {
-      throw new Error("部分已选择的评审规则不存在。");
+      throw new Error("部分已选择的评审规则不存在、已停用或已删除。");
     }
 
     const selectedRuleById = new Map(selectedRules.map((rule) => [rule.id, rule]));

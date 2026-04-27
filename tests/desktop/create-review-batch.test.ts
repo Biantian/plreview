@@ -534,4 +534,55 @@ describe("createReviewBatch", () => {
 
     expect(executeReviewJob).not.toHaveBeenCalled();
   });
+
+  it("rejects when selected rules are missing, disabled, or deleted", async () => {
+    const tx = {
+      llmProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "profile_1",
+          provider: "dashscope",
+          defaultModel: "qwen-plus",
+        }),
+      },
+      rule: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rule_a",
+            name: "规则 A",
+            description: "说明 A",
+            promptTemplate: "提示 A",
+            severity: Severity.high,
+          },
+        ]),
+      },
+      ruleVersion: {
+        findFirst: vi.fn(),
+        create: vi.fn(),
+      },
+      reviewBatch: {
+        create: vi.fn(),
+      },
+      reviewBatchRule: {
+        createMany: vi.fn(),
+      },
+      reviewJob: {
+        createMany: vi.fn(),
+        findMany: vi.fn(),
+      },
+    };
+
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx as never)),
+      ...tx,
+    };
+
+    await expect(
+      createReviewBatch(prisma as never, {
+        batchName: "规则不完整批次",
+        llmProfileId: "profile_1",
+        ruleIds: ["rule_a", "rule_b"],
+        documents: [{ documentId: "doc_1" }],
+      }),
+    ).rejects.toThrow("部分已选择的评审规则不存在、已停用或已删除。");
+  });
 });

@@ -112,32 +112,34 @@ export async function deleteRule(id: string) {
     throw new Error("缺少规则 ID。");
   }
 
-  const [annotationRefCount, batchRuleRefCount] = await Promise.all([
-    prisma.annotation.count({
-      where: { ruleId: normalizedId },
-    }),
-    prisma.reviewBatchRule.count({
-      where: {
-        ruleVersion: {
-          ruleId: normalizedId,
+  return prisma.$transaction(async (tx) => {
+    const [annotationRefCount, batchRuleRefCount] = await Promise.all([
+      tx.annotation.count({
+        where: { ruleId: normalizedId },
+      }),
+      tx.reviewBatchRule.count({
+        where: {
+          ruleVersion: {
+            ruleId: normalizedId,
+          },
         },
-      },
-    }),
-  ]);
+      }),
+    ]);
 
-  if (annotationRefCount > 0 || batchRuleRefCount > 0) {
-    await prisma.rule.update({
+    if (annotationRefCount > 0 || batchRuleRefCount > 0) {
+      await tx.rule.update({
+        where: { id: normalizedId },
+        data: {
+          deletedAt: new Date(),
+          enabled: false,
+        },
+      });
+      return { mode: "soft" as const };
+    }
+
+    await tx.rule.delete({
       where: { id: normalizedId },
-      data: {
-        deletedAt: new Date(),
-        enabled: false,
-      },
     });
-    return { mode: "soft" as const };
-  }
-
-  await prisma.rule.delete({
-    where: { id: normalizedId },
+    return { mode: "hard" as const };
   });
-  return { mode: "hard" as const };
 }
