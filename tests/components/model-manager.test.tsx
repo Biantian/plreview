@@ -60,6 +60,7 @@ describe("ModelManager", () => {
       exportReviewReport: vi.fn(),
       saveRule: vi.fn(),
       toggleRuleEnabled: vi.fn(),
+      deleteRule: vi.fn(),
       saveModelProfile: vi.fn().mockResolvedValue({
         metrics: {
           totalCount: profiles.length + 1,

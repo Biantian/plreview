@@ -16,6 +16,7 @@ const DESKTOP_REQUESTS = {
   rulesSearch: "rules:search",
   rulesSave: "rules:save",
   rulesToggleEnabled: "rules:toggle-enabled",
+  rulesDelete: "rules:delete",
   modelsSave: "models:save",
   modelsToggleEnabled: "models:toggle-enabled",
   modelsDelete: "models:delete",
@@ -44,7 +45,7 @@ contextBridge.exposeInMainWorld("plreview", {
   pickFiles: () => invoke(DESKTOP_REQUESTS.filesPick),
   getHomeDashboard: () => invoke(DESKTOP_REQUESTS.homeDashboard),
   getModelDashboard: () => invoke(DESKTOP_REQUESTS.modelsDashboard),
-  getRuleDashboard: () => invoke(DESKTOP_REQUESTS.rulesDashboard),
+  getRuleDashboard: (query) => invoke(DESKTOP_REQUESTS.rulesDashboard, query),
   getReviewDetail: (reviewId) => invoke(DESKTOP_REQUESTS.reviewDetail, { reviewId }),
   listReviewJobs: () => invoke(DESKTOP_REQUESTS.reviewJobsList),
   searchReviewJobs: (query) => invoke(DESKTOP_REQUESTS.reviewJobsSearch, { query }),
@@ -59,6 +60,7 @@ contextBridge.exposeInMainWorld("plreview", {
   saveRule: (payload) => invoke(DESKTOP_REQUESTS.rulesSave, payload),
   toggleRuleEnabled: (id, enabled) =>
     invoke(DESKTOP_REQUESTS.rulesToggleEnabled, { id, enabled }),
+  deleteRule: (id) => invoke(DESKTOP_REQUESTS.rulesDelete, { id }),
   saveModelProfile: (payload) => invoke(DESKTOP_REQUESTS.modelsSave, payload),
   toggleModelProfileEnabled: (id, enabled) =>
     invoke(DESKTOP_REQUESTS.modelsToggleEnabled, { id, enabled }),

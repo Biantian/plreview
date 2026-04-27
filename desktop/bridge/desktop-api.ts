@@ -88,6 +88,10 @@ export type RuleDashboardData = {
   totalCount: number;
 };
 
+export type RuleDashboardQuery = {
+  includeDeleted?: boolean;
+};
+
 export type RuleSaveInput = {
   id?: string;
   name: string;
@@ -197,7 +201,7 @@ export interface DesktopApi {
   pickFiles: () => Promise<ImportedDocumentRecord[]>;
   getHomeDashboard: () => Promise<HomeDashboardData>;
   getModelDashboard: () => Promise<ModelDashboardData>;
-  getRuleDashboard: () => Promise<RuleDashboardData>;
+  getRuleDashboard: (query?: RuleDashboardQuery) => Promise<RuleDashboardData>;
   getReviewDetail: (reviewId: string) => Promise<ReviewDetailData>;
   listReviewJobs: () => Promise<DesktopReviewJobRow[]>;
   searchReviewJobs: (query: string) => Promise<DesktopReviewJobRow[]>;
@@ -210,6 +214,7 @@ export interface DesktopApi {
   exportReviewReport: (payload: ReviewSelectionRequest) => Promise<DesktopBinaryPayload>;
   saveRule: (payload: RuleSaveInput) => Promise<RuleDashboardData>;
   toggleRuleEnabled: (id: string, enabled: boolean) => Promise<RuleDashboardData>;
+  deleteRule: (id: string) => Promise<{ mode: "soft" | "hard" }>;
   saveModelProfile: (payload: ModelSaveInput) => Promise<ModelDashboardData>;
   toggleModelProfileEnabled: (id: string, enabled: boolean) => Promise<ModelDashboardData>;
   deleteModelProfile: (id: string) => Promise<ModelDashboardData>;
@@ -227,7 +232,8 @@ export function createDesktopApi(
     pickFiles: () => invoke<ImportedDocumentRecord[]>(DESKTOP_REQUESTS.filesPick),
     getHomeDashboard: () => invoke<HomeDashboardData>(DESKTOP_REQUESTS.homeDashboard),
     getModelDashboard: () => invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsDashboard),
-    getRuleDashboard: () => invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesDashboard),
+    getRuleDashboard: (query) =>
+      invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesDashboard, query),
     getReviewDetail: (reviewId: string) =>
       invoke<ReviewDetailData>(DESKTOP_REQUESTS.reviewDetail, { reviewId }),
     listReviewJobs: () => invoke<DesktopReviewJobRow[]>(DESKTOP_REQUESTS.reviewJobsList),
@@ -248,6 +254,8 @@ export function createDesktopApi(
     saveRule: (payload) => invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesSave, payload),
     toggleRuleEnabled: (id: string, enabled: boolean) =>
       invoke<RuleDashboardData>(DESKTOP_REQUESTS.rulesToggleEnabled, { id, enabled }),
+    deleteRule: (id: string) =>
+      invoke<{ mode: "soft" | "hard" }>(DESKTOP_REQUESTS.rulesDelete, { id }),
     saveModelProfile: (payload) =>
       invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsSave, payload),
     toggleModelProfileEnabled: (id: string, enabled: boolean) =>

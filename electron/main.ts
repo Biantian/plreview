@@ -205,7 +205,12 @@ void app.whenReady().then(async () => {
     {
       [CHANNELS.homeDashboard]: async () => desktopData.getHomeDashboardData(),
       [CHANNELS.modelsDashboard]: async () => desktopData.getModelDashboardData(),
-      [CHANNELS.rulesDashboard]: async () => desktopData.getRuleDashboardData(),
+      [CHANNELS.rulesDashboard]: async (_event, payload) =>
+        desktopData.getRuleDashboardData({
+          includeDeleted: Boolean(
+            (payload as { includeDeleted?: unknown } | undefined)?.includeDeleted,
+          ),
+        }),
       [CHANNELS.reviewDetail]: async (_event, payload) =>
         desktopData.getReviewDetailData(
           String((payload as { reviewId?: unknown })?.reviewId ?? ""),
@@ -281,6 +286,8 @@ void app.whenReady().then(async () => {
           String((payload as { id?: unknown })?.id ?? ""),
           Boolean((payload as { enabled?: unknown })?.enabled),
         ),
+      [CHANNELS.rulesDelete]: async (_event, payload) =>
+        desktopData.deleteRule(String((payload as { id?: unknown })?.id ?? "")),
       [CHANNELS.modelsSave]: async (_event, payload) =>
         desktopData.saveLlmProfile(payload as {
           id?: string;

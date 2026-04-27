@@ -40,6 +40,7 @@ describe("IntakeWorkbench", () => {
       exportReviewReport: vi.fn(),
       saveRule: vi.fn(),
       toggleRuleEnabled: vi.fn(),
+      deleteRule: vi.fn(),
       saveModelProfile: vi.fn(),
       toggleModelProfileEnabled: vi.fn(),
       deleteModelProfile: vi.fn(),

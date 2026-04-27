@@ -16,6 +16,7 @@ export const CHANNELS = {
   rulesSearch: DESKTOP_REQUESTS.rulesSearch,
   rulesSave: DESKTOP_REQUESTS.rulesSave,
   rulesToggleEnabled: DESKTOP_REQUESTS.rulesToggleEnabled,
+  rulesDelete: DESKTOP_REQUESTS.rulesDelete,
   modelsSave: DESKTOP_REQUESTS.modelsSave,
   modelsToggleEnabled: DESKTOP_REQUESTS.modelsToggleEnabled,
   modelsDelete: DESKTOP_REQUESTS.modelsDelete,
@@ -60,6 +61,7 @@ export function registerDesktopHandlers(
     CHANNELS.rulesToggleEnabled,
     handlers[CHANNELS.rulesToggleEnabled] ?? notImplemented,
   );
+  register(CHANNELS.rulesDelete, handlers[CHANNELS.rulesDelete] ?? notImplemented);
   register(CHANNELS.modelsSave, handlers[CHANNELS.modelsSave] ?? notImplemented);
   register(
     CHANNELS.modelsToggleEnabled,

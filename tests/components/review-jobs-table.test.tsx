@@ -53,6 +53,7 @@ function installDesktopApi(overrides: Partial<typeof window.plreview> = {}) {
     }),
     saveRule: vi.fn(),
     toggleRuleEnabled: vi.fn(),
+    deleteRule: vi.fn(),
     saveModelProfile: vi.fn(),
     toggleModelProfileEnabled: vi.fn(),
     deleteModelProfile: vi.fn(),

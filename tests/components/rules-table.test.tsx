@@ -64,6 +64,7 @@ describe("RulesTable", () => {
         items: [],
         totalCount: 2,
       }),
+      deleteRule: vi.fn(),
       saveModelProfile: vi.fn(),
       toggleModelProfileEnabled: vi.fn(),
       deleteModelProfile: vi.fn(),
