@@ -152,6 +152,11 @@ describe("IntakeWorkbench", () => {
     expect(within(workspace).getByText("内容 · 中")).toBeInTheDocument();
     expect(within(workspace).queryByRole("heading", { name: "规则选择" })).not.toBeInTheDocument();
     expect(within(workspace).queryByRole("heading", { name: "文件工作台" })).not.toBeInTheDocument();
+    expect(
+      within(workspace).getByRole("button", { name: "移除规则 Tone" }).closest(
+        ".launch-rule-summary-card-header",
+      ),
+    ).toBeTruthy();
   });
 
   it("opens the rule drawer, allows temporary edits, and commits on confirm", async () => {
@@ -184,9 +189,27 @@ describe("IntakeWorkbench", () => {
     expect(screen.getByRole("dialog", { name: "选择规则" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("checkbox", { name: /风险识别/ }));
-    await user.click(screen.getByRole("button", { name: "确认带回" }));
+    await user.click(screen.getByRole("button", { name: "确认" }));
 
     expect(screen.getByText("风险识别")).toBeInTheDocument();
+  });
+
+  it("keeps section action buttons aligned with the section headers", () => {
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "选择规则" }).closest(".launch-section-header"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "选择本地文件" }).closest(".launch-section-header"),
+    ).toBeTruthy();
+    expect(screen.queryByText("文件进入工作台后，会在下方清单里显示解析结果和待评审状态。")).not.toBeInTheDocument();
   });
 
   it("clears temporary rules and restores last batch defaults from the drawer", async () => {
@@ -247,6 +270,7 @@ describe("IntakeWorkbench", () => {
 
     expect(submitButton).toBeEnabled();
     expect(within(submitZone as HTMLElement).getByText("可创建批次")).toBeInTheDocument();
+    expect((submitZone as HTMLElement).querySelector(".launch-submit-grid")).toBeTruthy();
   });
 
   it("highlights only the missing launch controls and focuses the first missing input on submit", async () => {

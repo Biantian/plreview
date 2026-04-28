@@ -440,12 +440,13 @@ export function IntakeWorkbench({
           data-testid="launch-section-rules"
           ref={rulesSectionRef}
         >
-          <div className="inline-actions">
+          <div className="launch-section-header">
             <div>
               <p className="section-eyebrow">Selected Rules</p>
               <h2 className="subsection-title" id="launch-rules-heading">
                 规则摘要
               </h2>
+              <p className="section-copy">确认本次批次会使用哪些规则。</p>
             </div>
             <div className="actions">
               <button
@@ -466,8 +467,6 @@ export function IntakeWorkbench({
               </button>
             </div>
           </div>
-
-          <p className="section-copy">确认本次批次会使用哪些规则。</p>
 
           <div data-missing={isRulesHighlighted ? "true" : "false"} data-testid="launch-missing-rules">
             {rules.length === 0 ? (
@@ -498,7 +497,7 @@ export function IntakeWorkbench({
               <div className="launch-rule-summary-grid">
                 {selectedRules.map((rule) => (
                   <article className="launch-rule-summary-card" key={rule.id}>
-                    <div className="inline-actions">
+                    <div className="launch-rule-summary-card-header">
                       <strong>{rule.name}</strong>
                       <button
                         aria-label={`移除规则 ${rule.name}`}
@@ -536,38 +535,27 @@ export function IntakeWorkbench({
               <h2 className="subsection-title" id="launch-files-heading">
                 文件导入
               </h2>
+              <p className="section-copy">选择本地文件后开始导入和解析。</p>
             </div>
-            <div className="launch-pill-row">
-              <span className="pill pill-brand">已导入 {workbenchFiles.length} 条</span>
-              <span className="pill">待评审 {readyDocuments.length} 条</span>
-            </div>
+            {hasDesktopPicker ? (
+              <button
+                aria-label="选择本地文件"
+                className="button"
+                disabled={isPickingFiles || isSubmitting}
+                onClick={handlePickFiles}
+                type="button"
+              >
+                {isPickingFiles ? "正在导入..." : "选择本地文件"}
+              </button>
+            ) : (
+              <div className="launch-pill-row">
+                <span className="pill pill-brand">已导入 {workbenchFiles.length} 条</span>
+                <span className="pill">待评审 {readyDocuments.length} 条</span>
+              </div>
+            )}
           </div>
 
-          {hasDesktopPicker ? (
-            <div
-              className={`upload-panel launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
-              data-missing={isDocumentsHighlighted ? "true" : "false"}
-              data-testid="launch-missing-documents"
-            >
-              <div>
-                <p className="section-eyebrow">Desktop Intake</p>
-                <strong>选择本地文件</strong>
-                <p className="muted">选择文件后开始导入和解析。</p>
-              </div>
-
-              <div className="actions">
-                <button
-                  aria-label="选择本地文件"
-                  className="button"
-                  disabled={isPickingFiles || isSubmitting}
-                  onClick={handlePickFiles}
-                  type="button"
-                >
-                  {isPickingFiles ? "正在导入..." : "选择本地文件"}
-                </button>
-              </div>
-            </div>
-          ) : (
+          {!hasDesktopPicker ? (
             <div
               className={`upload-panel launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
               data-missing={isDocumentsHighlighted ? "true" : "false"}
@@ -579,7 +567,7 @@ export function IntakeWorkbench({
                 <p className="muted">当前环境仅显示桌面端导入结果。</p>
               </div>
             </div>
-          )}
+          ) : null}
 
           {errorMessage ? (
             <p className="muted" role="alert">
@@ -587,7 +575,12 @@ export function IntakeWorkbench({
             </p>
           ) : null}
 
-          <section className="launch-file-board stack" aria-labelledby="launch-file-board-heading">
+          <section
+            aria-labelledby="launch-file-board-heading"
+            className={`launch-file-board stack launch-guidance-target ${isDocumentsHighlighted ? "is-missing" : ""}`}
+            data-missing={isDocumentsHighlighted ? "true" : "false"}
+            data-testid="launch-missing-documents"
+          >
             <div className="launch-section-header">
               <div>
                 <p className="section-eyebrow">Imported Files</p>
@@ -779,7 +772,8 @@ export function IntakeWorkbench({
             </div>
           </div>
 
-          <div className="actions">
+          <div className="launch-submit-actions">
+            <p className="muted">需填写批次名称，并至少导入 1 个文件与保留 1 条规则。</p>
             <button
               aria-label="开始评审"
               className="button"
@@ -789,7 +783,6 @@ export function IntakeWorkbench({
             >
               {isSubmitting ? "正在提交..." : "开始评审"}
             </button>
-            <p className="muted">需填写批次名称，并至少导入 1 个文件与保留 1 条规则。</p>
           </div>
         </section>
       </div>

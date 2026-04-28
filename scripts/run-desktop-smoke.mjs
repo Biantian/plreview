@@ -307,7 +307,7 @@ async function main() {
         const checkbox = document.querySelector('.launch-rule-option input[type="checkbox"]');
         checkbox?.click();
         const confirm = [...document.querySelectorAll('button')].find((item) =>
-          (item.innerText || '').includes('确认带回'),
+          (item.innerText || '').trim() === '确认',
         );
         confirm?.click();
         return Boolean(checkbox) && Boolean(confirm);

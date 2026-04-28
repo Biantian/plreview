@@ -74,16 +74,22 @@ export default function HomePage() {
     <div className="home-command-center" data-testid="home-desktop-cockpit">
       <header className="home-command-header" data-testid="home-command-header">
         <PageIntro
-          actions={
-            <Link className="button" href="/reviews/new">
-              开始新批次
-            </Link>
-          }
           description="确认规则和模型已就绪，然后直接开始一个新的评审批次。"
           eyebrow="Workspace"
           title="评审工作台"
         />
       </header>
+
+      <section className="home-primary-action-panel" data-testid="home-primary-action-panel">
+        <div>
+          <p className="section-eyebrow">Primary Action</p>
+          <strong>开始一个新的评审批次</strong>
+          <p className="muted">进入新建批次页，确认模型、规则和文件后立即启动。</p>
+        </div>
+        <Link className="button" href="/reviews/new">
+          开始新批次
+        </Link>
+      </section>
 
       <section className="home-cockpit-grid" aria-label="工作台概览">
         <HomeRecentReviewsPane {...viewState} />

@@ -54,7 +54,7 @@ export function ReviewLaunchRuleDrawer({
             取消
           </button>
           <button className="button" onClick={() => onConfirm(draftRuleIds)} type="button">
-            确认带回
+            确认
           </button>
         </div>
       }

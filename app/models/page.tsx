@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { startTransition, useEffect, useState } from "react";
 
 import type { ModelDashboardData } from "@/desktop/bridge/desktop-api";
@@ -85,11 +84,6 @@ export default function ModelsPage() {
           eyebrow="Model Settings"
           title="模型配置"
         />
-        <div className="actions">
-          <Link className="button-ghost" href="/reviews/new">
-            去新建批次
-          </Link>
-        </div>
 
         <div className="desktop-kpi-grid">
           <div className="metric-card">
