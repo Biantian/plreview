@@ -139,6 +139,7 @@ describe("electron main runtime publication", () => {
     const handle = vi.fn();
     const showOpenDialog = vi.fn();
     const getAllWindows = vi.fn().mockReturnValue([]);
+    const ensurePackagedDatabaseSchema = vi.fn(async () => undefined);
     let workerOptions:
       | {
           onWorkerStarting?: () => void;
@@ -236,6 +237,16 @@ describe("electron main runtime publication", () => {
       })),
     }));
 
+    vi.doMock("@/electron/packaged-database-schema", () => ({
+      ensurePackagedDatabaseSchema,
+    }));
+
+    vi.doMock("@/electron/runtime-env", () => ({
+      applyDesktopRuntimeEnv: vi.fn(() => ({
+        DATABASE_URL: "file:/tmp/plreview-tests/plreview.db",
+      })),
+    }));
+
     vi.doMock("@/electron/desktop-data-loader", () => ({
       loadDesktopDataModules: vi.fn(async () => ({
       getHomeDashboardData: vi.fn(),
@@ -265,6 +276,7 @@ describe("electron main runtime publication", () => {
 
     await import("@/electron/main");
 
+    await vi.waitFor(() => expect(ensurePackagedDatabaseSchema).toHaveBeenCalledTimes(1));
     await vi.waitFor(() => expect(markWorkerStarting).toHaveBeenCalledTimes(1));
     await vi.waitFor(() => expect(markWorkerReady).toHaveBeenCalledTimes(1));
     expect(BrowserWindowMock).toHaveBeenCalledWith(

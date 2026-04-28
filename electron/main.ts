@@ -7,6 +7,7 @@ import { BrowserWindow, app, dialog, ipcMain, net, protocol } from "electron";
 import { DESKTOP_EVENTS } from "@/desktop/worker/protocol";
 import { createRuntimeMetricsService } from "@/desktop/worker/services/runtime-metrics-service";
 import { loadDesktopDataModules } from "@/electron/desktop-data-loader";
+import { ensurePackagedDatabaseSchema } from "@/electron/packaged-database-schema";
 import { applyDesktopRuntimeEnv } from "@/electron/runtime-env";
 import { resolveDesktopUserDataPathOverride } from "@/electron/user-data-path";
 import {
@@ -189,12 +190,15 @@ function registerPackagedRendererProtocol(entryFilePath: string) {
 }
 
 void app.whenReady().then(async () => {
-  applyDesktopRuntimeEnv({
+  const runtimeEnv = applyDesktopRuntimeEnv({
     currentDir,
     env: process.env,
     mode: app.isPackaged ? "packaged" : "development",
     userDataPath: app.getPath("userData"),
     resourcesPath: process.resourcesPath,
+  });
+  await ensurePackagedDatabaseSchema({
+    databaseUrl: runtimeEnv.DATABASE_URL,
   });
   const desktopData = await loadDesktopDataModules();
 
