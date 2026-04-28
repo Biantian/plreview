@@ -8,6 +8,7 @@ describe("ModelsPage", () => {
     window.plreview = {
       pickFiles: vi.fn(),
       getHomeDashboard: vi.fn(),
+      getReviewLaunchData: vi.fn(),
       getModelDashboard: vi.fn().mockResolvedValue({
         metrics: {
           totalCount: 2,
@@ -83,6 +84,7 @@ describe("ModelsPage", () => {
     window.plreview = {
       pickFiles: vi.fn(),
       getHomeDashboard: vi.fn(),
+      getReviewLaunchData: vi.fn(),
       getModelDashboard: vi.fn().mockRejectedValue(new Error("model dashboard failed")),
       getRuleDashboard: vi.fn(),
       getReviewDetail: vi.fn(),

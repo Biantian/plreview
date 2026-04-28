@@ -45,6 +45,7 @@ function installDesktopApi(overrides: Partial<DesktopApi> = {}) {
   window.plreview = {
     pickFiles: vi.fn(),
     getHomeDashboard: vi.fn().mockResolvedValue(DASHBOARD_FIXTURE),
+    getReviewLaunchData: vi.fn(),
     getModelDashboard: vi.fn(),
     getRuleDashboard: vi.fn(),
     getReviewDetail: vi.fn(),

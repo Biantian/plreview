@@ -7,6 +7,7 @@ function installDesktopApi(overrides: Partial<typeof window.plreview> = {}) {
   window.plreview = {
     pickFiles: vi.fn(),
     getHomeDashboard: vi.fn(),
+    getReviewLaunchData: vi.fn(),
     getModelDashboard: vi.fn(),
     getRuleDashboard: vi.fn(),
     getReviewDetail: vi.fn(),

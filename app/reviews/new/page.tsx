@@ -2,34 +2,18 @@
 
 import { startTransition, useEffect, useState } from "react";
 
-import type {
-  ModelDashboardData,
-  RuleDashboardData,
-} from "@/desktop/bridge/desktop-api";
+import type { ReviewLaunchData } from "@/desktop/bridge/desktop-api";
 import { IntakeWorkbench } from "@/components/intake-workbench";
 import { PageIntro } from "@/components/page-intro";
 
-const EMPTY_RULE_DASHBOARD: RuleDashboardData = {
-  enabledCount: 0,
-  categoryCount: 0,
-  latestUpdatedAtLabel: "--",
-  items: [],
-  totalCount: 0,
-};
-
-const EMPTY_MODEL_DASHBOARD: ModelDashboardData = {
-  metrics: {
-    totalCount: 0,
-    enabledCount: 0,
-    liveCount: 0,
-    latestUpdatedAtLabel: "--",
-  },
-  profiles: [],
+const EMPTY_REVIEW_LAUNCH_DATA: ReviewLaunchData = {
+  llmProfiles: [],
+  rules: [],
+  lastBatchRuleIds: [],
 };
 
 export default function NewReviewPage() {
-  const [ruleDashboard, setRuleDashboard] = useState<RuleDashboardData>(EMPTY_RULE_DASHBOARD);
-  const [modelDashboard, setModelDashboard] = useState<ModelDashboardData>(EMPTY_MODEL_DASHBOARD);
+  const [launchData, setLaunchData] = useState<ReviewLaunchData>(EMPTY_REVIEW_LAUNCH_DATA);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -37,25 +21,21 @@ export default function NewReviewPage() {
     let cancelled = false;
 
     async function loadLaunchData() {
-      if (!window.plreview?.getRuleDashboard || !window.plreview?.getModelDashboard) {
+      if (!window.plreview?.getReviewLaunchData) {
         setErrorMessage("桌面桥接不可用，请从 Electron 桌面壳启动。");
         setIsLoading(false);
         return;
       }
 
       try {
-        const [nextRuleDashboard, nextModelDashboard] = await Promise.all([
-          window.plreview.getRuleDashboard(),
-          window.plreview.getModelDashboard(),
-        ]);
+        const nextLaunchData = await window.plreview.getReviewLaunchData();
 
         if (cancelled) {
           return;
         }
 
         startTransition(() => {
-          setRuleDashboard(nextRuleDashboard);
-          setModelDashboard(nextModelDashboard);
+          setLaunchData(nextLaunchData);
           setErrorMessage(null);
         });
       } catch (error) {
@@ -105,8 +85,9 @@ export default function NewReviewPage() {
           <p className="section-copy">正在准备模型配置、规则库和本地启动环境。</p>
         ) : (
           <IntakeWorkbench
-            llmProfiles={modelDashboard.profiles.filter((profile) => profile.enabled)}
-            rules={ruleDashboard.items.filter((rule) => rule.enabled)}
+            initialRuleIds={launchData.lastBatchRuleIds}
+            llmProfiles={launchData.llmProfiles}
+            rules={launchData.rules}
           />
         )}
       </section>
