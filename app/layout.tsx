@@ -17,7 +17,8 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <div className="desktop-titlebar" aria-hidden="true" />
+        <div className="desktop-sidebar-drag-region" aria-hidden="true" />
+        <div className="desktop-workspace-drag-region" aria-hidden="true" />
         <div className="desktop-shell">
           <AppSidebar />
           <main className="workspace page">{children}</main>

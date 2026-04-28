@@ -342,6 +342,8 @@ export function IntakeWorkbench({
   const isProfileHighlighted = highlightedLaunchKeys.includes("profile");
   const isRulesHighlighted = highlightedLaunchKeys.includes("rules");
   const isDocumentsHighlighted = highlightedLaunchKeys.includes("documents");
+  const shouldHighlightRuleOptions = isRulesHighlighted && rules.length > 0;
+  const shouldHighlightRulesEmptyState = isRulesHighlighted && rules.length === 0;
 
   return (
     <section aria-label="评审启动工作区" className="launch-workspace">
@@ -466,12 +468,16 @@ export function IntakeWorkbench({
               <p className="section-copy">选择本次评审要使用的规则。</p>
 
               <div
-                className={`checkbox-list launch-guidance-target ${isRulesHighlighted ? "is-missing" : ""}`}
-                data-missing={isRulesHighlighted ? "true" : "false"}
+                className="checkbox-list"
+                data-missing="false"
                 data-testid="launch-missing-rules"
               >
                 {rules.length === 0 ? (
-                  <div className="checkbox-card">
+                  <div
+                    className={`checkbox-card launch-guidance-target ${shouldHighlightRulesEmptyState ? "is-missing" : ""}`}
+                    data-missing={shouldHighlightRulesEmptyState ? "true" : "false"}
+                    data-testid="launch-missing-rules-empty-state"
+                  >
                     <div>
                       <strong>还没有启用规则</strong>
                       <p className="muted">
@@ -481,7 +487,12 @@ export function IntakeWorkbench({
                   </div>
                 ) : (
                   rules.map((rule) => (
-                    <label className="checkbox-card" key={rule.id}>
+                    <label
+                      className={`checkbox-card launch-guidance-target ${shouldHighlightRuleOptions ? "is-missing" : ""}`}
+                      data-missing={shouldHighlightRuleOptions ? "true" : "false"}
+                      data-testid={`launch-missing-rule-option-${rule.id}`}
+                      key={rule.id}
+                    >
                       <input
                         checked={selectedRuleIds.includes(rule.id)}
                         onChange={(event) => {

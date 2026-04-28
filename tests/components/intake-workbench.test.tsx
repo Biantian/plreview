@@ -203,6 +203,38 @@ describe("IntakeWorkbench", () => {
     expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
   });
 
+  it("highlights the missing rule choice cards instead of the whole rules container", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+          },
+        ]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("批次名称"), "规则选择回归");
+    await user.click(screen.getByRole("checkbox", { name: /Tone/ }));
+    await user.click(screen.getByRole("button", { name: "开始评审" }));
+
+    expect(screen.getByRole("checkbox", { name: /Tone/ })).toHaveFocus();
+    expect(screen.getByTestId("launch-missing-rules")).toHaveAttribute("data-missing", "false");
+    expect(screen.getByTestId("launch-missing-rule-option-rule-1")).toHaveAttribute(
+      "data-missing",
+      "true",
+    );
+    expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
+  });
+
   it("clears missing control highlight as soon as that control becomes ready", async () => {
     const user = userEvent.setup();
 
