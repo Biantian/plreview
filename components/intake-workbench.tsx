@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { ReviewLaunchRuleDrawer } from "@/components/review-launch-rule-drawer";
 import { type ReviewLaunchRuleItem } from "@/desktop/bridge/desktop-api";
 import { severityLabel } from "@/lib/utils";
 
@@ -112,6 +113,7 @@ export function IntakeWorkbench({
     mergeImportedFiles([], incomingImportedFiles),
   );
   const [isPickingFiles, setIsPickingFiles] = useState(false);
+  const [isRuleDrawerOpen, setIsRuleDrawerOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(null);
@@ -449,7 +451,7 @@ export function IntakeWorkbench({
               <button
                 className="button"
                 data-launch-rules-trigger="true"
-                onClick={() => {}}
+                onClick={() => setIsRuleDrawerOpen(true)}
                 type="button"
               >
                 选择规则
@@ -488,21 +490,33 @@ export function IntakeWorkbench({
                 data-testid="launch-missing-rules-empty-state"
               >
                 <div>
-                  <strong>当前没有已选规则</strong>
-                  <p className="muted">点击“选择规则”后可在下一步调整本次批次的规则集。</p>
+                  <strong>当前未选择规则</strong>
+                  <p className="muted">点击“选择规则”后可继续调整本次批次的规则集。</p>
                 </div>
               </div>
             ) : (
-              <div className="checkbox-list">
+              <div className="launch-rule-summary-grid">
                 {selectedRules.map((rule) => (
-                  <article className="checkbox-card" key={rule.id}>
-                    <div>
+                  <article className="launch-rule-summary-card" key={rule.id}>
+                    <div className="inline-actions">
                       <strong>{rule.name}</strong>
-                      <p className="muted">
-                        {rule.category} · {severityLabel(rule.severity)}
-                      </p>
-                      <p className="muted">{rule.description}</p>
+                      <button
+                        aria-label={`移除规则 ${rule.name}`}
+                        className="table-text-button is-danger"
+                        onClick={() =>
+                          setSelectedRuleIds((current) =>
+                            current.filter((ruleId) => ruleId !== rule.id),
+                          )
+                        }
+                        type="button"
+                      >
+                        移除
+                      </button>
                     </div>
+                    <p className="muted">{rule.description}</p>
+                    <p className="muted">
+                      {rule.category} · {severityLabel(rule.severity)}
+                    </p>
                   </article>
                 ))}
               </div>
@@ -779,6 +793,18 @@ export function IntakeWorkbench({
           </div>
         </section>
       </div>
+
+      <ReviewLaunchRuleDrawer
+        initialRuleIds={initialRuleIds ?? []}
+        onClose={() => setIsRuleDrawerOpen(false)}
+        onConfirm={(nextRuleIds) => {
+          setSelectedRuleIds(nextRuleIds);
+          setIsRuleDrawerOpen(false);
+        }}
+        open={isRuleDrawerOpen}
+        rules={rules}
+        selectedRuleIds={selectedRuleIds}
+      />
     </section>
   );
 }

@@ -154,6 +154,68 @@ describe("IntakeWorkbench", () => {
     expect(within(workspace).queryByRole("heading", { name: "文件工作台" })).not.toBeInTheDocument();
   });
 
+  it("opens the rule drawer, allows temporary edits, and commits on confirm", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={[
+          {
+            id: "rule-1",
+            name: "目标清晰度",
+            category: "基础质量",
+            description: "检查业务目标是否清楚",
+            severity: "medium",
+          },
+          {
+            id: "rule-2",
+            name: "风险识别",
+            category: "执行风险",
+            description: "检查主要风险是否完整",
+            severity: "high",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "选择规则" }));
+    expect(screen.getByRole("dialog", { name: "选择规则" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /风险识别/ }));
+    await user.click(screen.getByRole("button", { name: "确认带回" }));
+
+    expect(screen.getByText("风险识别")).toBeInTheDocument();
+  });
+
+  it("clears temporary rules and restores last batch defaults from the drawer", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={[
+          {
+            id: "rule-1",
+            name: "目标清晰度",
+            category: "基础质量",
+            description: "检查业务目标是否清楚",
+            severity: "medium",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "选择规则" }));
+    const drawer = screen.getByRole("dialog", { name: "选择规则" });
+    await user.click(within(drawer).getByRole("button", { name: "一键清空" }));
+    expect(screen.getByText("当前未选择规则")).toBeInTheDocument();
+    await user.click(within(drawer).getByRole("button", { name: "恢复上次" }));
+    expect(within(drawer).getByRole("checkbox", { name: /目标清晰度/ })).toBeChecked();
+  });
+
   it("keeps launch status pending until the required fields are complete", async () => {
     const user = userEvent.setup();
 
