@@ -21,6 +21,7 @@ extraMetadata:
   main: .desktop-runtime/electron/main.cjs
 afterSign: scripts/notarize.cjs
 mac:
+  icon: build/icon.icns
   category: public.app-category.productivity
   hardenedRuntime: true
   gatekeeperAssess: false

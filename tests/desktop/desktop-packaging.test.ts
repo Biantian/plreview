@@ -89,7 +89,10 @@ describe("desktop packaging scripts", () => {
   it("keeps mac release packaging ready for hardened runtime signing and notarization", () => {
     const builderConfig = fs.readFileSync(path.resolve("electron-builder.yml"), "utf8");
 
+    expect(fs.existsSync(path.resolve("build/icon.png"))).toBe(true);
+    expect(fs.existsSync(path.resolve("build/icon.icns"))).toBe(true);
     expect(builderConfig).toContain("afterSign: scripts/notarize.cjs");
+    expect(builderConfig).toMatch(/mac:[\s\S]*icon:\s*build\/icon\.icns/u);
     expect(builderConfig).toMatch(/mac:[\s\S]*hardenedRuntime:\s*true/u);
     expect(builderConfig).toMatch(/mac:[\s\S]*gatekeeperAssess:\s*false/u);
     expect(builderConfig).toMatch(
