@@ -161,6 +161,25 @@ export type HomeDashboardData = {
   }>;
 };
 
+export type ReviewLaunchRuleItem = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  severity: Severity;
+};
+
+export type ReviewLaunchData = {
+  llmProfiles: Array<{
+    id: string;
+    name: string;
+    provider: string;
+    defaultModel: string;
+  }>;
+  rules: ReviewLaunchRuleItem[];
+  lastBatchRuleIds: string[];
+};
+
 export type ReviewDetailBlock = {
   blockIndex: number;
   blockType: "heading" | "paragraph" | "list_item";
@@ -200,6 +219,7 @@ export type ReviewDetailData = {
 
 export interface DesktopApi {
   pickFiles: () => Promise<ImportedDocumentRecord[]>;
+  getReviewLaunchData: () => Promise<ReviewLaunchData>;
   getHomeDashboard: () => Promise<HomeDashboardData>;
   getModelDashboard: () => Promise<ModelDashboardData>;
   getRuleDashboard: (query?: RuleDashboardQuery) => Promise<RuleDashboardData>;
@@ -231,6 +251,7 @@ export function createDesktopApi(
 ): DesktopApi {
   return {
     pickFiles: () => invoke<ImportedDocumentRecord[]>(DESKTOP_REQUESTS.filesPick),
+    getReviewLaunchData: () => invoke<ReviewLaunchData>(DESKTOP_REQUESTS.reviewLaunch),
     getHomeDashboard: () => invoke<HomeDashboardData>(DESKTOP_REQUESTS.homeDashboard),
     getModelDashboard: () => invoke<ModelDashboardData>(DESKTOP_REQUESTS.modelsDashboard),
     getRuleDashboard: (query) =>

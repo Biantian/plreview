@@ -25,7 +25,7 @@ describe("mac release verification", () => {
       releaseDir,
       "mac-arm64/PLReview.app/Contents/MacOS/PLReview",
     );
-    const dmgPath = path.join(releaseDir, "PLReview-0.2.0-arm64.dmg");
+    const dmgPath = path.join(releaseDir, "PLReview-0.3.0-arm64.dmg");
     const logPath = path.join(tempDir, "commands.log");
     const fakeCodesignPath = path.join(tempDir, "fake-codesign");
     const fakeSpctlPath = path.join(tempDir, "fake-spctl");

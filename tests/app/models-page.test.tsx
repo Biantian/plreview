@@ -8,6 +8,7 @@ describe("ModelsPage", () => {
     window.plreview = {
       pickFiles: vi.fn(),
       getHomeDashboard: vi.fn(),
+      getReviewLaunchData: vi.fn(),
       getModelDashboard: vi.fn().mockResolvedValue({
         metrics: {
           totalCount: 2,
@@ -70,6 +71,7 @@ describe("ModelsPage", () => {
     expect(within(pagePanel as HTMLElement).getByText("启用中")).toBeInTheDocument();
     expect(within(pagePanel as HTMLElement).getByText("实时模式")).toBeInTheDocument();
     expect(within(pagePanel as HTMLElement).getByText("最近更新")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "去新建批次" })).not.toBeInTheDocument();
     expect(
       screen.getByRole("table", { name: "模型表格" }).closest(".desktop-table-card"),
     ).toBeTruthy();
@@ -83,6 +85,7 @@ describe("ModelsPage", () => {
     window.plreview = {
       pickFiles: vi.fn(),
       getHomeDashboard: vi.fn(),
+      getReviewLaunchData: vi.fn(),
       getModelDashboard: vi.fn().mockRejectedValue(new Error("model dashboard failed")),
       getRuleDashboard: vi.fn(),
       getReviewDetail: vi.fn(),

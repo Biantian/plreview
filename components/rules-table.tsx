@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { RuleEditorDrawer, type RuleCreateDraft } from "@/components/rule-editor-drawer";
 import { TableSearchInput } from "@/components/table-search-input";
 import { RULE_TEMPLATE } from "@/lib/defaults";
+import { normalizeRuleSearchText, rankRuleSearchResults } from "@/lib/rule-search";
 import { severityLabel } from "@/lib/utils";
 
 export type RuleRow = {
@@ -21,17 +22,6 @@ export type RuleRow = {
   updatedAtLabel: string;
   isDeleted?: boolean;
 };
-
-function matchesQuery(item: RuleRow, query: string) {
-  if (!query) {
-    return true;
-  }
-
-  return [item.name, item.category, item.description, item.severity, severityLabel(item.severity)]
-    .join(" ")
-    .toLowerCase()
-    .includes(query);
-}
 
 function createDefaultRuleDraft(): RuleCreateDraft {
   return {
@@ -57,9 +47,9 @@ export function RulesTable({ items }: { items: RuleRow[] }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const deferredQuery = useDeferredValue(query);
-  const keyword = deferredQuery.trim().toLowerCase();
+  const keyword = normalizeRuleSearchText(deferredQuery);
   const visibleRecords = records.filter((item) => showDeleted || !item.isDeleted);
-  const filteredItems = visibleRecords.filter((item) => matchesQuery(item, keyword));
+  const filteredItems = rankRuleSearchResults(visibleRecords, keyword);
   const editingRule =
     filteredItems.find((item) => item.id === editingId) ??
     visibleRecords.find((item) => item.id === editingId) ??

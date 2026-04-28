@@ -1,4 +1,5 @@
 export const DESKTOP_REQUESTS = {
+  reviewLaunch: "review-launch:get",
   homeDashboard: "home-dashboard:get",
   modelsDashboard: "models-dashboard:get",
   rulesDashboard: "rules-dashboard:get",

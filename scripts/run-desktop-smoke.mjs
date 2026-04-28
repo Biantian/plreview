@@ -262,7 +262,11 @@ async function main() {
 
     await waitForExpression(
       client,
-      "Boolean(document.querySelector('#batchName')) && document.querySelectorAll('input[name=\"ruleIds\"]').length > 0",
+      [
+        "Boolean(document.querySelector('#batchName'))",
+        "document.body.innerText.includes('选择规则')",
+        "document.body.innerText.includes('选择本地文件')",
+      ].join(" && "),
       15000,
       "New batch page did not finish loading.",
     );
@@ -277,6 +281,44 @@ async function main() {
         input?.dispatchEvent(new Event('change', { bubbles: true }));
         return input?.value ?? null;
       })()`,
+    );
+
+    await evaluate(
+      client,
+      `(() => {
+        const trigger = [...document.querySelectorAll('button')].find((item) =>
+          (item.innerText || '').includes('选择规则'),
+        );
+        trigger?.click();
+        return Boolean(trigger);
+      })()`,
+    );
+
+    await waitForExpression(
+      client,
+      "document.querySelectorAll('.launch-rule-option input[type=\"checkbox\"]').length > 0",
+      15000,
+      "Rule drawer did not load selectable rules.",
+    );
+
+    await evaluate(
+      client,
+      `(() => {
+        const checkbox = document.querySelector('.launch-rule-option input[type="checkbox"]');
+        checkbox?.click();
+        const confirm = [...document.querySelectorAll('button')].find((item) =>
+          (item.innerText || '').trim() === '确认',
+        );
+        confirm?.click();
+        return Boolean(checkbox) && Boolean(confirm);
+      })()`,
+    );
+
+    await waitForExpression(
+      client,
+      "document.querySelectorAll('.launch-rule-summary-card').length > 0",
+      15000,
+      "Selected rules did not return to the launch page.",
     );
 
     await evaluate(

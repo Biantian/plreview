@@ -17,7 +17,7 @@ const defaultProfiles = [
 ];
 
 const defaultRules = [
-  { category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone" },
+  { category: "内容", description: "保持表达统一", id: "rule-1", name: "Tone", severity: "medium" as const },
 ];
 
 describe("IntakeWorkbench", () => {
@@ -26,6 +26,7 @@ describe("IntakeWorkbench", () => {
     window.plreview = {
       pickFiles: vi.fn().mockResolvedValue([]),
       getHomeDashboard: vi.fn(),
+      getReviewLaunchData: vi.fn(),
       getModelDashboard: vi.fn(),
       getRuleDashboard: vi.fn(),
       getReviewDetail: vi.fn(),
@@ -115,31 +116,127 @@ describe("IntakeWorkbench", () => {
   });
 
   it("renders launch actions without the old split workbench copy", () => {
-    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
 
     expect(screen.getByRole("region", { name: "评审启动工作区" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "启动摘要" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
+    expect(screen.getByText("已带入上次批次规则")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "规则摘要" })).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "启动摘要" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "文件工作台" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "查看帮助" })).not.toBeInTheDocument();
   });
 
-  it("renders a desktop launch workspace with main zones and a readiness rail", () => {
-    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+  it("renders selected rules as summary cards instead of the old checkbox zone", () => {
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
 
     const workspace = screen.getByRole("region", { name: "评审启动工作区" });
-    const readinessRail = screen.getByRole("complementary", { name: "启动摘要" });
 
-    expect(within(workspace).getByRole("heading", { level: 2, name: "批次配置" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 3, name: "规则选择" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 3, name: "文件导入" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "基础信息" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "规则摘要" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "文件导入" })).toBeInTheDocument();
     expect(within(workspace).getByRole("heading", { level: 3, name: "导入文件清单" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 3, name: "启动批次" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("button", { name: "开始评审" })).toBeInTheDocument();
-    expect(within(readinessRail).getByRole("heading", { name: "启动摘要" })).toBeInTheDocument();
-    expect(within(readinessRail).queryByRole("button", { name: "开始评审" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "批量配置" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "提交" })).not.toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "启动区" })).toBeInTheDocument();
+    expect(within(workspace).getByText("Tone")).toBeInTheDocument();
+    expect(within(workspace).getByText("内容 · 中")).toBeInTheDocument();
+    expect(within(workspace).queryByRole("heading", { name: "规则选择" })).not.toBeInTheDocument();
+    expect(within(workspace).queryByRole("heading", { name: "文件工作台" })).not.toBeInTheDocument();
+    expect(
+      within(workspace).getByRole("button", { name: "移除规则 Tone" }).closest(
+        ".launch-rule-summary-card-header",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("opens the rule drawer, allows temporary edits, and commits on confirm", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={[
+          {
+            id: "rule-1",
+            name: "目标清晰度",
+            category: "基础质量",
+            description: "检查业务目标是否清楚",
+            severity: "medium",
+          },
+          {
+            id: "rule-2",
+            name: "风险识别",
+            category: "执行风险",
+            description: "检查主要风险是否完整",
+            severity: "high",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "选择规则" }));
+    expect(screen.getByRole("dialog", { name: "选择规则" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /风险识别/ }));
+    await user.click(screen.getByRole("button", { name: "确认" }));
+
+    expect(screen.getByText("风险识别")).toBeInTheDocument();
+  });
+
+  it("keeps section action buttons aligned with the section headers", () => {
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "选择规则" }).closest(".launch-section-header"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "选择本地文件" }).closest(".launch-section-header"),
+    ).toBeTruthy();
+    expect(screen.queryByText("文件进入工作台后，会在下方清单里显示解析结果和待评审状态。")).not.toBeInTheDocument();
+  });
+
+  it("clears temporary rules and restores last batch defaults from the drawer", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={[
+          {
+            id: "rule-1",
+            name: "目标清晰度",
+            category: "基础质量",
+            description: "检查业务目标是否清楚",
+            severity: "medium",
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "选择规则" }));
+    const drawer = screen.getByRole("dialog", { name: "选择规则" });
+    await user.click(within(drawer).getByRole("button", { name: "一键清空" }));
+    expect(screen.getByText("当前未选择规则")).toBeInTheDocument();
+    await user.click(within(drawer).getByRole("button", { name: "恢复上次" }));
+    expect(within(drawer).getByRole("checkbox", { name: /目标清晰度/ })).toBeChecked();
   });
 
   it("keeps launch status pending until the required fields are complete", async () => {
@@ -156,22 +253,24 @@ describe("IntakeWorkbench", () => {
             status: "已导入",
           },
         ]}
+        initialRuleIds={["rule-1"]}
         llmProfiles={defaultProfiles}
         rules={defaultRules}
       />,
     );
 
-    const workspace = screen.getByRole("region", { name: "评审启动工作区" });
-    const readinessRail = screen.getByRole("complementary", { name: "启动摘要" });
-    const submitButton = within(workspace).getByRole("button", { name: "开始评审" });
+    const submitZone = screen.getByRole("heading", { level: 2, name: "启动区" }).closest("section");
+    const submitButton = screen.getByRole("button", { name: "开始评审" });
 
+    expect(submitZone).not.toBeNull();
     expect(submitButton).toBeEnabled();
-    expect(within(readinessRail).getByText("待补全启动信息")).toBeInTheDocument();
+    expect(within(submitZone as HTMLElement).getByText("待补全启动信息")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("批次名称"), "四月策划案");
 
     expect(submitButton).toBeEnabled();
-    expect(within(readinessRail).getByText("可创建批次")).toBeInTheDocument();
+    expect(within(submitZone as HTMLElement).getByText("可创建批次")).toBeInTheDocument();
+    expect((submitZone as HTMLElement).querySelector(".launch-submit-grid")).toBeTruthy();
   });
 
   it("highlights only the missing launch controls and focuses the first missing input on submit", async () => {
@@ -184,26 +283,13 @@ describe("IntakeWorkbench", () => {
     expect(screen.getByTestId("launch-section-batch-profile")).not.toHaveAttribute("data-missing", "true");
     expect(screen.getByTestId("launch-missing-batch")).toHaveAttribute("data-missing", "true");
     expect(screen.getByTestId("launch-missing-profile")).toHaveAttribute("data-missing", "false");
-    expect(screen.getByTestId("launch-missing-rules")).toHaveAttribute("data-missing", "false");
+    expect(screen.getByTestId("launch-missing-rules")).toHaveAttribute("data-missing", "true");
     expect(screen.getByTestId("launch-missing-documents")).toHaveAttribute("data-missing", "true");
     expect(screen.getByLabelText("批次名称")).toHaveFocus();
     expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
   });
 
   it("focuses the exact model config field when batch config is missing only the profile", async () => {
-    const user = userEvent.setup();
-
-    render(<IntakeWorkbench llmProfiles={[]} rules={defaultRules} />);
-
-    await user.type(screen.getByLabelText("批次名称"), "四月策划案");
-    await user.click(screen.getByRole("button", { name: "开始评审" }));
-
-    expect(screen.getByLabelText("模型配置")).toHaveFocus();
-    expect(screen.getByTestId("launch-missing-profile")).toHaveAttribute("data-missing", "true");
-    expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
-  });
-
-  it("highlights the missing rule choice cards instead of the whole rules container", async () => {
     const user = userEvent.setup();
 
     render(
@@ -217,21 +303,47 @@ describe("IntakeWorkbench", () => {
             status: "已导入",
           },
         ]}
+        initialRuleIds={["rule-1"]}
+        llmProfiles={[]}
+        rules={defaultRules}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("批次名称"), "四月策划案");
+    await user.click(screen.getByRole("button", { name: "开始评审" }));
+
+    expect(screen.getByLabelText("模型配置")).toHaveFocus();
+    expect(screen.getByTestId("launch-missing-profile")).toHaveAttribute("data-missing", "true");
+    expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
+  });
+
+  it("highlights the rules summary entry point when no rules remain selected", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <IntakeWorkbench
+        importedFiles={[
+          {
+            id: "doc_1",
+            documentId: "doc_1",
+            name: "schedule.xlsx",
+            fileType: "xlsx",
+            status: "已导入",
+          },
+        ]}
+        initialRuleIds={["rule-1"]}
         llmProfiles={defaultProfiles}
         rules={defaultRules}
       />,
     );
 
     await user.type(screen.getByLabelText("批次名称"), "规则选择回归");
-    await user.click(screen.getByRole("checkbox", { name: /Tone/ }));
+    await user.click(screen.getByRole("button", { name: "一键清空" }));
     await user.click(screen.getByRole("button", { name: "开始评审" }));
 
-    expect(screen.getByRole("checkbox", { name: /Tone/ })).toHaveFocus();
-    expect(screen.getByTestId("launch-missing-rules")).toHaveAttribute("data-missing", "false");
-    expect(screen.getByTestId("launch-missing-rule-option-rule-1")).toHaveAttribute(
-      "data-missing",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: "选择规则" })).toHaveFocus();
+    expect(screen.getByTestId("launch-missing-rules")).toHaveAttribute("data-missing", "true");
+    expect(screen.getByTestId("launch-missing-rules-empty-state")).toHaveAttribute("data-missing", "true");
     expect(window.plreview.createReviewBatch).not.toHaveBeenCalled();
   });
 
@@ -264,6 +376,7 @@ describe("IntakeWorkbench", () => {
             status: "已导入",
           },
         ]}
+        initialRuleIds={["rule-1"]}
         llmProfiles={[]}
         rules={[]}
       />,
@@ -280,6 +393,7 @@ describe("IntakeWorkbench", () => {
             status: "已导入",
           },
         ]}
+        initialRuleIds={["rule-1"]}
         llmProfiles={defaultProfiles}
         rules={defaultRules}
       />,
@@ -288,7 +402,7 @@ describe("IntakeWorkbench", () => {
     const submitButton = screen.getByRole("button", { name: "开始评审" });
 
     expect(screen.getByLabelText("模型配置")).toHaveValue("profile-1");
-    expect(screen.getByRole("checkbox", { name: /Tone/ })).toBeChecked();
+    expect(screen.getByText("Tone")).toBeInTheDocument();
     expect(submitButton).toBeEnabled();
 
     await user.type(screen.getByLabelText("批次名称"), "异步加载回归");
@@ -309,16 +423,17 @@ describe("IntakeWorkbench", () => {
             note: "标题：四月活动排期 · 1 个文档块",
           },
         ]}
+        initialRuleIds={["rule-1"]}
         llmProfiles={defaultProfiles}
         rules={defaultRules}
       />,
     );
 
-    const fileZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+    const fileZone = screen.getByRole("heading", { level: 2, name: "文件导入" }).closest("section");
 
     expect(fileZone).not.toBeNull();
-    expect(within(fileZone as HTMLElement).getByText("已导入 1 条")).toBeInTheDocument();
-    expect(within(fileZone as HTMLElement).getByText("待评审 1 条")).toBeInTheDocument();
+    expect(within(fileZone as HTMLElement).getAllByText("已导入 1 条").length).toBeGreaterThan(0);
+    expect(within(fileZone as HTMLElement).getAllByText("待评审 1 条").length).toBeGreaterThan(0);
     expect(screen.queryByText(/可提交/)).not.toBeInTheDocument();
     expect(screen.queryByText(/待重新导入/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText("状态筛选")).not.toBeInTheDocument();
@@ -329,7 +444,7 @@ describe("IntakeWorkbench", () => {
 
     const table = screen.getByRole("table", { name: "已导入文件" });
     const fileBoard = screen.getByRole("heading", { level: 3, name: "导入文件清单" }).closest("section");
-    const intakeZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+    const intakeZone = screen.getByRole("heading", { level: 2, name: "文件导入" }).closest("section");
 
     expect(fileBoard).not.toBeNull();
     expect(intakeZone).not.toBeNull();
@@ -458,17 +573,23 @@ describe("IntakeWorkbench", () => {
 
     window.plreview.pickFiles = pickFiles;
 
-    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "选择本地文件" }));
 
     expect(pickFiles).toHaveBeenCalledTimes(1);
-    const fileZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+    const fileZone = screen.getByRole("heading", { level: 2, name: "文件导入" }).closest("section");
 
     expect(fileZone).not.toBeNull();
     expect(screen.getByRole("rowheader", { name: "schedule.xlsx" })).toBeInTheDocument();
     expect(screen.getByText("标题：四月活动排期 · 1 个文档块")).toBeInTheDocument();
-    expect(within(fileZone as HTMLElement).getByText("已导入 1 条")).toBeInTheDocument();
+    expect(within(fileZone as HTMLElement).getAllByText("已导入 1 条").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /重新导入/ })).not.toBeInTheDocument();
   });
 
@@ -500,7 +621,13 @@ describe("IntakeWorkbench", () => {
 
     window.plreview.pickFiles = vi.fn().mockRejectedValue(new Error("boom"));
 
-    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "选择本地文件" }));
 
@@ -523,7 +650,13 @@ describe("IntakeWorkbench", () => {
     ]);
     window.plreview.createReviewBatch = createReviewBatch;
 
-    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "选择本地文件" }));
     await user.type(screen.getByLabelText("批次名称"), "四月策划案");
@@ -573,16 +706,17 @@ describe("IntakeWorkbench", () => {
             note: "标题：上线公告 · 2 个文档块",
           },
         ]}
+        initialRuleIds={["rule-1"]}
         llmProfiles={defaultProfiles}
         rules={defaultRules}
       />,
     );
 
-    const fileZone = screen.getByRole("heading", { level: 3, name: "文件导入" }).closest("section");
+    const fileZone = screen.getByRole("heading", { level: 2, name: "文件导入" }).closest("section");
 
     expect(fileZone).not.toBeNull();
-    expect(within(fileZone as HTMLElement).getByText("已导入 3 条")).toBeInTheDocument();
-    expect(within(fileZone as HTMLElement).getByText("待评审 3 条")).toBeInTheDocument();
+    expect(within(fileZone as HTMLElement).getAllByText("已导入 3 条").length).toBeGreaterThan(0);
+    expect(within(fileZone as HTMLElement).getAllByText("待评审 3 条").length).toBeGreaterThan(0);
 
     await user.type(screen.getByLabelText("批次名称"), "四月批量回归");
     await user.click(screen.getByRole("button", { name: "开始评审" }));
@@ -612,7 +746,13 @@ describe("IntakeWorkbench", () => {
     ]);
     window.plreview.createReviewBatch = vi.fn().mockRejectedValue(new Error("boom"));
 
-    render(<IntakeWorkbench llmProfiles={defaultProfiles} rules={defaultRules} />);
+    render(
+      <IntakeWorkbench
+        initialRuleIds={["rule-1"]}
+        llmProfiles={defaultProfiles}
+        rules={defaultRules}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "选择本地文件" }));
     await user.type(screen.getByLabelText("批次名称"), "四月策划案");

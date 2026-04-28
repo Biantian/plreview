@@ -14,47 +14,28 @@ describe("NewReviewPage", () => {
     window.plreview = {
       pickFiles: vi.fn().mockResolvedValue([]),
       getHomeDashboard: vi.fn(),
-      getModelDashboard: vi.fn().mockResolvedValue({
-        metrics: {
-          totalCount: 1,
-          enabledCount: 1,
-          liveCount: 1,
-          latestUpdatedAtLabel: "2026-04-15 16:00",
-        },
-        profiles: [
+      getReviewLaunchData: vi.fn().mockResolvedValue({
+        llmProfiles: [
           {
             defaultModel: "qwen-plus",
             id: "profile-1",
             name: "Default",
             provider: "openai",
-            vendorKey: "openai_compatible",
-            mode: "live",
-            baseUrl: "https://example.com",
-            modelOptionsText: "qwen-plus",
-            enabled: true,
-            hasApiKey: true,
-            apiKeyLast4: "abcd",
           },
         ],
-      }),
-      getRuleDashboard: vi.fn().mockResolvedValue({
-        enabledCount: 1,
-        categoryCount: 1,
-        latestUpdatedAtLabel: "2026-04-15 16:00",
-        totalCount: 1,
-        items: [
+        rules: [
           {
             category: "内容",
             description: "保持表达统一",
-            enabled: true,
             id: "rule-1",
             name: "Tone",
-            promptTemplate: "模板",
             severity: "medium",
-            updatedAtLabel: "2026-04-15 16:00",
           },
         ],
+        lastBatchRuleIds: ["rule-1"],
       }),
+      getModelDashboard: vi.fn(),
+      getRuleDashboard: vi.fn(),
       getReviewDetail: vi.fn(),
       listReviewJobs: vi.fn(),
       searchReviewJobs: vi.fn(),
@@ -89,26 +70,20 @@ describe("NewReviewPage", () => {
     expect(pagePanel).toBeTruthy();
     expect(pageIntro).toBeTruthy();
     expect(within(pageIntro as HTMLElement).queryByRole("link")).not.toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 2, name: "批次配置" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 2, name: "文件工作台" })).toBeInTheDocument();
-    expect(within(workspace).getByRole("heading", { level: 3, name: "启动批次" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "启动摘要" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "基础信息" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "规则摘要" })).toBeInTheDocument();
+    expect(within(workspace).getByRole("heading", { level: 2, name: "启动区" })).toBeInTheDocument();
+    expect(within(workspace).queryByRole("heading", { level: 2, name: "文件工作台" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "启动摘要" })).not.toBeInTheDocument();
   });
 
   it("short-circuits to a dedicated failure state when bootstrap loading rejects", async () => {
     window.plreview = {
       pickFiles: vi.fn().mockResolvedValue([]),
       getHomeDashboard: vi.fn(),
-      getModelDashboard: vi.fn().mockResolvedValue({
-        metrics: {
-          totalCount: 1,
-          enabledCount: 1,
-          liveCount: 1,
-          latestUpdatedAtLabel: "2026-04-15 16:00",
-        },
-        profiles: [],
-      }),
-      getRuleDashboard: vi.fn().mockRejectedValue(new Error("bootstrap failed")),
+      getReviewLaunchData: vi.fn().mockRejectedValue(new Error("bootstrap failed")),
+      getModelDashboard: vi.fn(),
+      getRuleDashboard: vi.fn(),
       getReviewDetail: vi.fn(),
       listReviewJobs: vi.fn(),
       searchReviewJobs: vi.fn(),
@@ -142,7 +117,8 @@ describe("NewReviewPage", () => {
     window.plreview = {
       pickFiles: vi.fn().mockResolvedValue([]),
       getHomeDashboard: vi.fn(),
-      getModelDashboard: undefined as unknown as typeof window.plreview.getModelDashboard,
+      getReviewLaunchData: undefined as unknown as typeof window.plreview.getReviewLaunchData,
+      getModelDashboard: vi.fn(),
       getRuleDashboard: vi.fn(),
       getReviewDetail: vi.fn(),
       listReviewJobs: vi.fn(),

@@ -695,7 +695,7 @@ svg {
 
 .home-command-center {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
@@ -708,6 +708,23 @@ svg {
   flex: 0 0 auto;
   padding: 18px 0 16px;
   border-bottom: 1px solid var(--line);
+}
+
+.home-primary-action-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-primary-action-panel strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 18px;
+  line-height: 1.25;
 }
 
 .home-cockpit-grid {
@@ -1065,6 +1082,13 @@ svg {
 .launch-section-header {
   align-items: flex-start;
   justify-content: space-between;
+}
+
+.launch-section-header > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .launch-pill-row,
@@ -2890,6 +2914,10 @@ svg {
     border-left: 0;
   }
 
+  .home-primary-action-panel {
+    align-items: stretch;
+  }
+
   .hero-grid,
   .review-layout,
   .docs-shell,
@@ -2971,6 +2999,7 @@ svg {
   .desktop-table-toolbar-actions,
   .page-intro,
   .launch-section-header,
+  .launch-submit-actions,
   .docs-toolbar {
     flex-direction: column;
   }
@@ -3079,4 +3108,67 @@ svg {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.launch-quickstart {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.launch-inline-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.launch-rule-summary-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.launch-rule-summary-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.launch-rule-summary-card-header strong {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.launch-submit-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.launch-submit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.launch-rule-summary-card,
+.launch-rule-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.launch-rule-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(56vh, 520px);
+  overflow-y: auto;
 }

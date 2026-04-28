@@ -30,6 +30,7 @@ describe("background-entry protocol", () => {
     vi.doMock("@/desktop/worker/services/review-service", () => ({
       createReviewService: vi.fn(() => ({
         createReviewBatch: vi.fn(),
+        getReviewLaunchData: vi.fn(),
         listReviewJobs: vi.fn(),
         searchReviewJobs: vi.fn(),
       })),
@@ -89,6 +90,7 @@ describe("background-entry protocol", () => {
     vi.doMock("@/desktop/worker/services/review-service", () => ({
       createReviewService: vi.fn(() => ({
         createReviewBatch: vi.fn(),
+        getReviewLaunchData: vi.fn(),
         listReviewJobs: vi.fn(),
         searchReviewJobs: vi.fn(),
       })),

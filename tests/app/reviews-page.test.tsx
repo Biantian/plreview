@@ -7,6 +7,7 @@ function installDesktopApi(overrides: Partial<typeof window.plreview> = {}) {
   window.plreview = {
     pickFiles: vi.fn(),
     getHomeDashboard: vi.fn(),
+    getReviewLaunchData: vi.fn(),
     getModelDashboard: vi.fn(),
     getRuleDashboard: vi.fn(),
     getReviewDetail: vi.fn(),
@@ -53,6 +54,7 @@ describe("ReviewsPage", () => {
       "href",
       "/reviews/new",
     );
+    expect(screen.queryByText("默认带入上次批次规则")).not.toBeInTheDocument();
     expect(within(panel as HTMLElement).queryByRole("link", { name: "帮助文档" })).not.toBeInTheDocument();
     expect(within(panel as HTMLElement).queryByRole("link", { name: "返回工作台" })).not.toBeInTheDocument();
   });
