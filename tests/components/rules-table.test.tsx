@@ -388,6 +388,44 @@ describe("RulesTable", () => {
     expect(screen.queryByText("目标清晰度")).not.toBeInTheDocument();
   });
 
+  it("prioritizes stronger rule-name matches when filtering", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <RulesTable
+        items={[
+          {
+            category: "执行保障",
+            description: "覆盖风险沟通与执行跟踪",
+            enabled: true,
+            id: "1",
+            name: "流程校验",
+            promptTemplate: RULE_TEMPLATE,
+            severity: "medium",
+            updatedAtLabel: "2026-04-13 10:00",
+          },
+          {
+            category: "风险治理",
+            description: "识别潜在风险并建立应对方案",
+            enabled: true,
+            id: "2",
+            name: "风险识别",
+            promptTemplate: RULE_TEMPLATE,
+            severity: "high",
+            updatedAtLabel: "2026-04-13 11:00",
+          },
+        ]}
+      />,
+    );
+
+    await user.type(screen.getByRole("searchbox", { name: "搜索规则" }), "风险");
+
+    const rows = screen.getAllByRole("row");
+
+    expect(rows[1]).toHaveTextContent("风险识别");
+    expect(rows[2]).toHaveTextContent("流程校验");
+  });
+
   it("resets drawer form values when switching to another rule", async () => {
     const user = userEvent.setup();
 
