@@ -7,6 +7,7 @@ import {
 import { listReviewJobs } from "@/desktop/core/reviews/list-review-jobs";
 import { searchReviewJobs } from "@/desktop/core/reviews/search-review-jobs";
 import { createTaskRunner } from "@/desktop/worker/task-runner";
+import { getReviewLaunchData } from "@/lib/review-launch";
 
 export function createReviewService(prisma: PrismaClient) {
   const taskRunner = createTaskRunner();
@@ -16,6 +17,7 @@ export function createReviewService(prisma: PrismaClient) {
       createReviewBatch(prisma, input, (job) =>
         taskRunner.run("execute-review-job", job),
       ),
+    getReviewLaunchData: () => getReviewLaunchData(),
     listReviewJobs: () => listReviewJobs(prisma),
     searchReviewJobs: (query: string) => searchReviewJobs(prisma, query),
   };

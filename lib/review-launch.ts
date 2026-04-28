@@ -29,7 +29,7 @@ export async function getReviewLaunchData() {
     prisma.reviewBatch.findFirst({
       orderBy: { createdAt: "desc" },
       select: {
-        reviewBatchRules: {
+        batchRules: {
           select: {
             ruleVersion: {
               select: {
@@ -47,7 +47,7 @@ export async function getReviewLaunchData() {
     rules,
     lastBatchRuleIds: Array.from(
       new Set(
-        (latestReviewBatch?.reviewBatchRules ?? []).map(
+        (latestReviewBatch?.batchRules ?? []).map(
           (reviewBatchRule) => reviewBatchRule.ruleVersion.ruleId,
         ),
       ),

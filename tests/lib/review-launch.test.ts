@@ -59,7 +59,7 @@ describe("review-launch", () => {
       },
     ]);
     reviewBatchFindFirst.mockResolvedValue({
-      reviewBatchRules: [
+      batchRules: [
         { ruleVersion: { ruleId: "rule_a" } },
         { ruleVersion: { ruleId: "rule_b" } },
         { ruleVersion: { ruleId: "rule_a" } },
@@ -93,11 +93,11 @@ describe("review-launch", () => {
       },
     });
     expect(reviewBatchFindFirst).toHaveBeenCalledWith({
-      orderBy: { createdAt: "desc" },
-      select: {
-        reviewBatchRules: {
-          select: {
-            ruleVersion: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          batchRules: {
+            select: {
+              ruleVersion: {
               select: {
                 ruleId: true,
               },

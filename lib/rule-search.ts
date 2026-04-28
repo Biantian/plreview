@@ -95,7 +95,9 @@ export function rankRuleSearchResults<T extends SearchableRule>(rules: T[], quer
       rule,
       score: scoreRuleMatch(rule, normalizedQuery),
     }))
-    .filter((entry) => entry.score !== null)
+    .filter(
+      (entry): entry is { index: number; rule: T; score: RankedRuleMatch } => entry.score !== null,
+    )
     .sort((left, right) => {
       const leftScore = left.score;
       const rightScore = right.score;
