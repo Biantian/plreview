@@ -207,6 +207,7 @@ void app.whenReady().then(async () => {
       ipcMain.handle(channel, handler);
     },
     {
+      [CHANNELS.reviewLaunch]: async () => desktopData.getReviewLaunchData(),
       [CHANNELS.homeDashboard]: async () => desktopData.getHomeDashboardData(),
       [CHANNELS.modelsDashboard]: async () => desktopData.getModelDashboardData(),
       [CHANNELS.rulesDashboard]: async (_event, payload) =>

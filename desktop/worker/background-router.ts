@@ -7,6 +7,7 @@ import {
 type BackgroundServices = {
   reviews: {
     createReviewBatch: (input: CreateReviewBatchInput) => Promise<unknown>;
+    getReviewLaunchData: () => Promise<unknown>;
     listReviewJobs: () => Promise<unknown>;
     searchReviewJobs: (query: string) => Promise<unknown>;
   };
@@ -23,6 +24,8 @@ export function createBackgroundRouter(services: BackgroundServices) {
   return {
     async handle(message: WorkerEnvelope) {
       switch (message.channel) {
+        case DESKTOP_REQUESTS.reviewLaunch:
+          return services.reviews.getReviewLaunchData();
         case DESKTOP_REQUESTS.filesPick:
           return services.files.importDocumentsIntoStore(
             Array.isArray(message.payload) ? message.payload.filter(isString) : [],

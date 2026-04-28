@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const DESKTOP_REQUESTS = {
+  reviewLaunch: "review-launch:get",
   homeDashboard: "home-dashboard:get",
   modelsDashboard: "models-dashboard:get",
   rulesDashboard: "rules-dashboard:get",
@@ -43,6 +44,7 @@ const subscribe = (event, listener) => {
 
 contextBridge.exposeInMainWorld("plreview", {
   pickFiles: () => invoke(DESKTOP_REQUESTS.filesPick),
+  getReviewLaunchData: () => invoke(DESKTOP_REQUESTS.reviewLaunch),
   getHomeDashboard: () => invoke(DESKTOP_REQUESTS.homeDashboard),
   getModelDashboard: () => invoke(DESKTOP_REQUESTS.modelsDashboard),
   getRuleDashboard: (query) => invoke(DESKTOP_REQUESTS.rulesDashboard, query),

@@ -1,6 +1,7 @@
 import { DESKTOP_REQUESTS } from "@/desktop/worker/protocol";
 
 export const CHANNELS = {
+  reviewLaunch: DESKTOP_REQUESTS.reviewLaunch,
   homeDashboard: DESKTOP_REQUESTS.homeDashboard,
   modelsDashboard: DESKTOP_REQUESTS.modelsDashboard,
   rulesDashboard: DESKTOP_REQUESTS.rulesDashboard,
@@ -41,6 +42,7 @@ export function registerDesktopHandlers(
   };
 
   register(CHANNELS.reviewBatchesCreate, handlers[CHANNELS.reviewBatchesCreate] ?? notImplemented);
+  register(CHANNELS.reviewLaunch, handlers[CHANNELS.reviewLaunch] ?? notImplemented);
   register(CHANNELS.homeDashboard, handlers[CHANNELS.homeDashboard] ?? notImplemented);
   register(CHANNELS.modelsDashboard, handlers[CHANNELS.modelsDashboard] ?? notImplemented);
   register(CHANNELS.rulesDashboard, handlers[CHANNELS.rulesDashboard] ?? notImplemented);
