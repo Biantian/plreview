@@ -54,6 +54,7 @@ describe("ReviewsPage", () => {
       "href",
       "/reviews/new",
     );
+    expect(screen.queryByText("默认带入上次批次规则")).not.toBeInTheDocument();
     expect(within(panel as HTMLElement).queryByRole("link", { name: "帮助文档" })).not.toBeInTheDocument();
     expect(within(panel as HTMLElement).queryByRole("link", { name: "返回工作台" })).not.toBeInTheDocument();
   });

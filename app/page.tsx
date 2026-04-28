@@ -74,7 +74,12 @@ export default function HomePage() {
     <div className="home-command-center" data-testid="home-desktop-cockpit">
       <header className="home-command-header" data-testid="home-command-header">
         <PageIntro
-          description="继续最近评审，或开始一个新的本地批次。"
+          actions={
+            <Link className="button" href="/reviews/new">
+              开始新批次
+            </Link>
+          }
+          description="确认规则和模型已就绪，然后直接开始一个新的评审批次。"
           eyebrow="Workspace"
           title="评审工作台"
         />
@@ -127,7 +132,7 @@ function HomeSnapshotPane({
           <SnapshotRow
             label="规则"
             title={`${dashboard.enabledRulesCount}/${dashboard.rulesCount} 条规则启用`}
-            description="会作为本地评审的检查依据。"
+            description="规则库只负责维护资产，批次配置在新建批次页完成。"
           />
           {primaryModel ? (
             <SnapshotRow

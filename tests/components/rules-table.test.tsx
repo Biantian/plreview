@@ -46,6 +46,7 @@ describe("RulesTable", () => {
     window.plreview = {
       pickFiles: vi.fn(),
       getHomeDashboard: vi.fn(),
+      getReviewLaunchData: vi.fn(),
       getModelDashboard: vi.fn(),
       getRuleDashboard: vi.fn().mockResolvedValue({
         enabledCount: 1,
@@ -171,6 +172,31 @@ describe("RulesTable", () => {
 
     expect(screen.getByText("目标清晰度")).toBeInTheDocument();
     expect(screen.queryByText("历史规则")).not.toBeInTheDocument();
+  });
+
+  it("keeps ranked search results stable for name-priority matches", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <RulesTable
+        items={[
+          createRule({
+            id: "1",
+            name: "风险总览",
+            description: "这里提到目标但不是规则名称重点",
+          }),
+          createRule({
+            id: "2",
+            name: "目标清晰度",
+            description: "检查目标表达是否清楚",
+          }),
+        ]}
+      />,
+    );
+
+    await user.type(screen.getByRole("searchbox", { name: "搜索规则" }), "目标");
+
+    expect(screen.getAllByRole("row")[1]).toHaveTextContent("目标清晰度");
   });
 
   it("reloads dashboard with includeDeleted toggle and reflects deleted rows", async () => {

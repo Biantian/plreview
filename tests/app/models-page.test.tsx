@@ -71,6 +71,7 @@ describe("ModelsPage", () => {
     expect(within(pagePanel as HTMLElement).getByText("启用中")).toBeInTheDocument();
     expect(within(pagePanel as HTMLElement).getByText("实时模式")).toBeInTheDocument();
     expect(within(pagePanel as HTMLElement).getByText("最近更新")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "去新建批次" })).toHaveAttribute("href", "/reviews/new");
     expect(
       screen.getByRole("table", { name: "模型表格" }).closest(".desktop-table-card"),
     ).toBeTruthy();
