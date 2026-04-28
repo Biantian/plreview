@@ -71,6 +71,13 @@ function getSelectionIds(selection: SelectionState, filteredItems: ReviewJobRow[
   return selection.selectedIds;
 }
 
+function buildBulkSelectionPayload(selectedIds: string[]) {
+  return {
+    allMatching: false as const,
+    selectedIds,
+  };
+}
+
 async function triggerDownload(payload: DesktopBinaryPayload, fallbackFilename: string) {
   if (typeof window === "undefined") {
     return;
@@ -340,16 +347,7 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     setIsBulkWorking(true);
 
     try {
-      const payload =
-        allFilteredMode
-          ? {
-              allMatching: true,
-              query: deferredQuery.trim(),
-            }
-          : {
-              allMatching: false,
-              selectedIds: selectedReviews.map((item) => item.id),
-            };
+      const payload = buildBulkSelectionPayload(selectedReviews.map((item) => item.id));
       const result = await window.plreview.exportReviewList(payload);
 
       await triggerDownload(result, "review-list.xlsx");
@@ -374,19 +372,8 @@ export function ReviewJobsTable({ items }: { items: ReviewJobRow[] }) {
     try {
       const payload =
         deleteScope.mode === "row"
-          ? {
-              allMatching: false,
-              selectedIds: [deleteScope.reviewId],
-            }
-          : allFilteredMode
-            ? {
-                allMatching: true,
-                query: deferredQuery.trim(),
-              }
-            : {
-                allMatching: false,
-                selectedIds: selectedReviews.map((item) => item.id),
-              };
+          ? buildBulkSelectionPayload([deleteScope.reviewId])
+          : buildBulkSelectionPayload(selectedReviews.map((item) => item.id));
       const responsePayload = await window.plreview.deleteReviewJobs(payload);
       const deletedCount =
         typeof responsePayload.deletedCount === "number" ? responsePayload.deletedCount : 0;

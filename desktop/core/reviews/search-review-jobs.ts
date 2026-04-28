@@ -6,7 +6,7 @@ import { reviewStatusLabel } from "@/lib/utils";
 export async function searchReviewJobs(
   prisma: PrismaClient,
   query: string,
-  limit = 50,
+  limit?: number,
 ) {
   const keyword = query.trim().toLowerCase();
   const items = await listReviewJobs(prisma, limit);

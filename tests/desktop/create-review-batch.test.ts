@@ -450,6 +450,106 @@ describe("createReviewBatch", () => {
     );
   });
 
+  it("marks jobs as failed when dispatch rejects before execution starts", async () => {
+    const batch = { id: "batch_dispatch_failure" };
+    const reviewJobUpdate = vi.fn().mockResolvedValue(undefined);
+    const tx = {
+      llmProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "profile_1",
+          provider: "dashscope",
+          defaultModel: "qwen-plus",
+          mode: "demo",
+          apiKeyEncrypted: null,
+        }),
+      },
+      rule: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "rule_a",
+            name: "规则 A",
+            description: "说明 A",
+            promptTemplate: "提示 A",
+            severity: Severity.high,
+          },
+        ]),
+      },
+      ruleVersion: {
+        findFirst: vi.fn().mockResolvedValue({ id: "rule_version_a", ruleId: "rule_a" }),
+        create: vi.fn(),
+      },
+      reviewBatch: {
+        create: vi.fn().mockResolvedValue(batch),
+      },
+      reviewBatchRule: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      reviewJob: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "review_job_dispatch_failure",
+            documentId: "doc_1",
+            document: {
+              title: "文档一",
+              filename: "doc-1.docx",
+              fileType: "docx",
+              rawText: "内容一",
+              blocks: [
+                {
+                  blockIndex: 0,
+                  blockType: "paragraph",
+                  text: "内容一",
+                  level: null,
+                  listKind: null,
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+              paragraphs: [
+                {
+                  paragraphIndex: 0,
+                  text: "内容一",
+                  charStart: 0,
+                  charEnd: 3,
+                },
+              ],
+            },
+          },
+        ]),
+        update: reviewJobUpdate,
+      },
+    };
+
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx as never)),
+      reviewJob: {
+        update: reviewJobUpdate,
+      },
+      ...tx,
+    };
+
+    executeReviewJob.mockRejectedValueOnce(new Error("worker exited before ready"));
+
+    await createReviewBatch(prisma as never, {
+      batchName: "派发失败批次",
+      llmProfileId: "profile_1",
+      ruleIds: ["rule_a"],
+      documents: [{ documentId: "doc_1" }],
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(reviewJobUpdate).toHaveBeenCalledWith({
+      where: { id: "review_job_dispatch_failure" },
+      data: expect.objectContaining({
+        status: ReviewStatus.failed,
+        errorMessage: "worker exited before ready",
+      }),
+    });
+  });
+
   it("fails fast when created jobs cannot be reloaded for execution", async () => {
     const tx = {
       llmProfile: {

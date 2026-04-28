@@ -142,7 +142,7 @@ describe("ReviewJobsTable", () => {
     expect(screen.queryByText("活动包装")).not.toBeInTheDocument();
   });
 
-  it("uses the desktop export bridge for all-filtered export actions", async () => {
+  it("uses explicit selected ids for all-filtered export actions", async () => {
     const user = userEvent.setup();
     const exportReviewList = vi.fn().mockResolvedValue(createDesktopBinary("review-list.xlsx"));
     const listReviewJobs = vi.fn().mockResolvedValue([createReview()]);
@@ -159,10 +159,36 @@ describe("ReviewJobsTable", () => {
     await user.click(screen.getByRole("button", { name: "批量导出" }));
 
     expect(exportReviewList).toHaveBeenCalledWith({
-      allMatching: true,
-      query: "玩法",
+      allMatching: false,
+      selectedIds: ["review_1"],
     });
     expect(listReviewJobs).toHaveBeenCalled();
+  });
+
+  it("uses explicit selected ids for all-filtered delete actions", async () => {
+    const user = userEvent.setup();
+    const deleteReviewJobs = vi.fn().mockResolvedValue({ deletedCount: 1 });
+    const listReviewJobs = vi
+      .fn()
+      .mockResolvedValueOnce([createReview()])
+      .mockResolvedValueOnce([]);
+
+    installDesktopApi({
+      deleteReviewJobs,
+      listReviewJobs,
+    });
+
+    render(<ReviewJobsTable items={[createReview()]} />);
+
+    await user.type(screen.getByRole("searchbox", { name: "搜索评审任务" }), "玩法");
+    await user.click(screen.getByRole("checkbox", { name: "选择当前筛选结果" }));
+    await user.click(screen.getByRole("button", { name: "批量删除" }));
+    await user.click(screen.getByRole("button", { name: "仍要删除" }));
+
+    expect(deleteReviewJobs).toHaveBeenCalledWith({
+      allMatching: false,
+      selectedIds: ["review_1"],
+    });
   });
 
   it("uses page-provided items as the initial source of truth without an immediate duplicate fetch", () => {

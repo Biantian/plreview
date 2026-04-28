@@ -73,6 +73,27 @@ export type ReviewJobExecutor = (input: {
   rules: Parameters<typeof executeReviewJob>[0]["rules"];
 }) => Promise<unknown>;
 
+async function markReviewJobDispatchFailed(
+  prisma: PrismaClient,
+  reviewJobId: string,
+  error: unknown,
+) {
+  const message = error instanceof Error ? error.message : "评审任务派发失败，请稍后重试。";
+
+  try {
+    await prisma.reviewJob.update({
+      where: { id: reviewJobId },
+      data: {
+        status: ReviewStatus.failed,
+        errorMessage: message,
+        finishedAt: new Date(),
+      },
+    });
+  } catch {
+    // If the row was deleted before we could persist the dispatch failure, there is nothing to recover here.
+  }
+}
+
 export async function createReviewBatch(
   prisma: PrismaClient,
   input: CreateReviewBatchInput,
@@ -251,7 +272,15 @@ export async function createReviewBatch(
       rules: orderedRules,
     }));
 
-  void Promise.allSettled(reviewJobs.map((job) => executeJob(job)));
+  void Promise.allSettled(
+    reviewJobs.map(async (job) => {
+      try {
+        await executeJob(job);
+      } catch (error) {
+        await markReviewJobDispatchFailed(prisma, job.reviewJobId, error);
+      }
+    }),
+  );
 
   return batch;
 }

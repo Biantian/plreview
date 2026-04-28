@@ -14,7 +14,7 @@ export type DesktopReviewJobRow = {
   finishedAt: string | null;
 };
 
-export async function listReviewJobs(prisma: PrismaClient, limit = 50) {
+export async function listReviewJobs(prisma: PrismaClient, limit?: number) {
   const reviewJobs = await prisma.reviewJob.findMany({
     include: {
       reviewBatch: {
@@ -38,7 +38,7 @@ export async function listReviewJobs(prisma: PrismaClient, limit = 50) {
     orderBy: {
       createdAt: "desc",
     },
-    take: limit,
+    ...(typeof limit === "number" ? { take: limit } : {}),
   });
 
   return reviewJobs.map<DesktopReviewJobRow>((item) => ({
