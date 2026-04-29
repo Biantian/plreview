@@ -11,6 +11,14 @@
 - 当前支持的模型接口：OpenAI 兼容格式
 - 当前支持的导入文件：`docx`、`txt`、`md`、`xlsx`
 
+## 文档导航
+
+- [快速开始](#快速开始)
+- [典型使用流程](#典型使用流程)
+- [常用命令](#常用命令)
+- [桌面构建与分发](./docs/deployment/desktop-build-and-distribution.md)
+- [文档目录说明](./docs/README.md)
+
 ## 主要能力
 
 - 从工作台直接发起新的评审批次
@@ -113,100 +121,17 @@ npm test
 
 ## 桌面构建与分发
 
-### 本地打包
+README 只保留入口说明，详细步骤见：
 
-```bash
-npm run desktop:build
-npm run desktop:dist
-```
-
-打包配置位于 [electron-builder.yml](/Users/jiangdongzhe/Dev/ai-project/plreview/electron-builder.yml)，产物默认输出到 `release/`。
-
-当前打包链路要点：
-
-- `next.config.ts` 使用 `output: "export"` 生成静态 `out/`
-- 开发环境由 Electron 加载 `http://localhost:3000`
-- 生产环境由 Electron 直接加载 `out/index.html`
-- 页面数据通过 `electron/preload` 暴露的桌面 bridge 进入渲染层
-- 首次启动时会把预置 SQLite 模板复制到 Electron `userData` 目录，并在同目录生成持久化的 `APP_ENCRYPTION_KEY`
-
-如需查看产物体积：
-
-```bash
-npm run desktop:report-size
-```
-
-如需回归桌面核心发起链路：
-
-```bash
-npm run test:desktop:smoke
-```
-
-详细回归说明见 [docs/qa/2026-04-21-desktop-smoke-regression.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/qa/2026-04-21-desktop-smoke-regression.md)。
-
-### macOS 非正式分发
-
-适用于小范围内部试装，不适合作为正式对外交付方案。
-
-```bash
-npm run desktop:dist -- --mac dmg --arm64
-```
-
-如果下载后的应用被系统拦截，可在目标机器执行：
-
-```bash
-xattr -dr com.apple.quarantine /Applications/PLReview.app
-```
-
-### macOS 正式发布
-
-正式对外分发需要：
-
-- `Developer ID Application` 证书
-- `electron-builder` 可用的签名来源
-- 一组可用的 Apple notarization 凭据
-
-正式打包命令：
-
-```bash
-npm run desktop:release:mac
-```
-
-如需复验当前 `release/` 下的 macOS 产物：
-
-```bash
-npm run desktop:verify:mac-release
-```
-
-对应的底层校验命令通常是：
-
-```bash
-codesign --verify --deep --strict --verbose=2 release/mac-arm64/PLReview.app
-spctl -a -vv release/mac-arm64/PLReview.app
-xcrun stapler validate release/PLReview-<version>-arm64.dmg
-```
-
-### Win11 打包
-
-在当前环境下可使用：
-
-```bash
-ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ \
-ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/ \
-npm run desktop:dist -- --win --x64 --dir
-```
-
-如果需要正式安装包 `nsis`，更建议直接在 Win11 主机上执行：
-
-```bash
-npm run desktop:dist -- --win --x64
-```
-
-Win11 手工烟测步骤见 [docs/qa/2026-04-14-win11-smoke-test-checklist.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/qa/2026-04-14-win11-smoke-test-checklist.md)。
+- [桌面构建与分发总览](./docs/deployment/desktop-build-and-distribution.md)
+- [桌面烟测回归说明](./docs/qa/2026-04-21-desktop-smoke-regression.md)
+- [Win11 烟测清单](./docs/qa/2026-04-14-win11-smoke-test-checklist.md)
 
 ## 项目文档
 
 - [docs/README.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/README.md)：`docs/` 目录结构与归档规则
+- [docs/documentation-checklist.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/documentation-checklist.md)：文档更新检查清单
+- [docs/deployment/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/deployment)：桌面构建、打包与平台分发说明
 - [docs/qa/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/qa)：回归清单、烟测说明、复盘记录
 - [docs/plans/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/plans)：项目级规划与设计文档
 - [docs/superpowers/specs/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/superpowers/specs)：方案设计文档
