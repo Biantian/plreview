@@ -37,7 +37,7 @@
     "db:seed": "node prisma/seed.mjs"
   },
   "dependencies": {
-    "@prisma/client": "^6.6.0",
+    "@prisma/client": "^7.8.0",
     "clsx": "^2.1.1",
     "jszip": "^3.10.1",
     "mammoth": "^1.8.0",
