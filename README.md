@@ -1,5 +1,9 @@
 # PLReview
 
+<p align="center">
+  <img src="./build/icon.png" alt="PLReview icon" width="160" />
+</p>
+
 本项目是一个本地优先的策划案评审桌面应用，面向需要批量审阅文档、维护评审规则、管理模型配置并追踪评审结果的工作流。
 
 当前主形态是 Electron + Next.js 桌面端。评审数据和文档解析结果保存在本地 SQLite 中，模型调用通过 OpenAI 兼容接口完成。
