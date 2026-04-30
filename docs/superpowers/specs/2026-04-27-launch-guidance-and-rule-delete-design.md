@@ -18,7 +18,7 @@ Status: Approved in conversation, pending written spec review
 ### In Scope
 
 - 桌面壳全局顶部拖拽交互调整（不改变业务页面信息架构）
-- [components/intake-workbench.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/intake-workbench.tsx) 的缺失项引导交互升级
+- [components/intake-workbench.tsx](../../../components/intake-workbench.tsx) 的缺失项引导交互升级
 - 规则删除的前后端链路补齐（UI、bridge、IPC、service、数据层）
 - 规则库“显示已删除”低权重筛选入口（折叠/隐藏式）
 - 相关单测补充与回归
@@ -217,4 +217,3 @@ Status: Approved in conversation, pending written spec review
   4. 新建批次缺失项定位与动效
   5. 顶部拖拽边与全局样式收口
   6. 单测补齐与回归
-

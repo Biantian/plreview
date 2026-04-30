@@ -29,7 +29,7 @@ Branch: `main`
 
 ## Problem Summary
 
-当前 [components/model-editor-drawer.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/model-editor-drawer.tsx) 和 [components/rule-editor-drawer.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/rule-editor-drawer.tsx) 作为普通页面块挂在管理列表下方，受页面和父容器多层 `overflow: hidden` 约束影响，长表单在较小窗口内会超出可视范围，用户无法继续下滑查看剩余字段和底部操作区。
+当前 [components/model-editor-drawer.tsx](../../../components/model-editor-drawer.tsx) 和 [components/rule-editor-drawer.tsx](../../../components/rule-editor-drawer.tsx) 作为普通页面块挂在管理列表下方，受页面和父容器多层 `overflow: hidden` 约束影响，长表单在较小窗口内会超出可视范围，用户无法继续下滑查看剩余字段和底部操作区。
 
 这带来三个直接问题：
 

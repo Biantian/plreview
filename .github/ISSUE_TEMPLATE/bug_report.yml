@@ -1,0 +1,75 @@
+name: Bug report
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量提供可复现信息，方便我们更快定位问题。
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题描述
+      description: 用一两段话说明发生了什么
+      placeholder: 例如：在桌面端新建批次后，提交按钮一直处于 loading 状态
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 按顺序列出操作步骤
+      placeholder: |
+        1. 打开...
+        2. 点击...
+        3. 观察...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      placeholder: 例如：应显示评审任务列表并进入处理中状态
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      placeholder: 例如：界面一直显示 loading，控制台出现错误
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本或提交
+      description: 如果知道，请填写版本号、分支或 commit
+      placeholder: 例如：0.3.0 / main / abc1234
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 运行环境
+      options:
+        - macOS desktop app
+        - Windows desktop app
+        - Browser-only dev mode
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志或截图
+      description: 请移除密钥、账号和隐私数据
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已经检查过没有包含敏感信息或密钥
+          required: true
+        - label: 我已经确认这是当前仓库代码可复现的问题
+          required: true

@@ -292,7 +292,7 @@ describe("globals shell styles", () => {
   it("keeps the simplified home cockpit fixed on desktop with internal scrolling", () => {
     hasRule(".workspace.page:has(.home-command-center)", ["overflow: hidden;"]);
     hasRule(".home-command-center", [
-      "grid-template-rows: auto minmax(0, 1fr);",
+      "grid-template-rows: auto auto minmax(0, 1fr);",
       "min-height: 0;",
       "overflow: hidden;",
     ]);

@@ -1,8 +1,18 @@
 {
   "name": "plreview",
+  "description": "Local-first desktop app for reviewing planning documents and managing review workflows.",
   "version": "0.3.0",
   "main": "electron/main.cjs",
+  "license": "MIT",
   "private": true,
+  "homepage": "https://github.com/Biantian/plreview",
+  "bugs": {
+    "url": "https://github.com/Biantian/plreview/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Biantian/plreview.git"
+  },
   "scripts": {
     "dev": "node --import tsx ./scripts/run-with-dev-env.ts next dev",
     "desktop:main": "node --import tsx ./scripts/run-with-dev-env.ts cross-env ELECTRON_RENDERER_URL=http://localhost:3000 electron ./electron/main.cjs",

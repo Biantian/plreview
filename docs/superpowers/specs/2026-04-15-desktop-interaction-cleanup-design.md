@@ -17,9 +17,9 @@ Branch: `codex/local-first-desktop-delivery`
 
 ### In Scope
 
-- 重构 [app/reviews/new/page.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/app/reviews/new/page.tsx) 和 [components/intake-workbench.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/intake-workbench.tsx) 的页面职责与布局
-- 重构 [app/models/page.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/app/models/page.tsx) 和 [components/model-manager.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/model-manager.tsx) 的交互形态
-- 重构 [app/docs/page.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/app/docs/page.tsx) 的信息架构与双侧目录布局
+- 重构 [app/reviews/new/page.tsx](../../../app/reviews/new/page.tsx) 和 [components/intake-workbench.tsx](../../../components/intake-workbench.tsx) 的页面职责与布局
+- 重构 [app/models/page.tsx](../../../app/models/page.tsx) 和 [components/model-manager.tsx](../../../components/model-manager.tsx) 的交互形态
+- 重构 [app/docs/page.tsx](../../../app/docs/page.tsx) 的信息架构与双侧目录布局
 - 为上述页面补充必要的样式与组件测试
 
 ### Out of Scope

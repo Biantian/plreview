@@ -33,7 +33,7 @@ Branch: `main`
 
 ## Problem Summary
 
-当前 [components/adaptive-form-overlay.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/adaptive-form-overlay.tsx) 会在宽高充足时切到 `drawer` 模式，面板靠右侧停靠。对“新增规则”和“新增模型”这类用户主动创建内容的表单来说，靠边展开不符合当前用户习惯；用户偏好居中，并希望横向空间更宽。
+当前 [components/adaptive-form-overlay.tsx](../../../components/adaptive-form-overlay.tsx) 会在宽高充足时切到 `drawer` 模式，面板靠右侧停靠。对“新增规则”和“新增模型”这类用户主动创建内容的表单来说，靠边展开不符合当前用户习惯；用户偏好居中，并希望横向空间更宽。
 
 同时，当前新增表单主要依赖非受控字段的 `defaultValue`。关闭新增弹窗会卸载表单，再次打开时字段回到默认值；这让用户感觉只是离开输入框或临时关闭，就丢失了刚输入的内容。用户希望输入由自己控制，除非点击“清空”、保存成功、关闭应用窗口或退出应用，否则不要清空。
 
@@ -99,7 +99,7 @@ Branch: `main`
 
 ### Overlay Shell
 
-[components/adaptive-form-overlay.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/adaptive-form-overlay.tsx) 继续作为通用浮层壳体，负责：
+[components/adaptive-form-overlay.tsx](../../../components/adaptive-form-overlay.tsx) 继续作为通用浮层壳体，负责：
 
 - `<dialog>` 打开关闭
 - 焦点进入与返回
@@ -111,15 +111,15 @@ Branch: `main`
 
 ### Business Editors
 
-[components/rule-editor-drawer.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/rule-editor-drawer.tsx) 和 [components/model-editor-drawer.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/model-editor-drawer.tsx) 继续负责字段、提交 payload 和错误展示。为支持草稿保留，它们需要接收新增草稿值和草稿变更回调，或接收等价的受控字段 API。
+[components/rule-editor-drawer.tsx](../../../components/rule-editor-drawer.tsx) 和 [components/model-editor-drawer.tsx](../../../components/model-editor-drawer.tsx) 继续负责字段、提交 payload 和错误展示。为支持草稿保留，它们需要接收新增草稿值和草稿变更回调，或接收等价的受控字段 API。
 
 编辑已有记录时继续以传入的 `rule` 或 `profile` 作为当前编辑对象。新增草稿与已有记录编辑保持隔离。
 
 ### Parent State
 
-[components/rules-table.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/rules-table.tsx) 持有新增规则草稿。
+[components/rules-table.tsx](../../../components/rules-table.tsx) 持有新增规则草稿。
 
-[components/model-manager.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/components/model-manager.tsx) 持有新增模型草稿。
+[components/model-manager.tsx](../../../components/model-manager.tsx) 持有新增模型草稿。
 
 父组件负责：
 
@@ -257,7 +257,7 @@ Branch: `main`
 
 ### Overlay Tests
 
-调整 [tests/components/adaptive-form-overlay.test.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/tests/components/adaptive-form-overlay.test.tsx)：
+调整 [tests/components/adaptive-form-overlay.test.tsx](../../../tests/components/adaptive-form-overlay.test.tsx)：
 
 - 更新形态判断或标记断言，反映规则/模型使用居中模式
 - 保留焦点管理、关闭、遮罩点击、滚动锁定和焦点陷阱测试

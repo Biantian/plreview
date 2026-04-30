@@ -23,7 +23,10 @@ pnpm-debug.log*
 /coverage
 /dist
 /.desktop-runtime
+/.desktop-user-data
 /.turbo
+**/__pycache__/
+*.py[cod]
 
 # sqlite files
 /prisma/dev.db

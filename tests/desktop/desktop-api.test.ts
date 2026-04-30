@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -190,10 +191,7 @@ describe("electron preload bridge", () => {
     const exposeInMainWorld = vi.fn();
     const on = vi.fn();
     const off = vi.fn();
-    const source = fs.readFileSync(
-      "/Users/jiangdongzhe/Dev/ai-project/plreview/.worktrees/codex-review-launch-quick-start/electron/preload.cjs",
-      "utf8",
-    );
+    const source = fs.readFileSync(path.resolve(process.cwd(), "electron/preload.cjs"), "utf8");
     const module = { exports: {} };
     const executePreload = new Function("require", "module", "exports", source);
     let wrappedListener: ((event: unknown, payload: unknown) => void) | undefined;

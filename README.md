@@ -4,6 +4,12 @@
 
 当前主形态是 Electron + Next.js 桌面端。评审数据和文档解析结果保存在本地 SQLite 中，模型调用通过 OpenAI 兼容接口完成。
 
+## 开源协作
+
+- 欢迎通过 issue 反馈问题、讨论方案和提出功能建议
+- 欢迎提交 PR，建议先阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)
+- 安全问题请先看 [SECURITY.md](./SECURITY.md)，不要直接公开漏洞细节
+
 ## 项目状态
 
 - 当前版本：`0.3.0`
@@ -53,7 +59,7 @@ cp .env.example .env
 - `OPENAI_COMPATIBLE_BASE_URL`
 - `OPENAI_COMPATIBLE_DEFAULT_MODEL`
 
-示例见 [.env.example](/Users/jiangdongzhe/Dev/ai-project/plreview/.env.example)。
+示例见 [.env.example](./.env.example)。
 
 ### 3. 初始化数据库
 
@@ -85,7 +91,7 @@ npm run dev
 浏览器地址默认是 [http://localhost:3000](http://localhost:3000)。
 需要注意的是，大部分业务页依赖 `window.plreview` 桌面 bridge；直接在浏览器访问时会进入“桌面桥接不可用”的降级状态，因此这个命令更适合纯界面调试，不适合完整流程验证。
 
-开发期 SQLite 默认位于 [prisma/dev.db](/Users/jiangdongzhe/Dev/ai-project/plreview/prisma/dev.db)。
+开发期 SQLite 默认位于 `prisma/dev.db`。
 
 ## 典型使用流程
 
@@ -95,7 +101,7 @@ npm run dev
 4. 提交批次后，在“评审任务”页查看执行状态、失败项和导出操作。
 5. 在“评审详情”页复核问题标注、原文证据和 Markdown 报告。
 
-更多产品说明见 [app/docs/page.tsx](/Users/jiangdongzhe/Dev/ai-project/plreview/app/docs/page.tsx) 和 [docs/README.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/README.md)。
+更多产品说明见 [app/docs/page.tsx](./app/docs/page.tsx) 和 [docs/README.md](./docs/README.md)。
 
 ## 常用命令
 
@@ -129,13 +135,17 @@ README 只保留入口说明，详细步骤见：
 
 ## 项目文档
 
-- [docs/README.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/README.md)：`docs/` 目录结构与归档规则
-- [docs/documentation-checklist.md](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/documentation-checklist.md)：文档更新检查清单
-- [docs/deployment/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/deployment)：桌面构建、打包与平台分发说明
-- [docs/qa/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/qa)：回归清单、烟测说明、复盘记录
-- [docs/plans/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/plans)：项目级规划与设计文档
-- [docs/superpowers/specs/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/superpowers/specs)：方案设计文档
-- [docs/superpowers/plans/](/Users/jiangdongzhe/Dev/ai-project/plreview/docs/superpowers/plans)：实现计划文档
+- [docs/README.md](./docs/README.md)：`docs/` 目录结构与归档规则
+- [docs/documentation-checklist.md](./docs/documentation-checklist.md)：文档更新检查清单
+- [docs/deployment/](./docs/deployment/)：桌面构建、打包与平台分发说明
+- [docs/qa/](./docs/qa/)：回归清单、烟测说明、复盘记录
+- [docs/plans/](./docs/plans/)：项目级规划与设计文档
+- [docs/superpowers/specs/](./docs/superpowers/specs/)：方案设计文档
+- [docs/superpowers/plans/](./docs/superpowers/plans/)：实现计划文档
+
+## 许可证
+
+本项目使用 [MIT License](./LICENSE)。
 
 ## 文案约束
 

@@ -1,0 +1,36 @@
+name: Feature request
+description: 提出功能建议或产品改进想法
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎提出功能建议。请尽量说明使用场景和为什么这项能力值得进入主线。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决的问题
+      description: 当前流程里哪里不顺，或者缺了什么能力
+      placeholder: 例如：批量导入后很难快速筛掉明显不需要评审的文件
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 说说你理想中的行为、入口或交互
+      placeholder: 例如：允许在新建批次页按文件名或来源先做一次本地筛选
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案或临时绕过方式
+      description: 如果你已经尝试过别的做法，也欢迎写出来
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充背景
+      description: 可补充截图、流程、业务背景或相关 issue/PR
